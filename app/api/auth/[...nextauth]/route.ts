@@ -1,6 +1,7 @@
  // app/api/auth/[...nextauth]/route.ts
 // نلغي فحص التايبز في هذا الملف حتى لا يزعجنا TypeScript
 // @ts-nocheck
+export const runtime = "nodejs";
 
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
