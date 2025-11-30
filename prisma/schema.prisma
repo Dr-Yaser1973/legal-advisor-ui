@@ -1,0 +1,656 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//// ===================== ENUMS ===================== ////
+
+enum DocStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Language {
+  AR
+  EN
+}
+
+enum LawCategory {
+  LAW
+  FIQH
+  ACADEMIC_STUDY
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT // مستخدم عادي
+  LAWYER // محامي
+  COMPANY // شركة
+  TRANSLATION_OFFICE // مكتب ترجمة
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum HumanConsultStatus {
+  PENDING // بانتظار قبول أحد المحامين
+  ACCEPTED // تم قبولها من محامٍ
+  IN_PROGRESS // قيد التنفيذ
+  COMPLETED // منجزة
+  CANCELED // ملغاة
+}
+
+enum TranslationStatus {
+  PENDING // بانتظار قبول مكتب الترجمة
+  ACCEPTED // تم قبولها من مكتب ترجمة
+  IN_PROGRESS // قيد الترجمة
+  COMPLETED // منجزة
+  CANCELED // ملغاة
+}
+
+enum UserStatus {
+  ACTIVE // حساب فعّال
+  PENDING // بانتظار تفعيل الأدمن (محامٍ / شركة / مكتب ترجمة)
+  SUSPENDED // موقوف لمخالفة
+  EXPIRED // انتهى الاشتراك
+}
+
+//// ===================== USERS / AUTH ===================== ////
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  name               String?
+  email              String?    @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  role               UserRole   @default(CLIENT)
+  isApproved         Boolean    @default(false)
+  status             UserStatus @default(PENDING)
+  phone              String?
+  subscriptionEndsAt DateTime?
+  location           String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  consultations     Consultation[]
+  cases             Case[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  lawyerProfile     LawyerProfile?
+  clientProfile     ClientProfile?
+  ContractTemplate  ContractTemplate[]
+  GeneratedContract GeneratedContract[]
+  AnalysisJob       AnalysisJob[]
+  LegalQuestion     LegalQuestion[]     @relation("UserQuestions")
+  LawDocs           LawDoc[]
+
+  // علاقات الاستشارات البشرية وغرف المحادثة
+  ClientHumanConsults HumanConsultRequest[] @relation("ClientHumanConsults")
+  LawyerHumanConsults HumanConsultRequest[] @relation("LawyerHumanConsults")
+
+  ClientChatRooms ChatRoom[] @relation("ClientChatRooms")
+  LawyerChatRooms ChatRoom[] @relation("LawyerChatRooms")
+
+  messages Message[]
+
+  // علاقات طلب استشارة من محامٍ (النسخة الخفيفة ConsultationRequest)
+  ClientConsultationRequests ConsultationRequest[] @relation("ClientConsultationRequests")
+  LawyerConsultationRequests ConsultationRequest[] @relation("LawyerConsultationRequests")
+
+  // عروض المحامين على طلبات الاستشارة البشرية
+  LawyerConsultOffers HumanConsultOffer[]
+
+  // طلبات الترجمة (من جهة العميل ومكتب الترجمة)
+  ClientTranslationRequests TranslationRequest[] @relation("ClientTranslationRequests")
+  OfficeTranslationRequests TranslationRequest[] @relation("OfficeTranslationRequests")
+  TranslationOffers         TranslationOffer[]
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+//// ===================== PROFILES ===================== ////
+
+model LawyerProfile {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  bio         String?
+  specialties String?
+  phone       String?
+  city        String?
+  rating      Float?
+
+  // إعدادات الأجور والبيانات الإضافية
+  consultFee      Int? // أجرة الاستشارة الافتراضية
+  consultCurrency String? @default("IQD")
+  officeAddress   String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([city])
+}
+
+model ClientProfile {
+  id     Int     @id @default(autoincrement())
+  userId Int     @unique
+  phone  String?
+  city   String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([city])
+}
+
+model Appointment {
+  id       Int      @id @default(autoincrement())
+  lawyerId Int
+  clientId Int
+  startsAt DateTime
+  endsAt   DateTime
+  subject  String
+  location String?
+  notes    String?
+
+  lawyer LawyerProfile @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  client ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([lawyerId, startsAt])
+  @@index([clientId, startsAt])
+}
+
+//// ===================== NOTIFICATIONS / LOGS ===================== ////
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+//// ===================== LEGAL QUESTIONS ===================== ////
+
+model LegalQuestion {
+  id               Int       @id @default(autoincrement())
+  slug             String?   @unique
+  question_text    String
+  answer_text      String
+  category         String?
+  language         Language?
+  jurisdiction     String?
+  source_reference String?
+  status           DocStatus @default(PUBLISHED)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  createdById Int?
+  createdBy   User? @relation("UserQuestions", fields: [createdById], references: [id], onDelete: SetNull)
+
+  embedding     QuestionEmbedding?
+  tags          LegalQuestionTag[]
+  references    LegalReference[]
+  consultations Consultation[]
+
+  @@index([category])
+  @@index([jurisdiction])
+  @@index([status, createdAt])
+}
+
+model QuestionEmbedding {
+  id              Int     @id @default(autoincrement())
+  legalQuestionId Int     @unique
+  embedding       Float[]
+
+  legalQuestion LegalQuestion @relation(fields: [legalQuestionId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  qs   LegalQuestionTag[]
+  docs TagOnDoc[]
+
+  @@index([name])
+}
+
+model LegalQuestionTag {
+  questionId Int
+  tagId      Int
+
+  question LegalQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      Tag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+}
+
+model LegalReference {
+  id           Int     @id @default(autoincrement())
+  questionId   Int
+  title        String?
+  cite         String?
+  url          String?
+  year         Int?
+  jurisdiction String?
+
+  question LegalQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+//// ===================== DOCUMENTS / RAG ===================== ////
+
+model LegalDocument {
+  id        Int      @id @default(autoincrement())
+  title     String
+  filename  String
+  mimetype  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  chunks              LegalDocChunk[]
+  generatedContracts  GeneratedContract[]
+  CaseDocument        CaseDocument[]
+  AnalysisJobs        AnalysisJob[]
+  TranslationRequests TranslationRequest[]
+}
+
+model LegalDocChunk {
+  id         Int    @id @default(autoincrement())
+  documentId Int
+  idx        Int
+  text       String
+
+  document  LegalDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  embedding ChunkEmbedding?
+}
+
+model ChunkEmbedding {
+  id        Int     @id @default(autoincrement())
+  chunkId   Int     @unique
+  embedding Float[]
+
+  chunk LegalDocChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+}
+
+//// ===================== CONSULTATIONS ===================== ////
+
+model Consultation {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+
+  answer String? // جواب الذكاء الاصطناعي (اختياري)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  legalRefs     LegalQuestion[]
+  humanRequests HumanConsultRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//// ===================== CASES ===================== ////
+
+model Case {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  type        String
+  court       String
+  status      String
+  filingDate  DateTime
+  closingDate DateTime?
+  parties     Json
+  notes       String?
+  aiAnalysis  Json?
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  documents CaseDocument[]
+  events    CaseEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([filingDate])
+}
+
+model CaseEvent {
+  id     Int      @id @default(autoincrement())
+  caseId Int
+  title  String
+  date   DateTime
+  note   String?
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model CaseDocument {
+  caseId     Int
+  documentId Int
+
+  case     Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, documentId])
+}
+
+//// ===================== CONTRACTS ===================== ////
+
+model ContractTemplate {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  bodyHtml    String
+  language    Language @default(AR)
+  createdById Int?
+
+  createdBy User?               @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  generated GeneratedContract[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GeneratedContract {
+  id          Int     @id @default(autoincrement())
+  templateId  Int?
+  sourceDocId Int?
+  title       String
+  partyA      String?
+  partyB      String?
+  subject     String?
+  pdfPath     String
+  data        Json?
+  createdById Int?
+
+  template  ContractTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  sourceDoc LegalDocument?    @relation(fields: [sourceDocId], references: [id], onDelete: SetNull)
+  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+}
+
+//// ===================== ANALYSIS JOBS ===================== ////
+
+model AnalysisJob {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  filename   String
+  mimetype   String?
+  size       Int?
+  status     JobStatus @default(QUEUED)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  error      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sourceDocId Int?
+  sourceDoc   LegalDocument? @relation(fields: [sourceDocId], references: [id], onDelete: SetNull)
+
+  outputs   AnalysisOutput[]
+  createdAt DateTime         @default(now())
+
+  @@index([userId, status, createdAt])
+}
+
+model AnalysisOutput {
+  id        Int      @id @default(autoincrement())
+  jobId     Int
+  kind      String
+  content   Json
+  createdAt DateTime @default(now())
+
+  job AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+//// ===================== PRIMARY LEGAL LIBRARY ===================== ////
+
+model LawDoc {
+  id           Int         @id @default(autoincrement())
+  title        String
+  jurisdiction String
+  category     LawCategory
+  year         Int?
+  sourceUrl    String?
+  filePath     String?
+  pagesCount   Int?
+  checksum     String?     @unique
+  text         String?
+  visibility   String      @default("PUBLIC")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  createdById Int?
+  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  articles LawArticle[]
+  tags     TagOnDoc[]
+
+  @@index([category])
+  @@index([jurisdiction])
+}
+
+model LawArticle {
+  id       Int    @id @default(autoincrement())
+  lawDoc   LawDoc @relation(fields: [lawDocId], references: [id], onDelete: Cascade)
+  lawDocId Int
+
+  ordinal Int
+  number  String?
+  text    String
+
+  createdAt DateTime @default(now())
+}
+
+model TagOnDoc {
+  docId Int
+  tagId Int
+  doc   LawDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([docId, tagId])
+}
+
+//// ===================== HUMAN LAWYER CONSULTS & CHAT ===================== ////
+
+model HumanConsultRequest {
+  id             Int                @id @default(autoincrement())
+  consultationId Int?
+  clientId       Int
+  lawyerId       Int?
+  status         HumanConsultStatus @default(PENDING)
+  createdAt      DateTime           @default(now())
+  acceptedAt     DateTime?
+  completedAt    DateTime?
+
+  consultation Consultation? @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  client       User          @relation("ClientHumanConsults", fields: [clientId], references: [id], onDelete: Cascade)
+  lawyer       User?         @relation("LawyerHumanConsults", fields: [lawyerId], references: [id], onDelete: SetNull)
+
+  offers   HumanConsultOffer[]
+  chatRoom ChatRoom?
+}
+
+model HumanConsultOffer {
+  id        Int      @id @default(autoincrement())
+  requestId Int
+  lawyerId  Int
+  fee       Int
+  currency  String   @default("IQD")
+  note      String?
+  status    String   @default("PENDING") // PENDING | ACCEPTED_BY_CLIENT | REJECTED | EXPIRED
+  createdAt DateTime @default(now())
+
+  request HumanConsultRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  lawyer  User                @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([lawyerId])
+}
+
+model ChatRoom {
+  id        Int      @id @default(autoincrement())
+  requestId Int      @unique
+  clientId  Int
+  lawyerId  Int
+  createdAt DateTime @default(now())
+
+  request HumanConsultRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  client  User                @relation("ClientChatRooms", fields: [clientId], references: [id], onDelete: Cascade)
+  lawyer  User                @relation("LawyerChatRooms", fields: [lawyerId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  senderId  Int
+  text      String
+  createdAt DateTime @default(now())
+
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([senderId])
+}
+
+//// ===================== SIMPLE CONSULTATION REQUEST ===================== ////
+
+model ConsultationRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  lawyerId  Int?
+  status    String   @default("PENDING") // PENDING | APPROVED | REJECTED | COMPLETED
+  message   String
+  createdAt DateTime @default(now())
+
+  // المستخدم الذي طلب الاستشارة
+  user   User  @relation("ClientConsultationRequests", fields: [userId], references: [id], onDelete: Cascade)
+  // المحامي الذي ستُوجّه له الاستشارة (اختياري في البداية)
+  lawyer User? @relation("LawyerConsultationRequests", fields: [lawyerId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([lawyerId])
+  @@index([status, createdAt])
+}
+
+//// ===================== TRANSLATION REQUESTS (HUMAN OFFICES) ===================== ////
+
+model TranslationRequest {
+  id          Int               @id @default(autoincrement())
+  clientId    Int
+  officeId    Int?
+  sourceDocId Int
+  targetLang  Language
+  status      TranslationStatus @default(PENDING)
+  note        String?
+  price       Int?
+  currency    String?           @default("IQD")
+  createdAt   DateTime          @default(now())
+  acceptedAt  DateTime?
+  completedAt DateTime?
+
+  // المستخدم الذي طلب الترجمة (غالباً CLIENT أو COMPANY)
+  client User @relation("ClientTranslationRequests", fields: [clientId], references: [id], onDelete: Cascade)
+
+  // مكتب الترجمة الذي استلم الطلب (TRANSLATION_OFFICE)
+  office User? @relation("OfficeTranslationRequests", fields: [officeId], references: [id], onDelete: SetNull)
+
+  // الملف الذي سيتم ترجمته
+  sourceDoc LegalDocument @relation(fields: [sourceDocId], references: [id], onDelete: Cascade)
+
+  offers TranslationOffer[]
+
+  @@index([clientId])
+  @@index([officeId])
+  @@index([status, createdAt])
+}
+
+model TranslationOffer {
+  id        Int      @id @default(autoincrement())
+  requestId Int
+  officeId  Int
+  price     Int
+  currency  String   @default("IQD")
+  note      String?
+  status    String   @default("PENDING") // PENDING | ACCEPTED_BY_CLIENT | REJECTED | EXPIRED
+  createdAt DateTime @default(now())
+
+  request TranslationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  office  User               @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([officeId])
+}

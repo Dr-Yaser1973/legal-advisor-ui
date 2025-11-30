@@ -1,0 +1,14 @@
+
+import PdfViewer from './PdfViewer';
+
+export default async function LibraryPage() {
+  // ... بقية منطق الصفحة/البحث/القائمة
+  return (
+    <main className="p-6 space-y-6">
+      {/* مكوّن العرض (اختياري للتجربة) */}
+      <PdfViewer src="/sample.pdf" page={1} />
+
+      {/* باقي الصفحة … */}
+    </main>
+  );
+}

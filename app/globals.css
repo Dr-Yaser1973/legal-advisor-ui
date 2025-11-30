@@ -1,0 +1,18 @@
+ /* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* اتجاه عربي */
+html { direction: rtl; }
+
+/* وضع داكن افتراضي */
+:root { color-scheme: dark; }
+body { background: #0b1220; color: #e5e7eb; }
+
+/* حاويات سريعة */
+.container { max-width: 1200px; margin-inline: auto; }
+.container-narrow { max-width: 900px; }
+
+/* خلفية الهرّو (من التكوين) */
+.hero-bg { background-image: theme('backgroundImage.hero-gradient'); }
