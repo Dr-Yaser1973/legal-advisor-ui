@@ -1,16 +1,22 @@
  // app/api/auth/[...nextauth]/route.ts
-// نلغي فحص التايبز في هذا الملف حتى لا يزعجنا TypeScript
+
+// نوقف فحص التايبز
 // @ts-nocheck
 export const runtime = "nodejs";
 
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+
+// شكل المستخدم الذي سنضعه في التوكن
+type AppUser = {
+  id: number;
+  email: string | null;
+  name: string | null;
+  role: string; // ADMIN | LAWYER | ...
+};
 
 // خيارات NextAuth
 export const authOptions = {
-  // نستخدم JWT بدل تخزين الجلسة في قاعدة البيانات
   session: {
     strategy: "jwt",
   },
@@ -23,42 +29,39 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
 
-      // دالة التحقق عند محاولة تسجيل الدخول
-      async authorize(credentials) {
+      // ✅ هنا الباب الخلفي للأدمن فقط، بدون قاعدة بيانات
+      async authorize(credentials): Promise<AppUser | null> {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("البيانات غير مكتملة");
+          return null;
         }
 
-        // البحث عن المستخدم في قاعدة البيانات
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        // نقرأ بيانات الأدمن من متغيرات البيئة
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (!user || !user.password) {
-          throw new Error("البريد أو كلمة المرور غير صحيحة");
+        // لو الإيميل والباسورد مطابقين للقيم الموجودة في الـ ENV → دخول كأدمن
+        if (
+          adminEmail &&
+          adminPassword &&
+          credentials.email === adminEmail &&
+          credentials.password === adminPassword
+        ) {
+          return {
+            id: 1,
+            email: adminEmail,
+            name: "Platform Admin",
+            role: "ADMIN",
+          };
         }
 
-        // مقارنة كلمة المرور المدخلة مع الـ hash المخزَّن
-        const ok = await bcrypt.compare(credentials.password, user.password);
-        if (!ok) {
-          throw new Error("البريد أو كلمة المرور غير صحيحة");
-        }
-
-        // إرجاع بيانات المستخدم التي ستُخزن في الـ JWT
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role, // ADMIN | LAWYER | CLIENT | COMPANY | TRANSLATION_OFFICE
-        };
+        // ❌ أي مستخدم آخر نرفضه (إلى أن نرجع لاحقًا لنظام التسجيل)
+        return null;
       },
     }),
   ],
 
-  // callbacks للتحكم في الـ JWT والـ session
   callbacks: {
     async jwt({ token, user }) {
-      // أول مرة (وقت تسجيل الدخول) ننسخ بيانات المستخدم إلى التوكن
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -67,7 +70,6 @@ export const authOptions = {
     },
 
     async session({ session, token }) {
-      // نجعل بيانات الـ token متاحة داخل session.user
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
@@ -76,15 +78,12 @@ export const authOptions = {
     },
   },
 
-  // صفحة تسجيل الدخول المخصصة
   pages: {
     signIn: "/login",
   },
 
-  // السر المستخدم لتشفير الـ JWT
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// هاندلر NextAuth لـ GET و POST
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
