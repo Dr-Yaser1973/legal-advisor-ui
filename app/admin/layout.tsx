@@ -1,5 +1,7 @@
-// app/(admin)/layout.tsx
-"use client";
+ // app/(admin)/layout.tsx
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -66,9 +68,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-row-reverse">
-      {/* السايدبار (يمين في RTL) */}
       <aside className="w-64 border-l border-white/10 bg-zinc-900/40 backdrop-blur flex flex-col">
-        {/* شعار وحالة الأدمن */}
         <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-emerald-400/50 bg-emerald-500/10">
             <Scale className="h-5 w-5" />
@@ -81,7 +81,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* روابط التنقّل */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {adminNav.map((item) => {
             const active =
@@ -98,16 +97,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* تذييل بسيط */}
         <div className="px-4 py-3 border-t border-white/10 text-[11px] text-zinc-500">
           نسخة تجريبية من لوحة التحكم. يمكن توسيعها لاحقاً لإضافة المزيد من
           التقارير والإحصاءات.
         </div>
       </aside>
 
-      {/* منطقة المحتوى الرئيسية */}
       <main className="flex-1 flex flex-col">
-        {/* عنوان أعلى كل صفحات الأدمن */}
         <header className="border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">لوحة تحكم المستشار القانوني</h1>
@@ -122,4 +118,3 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
