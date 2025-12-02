@@ -4,39 +4,88 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// مهم: params هنا Promise
-type RouteParams = Promise<{ id: string }>;
+type UserStatusValue = "ACTIVE" | "PENDING" | "SUSPENDED" | "EXPIRED";
+
+type UserRoleValue =
+  | "ADMIN"
+  | "CLIENT"
+  | "LAWYER"
+  | "COMPANY"
+  | "TRANSLATION_OFFICE";
+
+type BodyType = {
+  status?: UserStatusValue;
+  role?: UserRoleValue;
+  subscriptionEndsAt?: string | null;
+};
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: RouteParams }
+  { params }: { params: { id: string } }
 ) {
-  // نفك الـ Promise هنا
-  const { id } = await context.params;
-  const userId = Number(id);
+  // 👈 نجبر TypeScript أن يعتبر الـ session من نوع any
+  const session: any = await getServerSession(authOptions as any);
+  const currentUser: any = session?.user ?? null;
 
-  const session = await getServerSession(authOptions);
-
-  if (!session || (session.user as any).role !== "ADMIN") {
+  // 🔐 التحقق أن المستدعي هو ADMIN
+  if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
+  const userId = Number(params.id);
   if (!userId || Number.isNaN(userId)) {
-    return NextResponse.json({ error: "معرّف غير صالح" }, { status: 400 });
+    return NextResponse.json(
+      { error: "معرّف مستخدم غير صالح" },
+      { status: 400 }
+    );
   }
 
-  const body = await req.json();
+  const body = (await req.json()) as BodyType;
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      status: body.status,
-      role: body.role,
-      subscriptionEndsAt: body.subscriptionEndsAt
-        ? new Date(body.subscriptionEndsAt)
-        : undefined, // أو null حسب ما تحب
-    },
-  });
+  const data: any = {};
 
-  return NextResponse.json({ ok: true, user: updated });
+  if (body.status) {
+    data.status = body.status;
+  }
+
+  if (body.role) {
+    data.role = body.role;
+  }
+
+  if (body.subscriptionEndsAt !== undefined) {
+    data.subscriptionEndsAt = body.subscriptionEndsAt
+      ? new Date(body.subscriptionEndsAt)
+      : null;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json(
+      { error: "لا توجد بيانات لتحديثها" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        isApproved: true,
+        subscriptionEndsAt: true,
+      },
+    });
+
+    return NextResponse.json({ ok: true, user: updated });
+  } catch (err) {
+    console.error("[ADMIN_UPDATE_USER_STATUS]", err);
+    return NextResponse.json(
+      { error: "تعذر تحديث المستخدم" },
+      { status: 500 }
+    );
+  }
 }
