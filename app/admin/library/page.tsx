@@ -10,6 +10,8 @@ import DeleteDocButton from "./DeleteDocButton";
 import ReindexButton from "./ReindexButton";
 import UploadPdfCard from "./UploadPdfCard";
 
+// مهم جداً عشان Prisma يشتغل على Vercel
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLibraryPage() {
@@ -37,7 +39,7 @@ export default async function AdminLibraryPage() {
     <div className="max-w-6xl mx-auto px-4 py-8 text-right">
       <h1 className="text-3xl font-bold mb-6">إدارة المكتبة القانونية</h1>
 
-      {/* 🔵 رفع ملفات PDF ومعالجتها (نفس منطق المكتبة الاحترافية) */}
+      {/* 🔵 رفع ملفات PDF ومعالجتها */}
       <div className="mb-8">
         <UploadPdfCard />
       </div>
