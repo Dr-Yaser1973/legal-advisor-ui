@@ -1,67 +1,82 @@
  // app/admin/users/page.tsx
+import AdminSidebar from "@/components/admin/AdminSidebar";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
-import UsersTable from "./UsersTable";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
-  const session: any = await getServerSession(authOptions as any);
-  const user = session?.user as any;
-
-  // لو ماكو جلسة → رجّعه للّوگن
-  if (!user) {
-    redirect("/login");
-  }
-
-  // لو مو أدمن → ممنوع
-  if (user.role !== "ADMIN") {
-    redirect("/unauthorized");
-  }
-
-  // جلب المستخدمين من قاعدة البيانات
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
-      email: true,
       name: true,
+      email: true,
       role: true,
       status: true,
-      subscriptionEndsAt: true,
+      isApproved: true,
       createdAt: true,
     },
   });
 
-  // تحويل التواريخ إلى نصوص (JSON-safe)
-  const safeUsers = users.map((u) => ({
-    id: u.id,
-    email: u.email ?? "",
-    name: u.name ?? "",
-    role: u.role,
-    status: u.status,
-    subscriptionEndsAt: u.subscriptionEndsAt
-      ? u.subscriptionEndsAt.toISOString()
-      : "",
-    createdAt: u.createdAt.toISOString(),
-  }));
-
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-50" dir="rtl">
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        <header className="flex flex-col gap-2 text-right">
-          <h1 className="text-3xl font-bold mb-1">إدارة المستخدمين</h1>
-          <p className="text-sm text-zinc-400">
-            من هذه الصفحة يمكنك تفعيل أو إيقاف الحسابات، وتغيير الأدوار بين
-            عميل ومحامٍ وشركة ومكتب ترجمة، وضبط تاريخ انتهاء الاشتراك.
+    <div className="flex gap-0">
+      <AdminSidebar />
+
+      <section className="flex-1 p-6 space-y-4">
+        <header className="border-b border-white/10 pb-4 mb-2">
+          <h1 className="text-xl font-semibold">إدارة المستخدمين والأدوار</h1>
+          <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
+            من هذه الصفحة يمكنك متابعة حسابات المستخدمين، أدوارهم في المنصة،
+            وحالة الموافقة على الحساب.
           </p>
         </header>
 
-        {/* 👇 هنا نعرض الجدول فعليًا */}
-        <UsersTable initialUsers={safeUsers} />
-      </div>
-    </main>
+        {users.length === 0 ? (
+          <p className="text-sm text-zinc-400">لا يوجد مستخدمون مسجلون بعد.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-white/10 bg-zinc-900/60">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-900/80">
+                <tr className="text-zinc-300 border-b border-zinc-800">
+                  <th className="p-2 text-right">ID</th>
+                  <th className="p-2 text-right">الاسم</th>
+                  <th className="p-2 text-right">البريد الإلكتروني</th>
+                  <th className="p-2 text-right">الدور</th>
+                  <th className="p-2 text-right">الحالة</th>
+                  <th className="p-2 text-right">مُفعّل؟</th>
+                  <th className="p-2 text-right">تاريخ الإنشاء</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-zinc-800 last:border-0 hover:bg-zinc-800/60"
+                  >
+                    <td className="p-2">{u.id}</td>
+                    <td className="p-2">{u.name ?? "-"}</td>
+                    <td className="p-2">{u.email ?? "-"}</td>
+                    <td className="p-2 text-xs">{u.role}</td>
+                    <td className="p-2 text-xs">{u.status}</td>
+                    <td className="p-2 text-xs">
+                      {u.isApproved ? "نعم" : "لا"}
+                    </td>
+                    <td className="p-2 text-xs">
+                      {u.createdAt
+                        ? new Intl.DateTimeFormat("ar-IQ", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }).format(u.createdAt)
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
