@@ -19,6 +19,7 @@ type PageProps = {
 const PAGE_SIZE = 12;
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // ✅ تثبيت التشغيل على Node.js حتى يعمل Prisma على Vercel
 
 export default async function LibraryPage({ searchParams }: PageProps) {
   const sp = await searchParams;
