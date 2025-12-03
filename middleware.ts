@@ -31,7 +31,9 @@ function isPublicPath(pathname: string) {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
+  if (pathname.startsWith("/api/debug/prisma")) {
+    return NextResponse.next();
+  }
   // استثناء ملفات النظام والستايل
   if (
     pathname.startsWith("/_next") ||
