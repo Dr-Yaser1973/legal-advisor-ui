@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // ✅ مهم جداً لـ Prisma على Vercel مع Next 16
+  // هذا يضمن تضمين ملفات محرك Prisma (.so.node) في الباندل
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/.prisma/client/**/*"],
+    "/*": ["./node_modules/.prisma/client/**/*"],
+  },
 };
 
 export default nextConfig;
