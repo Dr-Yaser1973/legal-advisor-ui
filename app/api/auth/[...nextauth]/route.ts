@@ -1,89 +1,90 @@
  // app/api/auth/[...nextauth]/route.ts
+import NextAuth, { type NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
-// نوقف فحص التايبز
-// @ts-nocheck
 export const runtime = "nodejs";
 
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-
-// شكل المستخدم الذي سنضعه في التوكن
-type AppUser = {
-  id: number;
-  email: string | null;
-  name: string | null;
-  role: string; // ADMIN | LAWYER | ...
-};
-
-// خيارات NextAuth
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
+  pages: {
+    signIn: "/login", // صفحة تسجيل الدخول المخصصة
+  },
   session: {
     strategy: "jwt",
   },
-
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-
-      // ✅ هنا الباب الخلفي للأدمن فقط، بدون قاعدة بيانات
-      async authorize(credentials): Promise<AppUser | null> {
+      async authorize(credentials: any): Promise<any> {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("يرجى إدخال البريد وكلمة المرور.");
         }
 
-        // نقرأ بيانات الأدمن من متغيرات البيئة
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const email = credentials.email.trim().toLowerCase();
+        const plainPassword = credentials.password;
 
-        // لو الإيميل والباسورد مطابقين للقيم الموجودة في الـ ENV → دخول كأدمن
-        if (
-          adminEmail &&
-          adminPassword &&
-          credentials.email === adminEmail &&
-          credentials.password === adminPassword
-        ) {
-          return {
-            id: 1,
-            email: adminEmail,
-            name: "Platform Admin",
-            role: "ADMIN",
-          };
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          throw new Error("البريد غير مسجل.");
         }
 
-        // ❌ أي مستخدم آخر نرفضه (إلى أن نرجع لاحقًا لنظام التسجيل)
-        return null;
+        if (!user.password) {
+          throw new Error("لا توجد كلمة مرور محفوظة لهذا الحساب.");
+        }
+
+        // 🔐 التحقق من كلمة المرور
+        const isValid = await bcrypt.compare(plainPassword, user.password);
+        if (!isValid) {
+          throw new Error("كلمة المرور غير صحيحة.");
+        }
+
+        // اختياري: منع المستخدمين غير الفعّالين
+        if (user.status && user.status !== "ACTIVE") {
+          throw new Error("الحساب غير مفعّل، يرجى مراجعة إدارة المنصة.");
+        }
+
+        return {
+          id: user.id.toString(),
+          name: user.name ?? "",
+          email: user.email ?? "",
+          role: user.role,
+          status: user.status,
+          isApproved: user.isApproved,
+        };
       },
     }),
   ],
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = (user as any).role;
+        token.status = (user as any).status;
+        token.isApproved = (user as any).isApproved;
       }
       return token;
     },
-
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
+      if (token && session.user) {
+        (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
+        (session.user as any).status = token.status;
+        (session.user as any).isApproved = token.isApproved;
       }
       return session;
     },
   },
-
-  pages: {
-    signIn: "/login",
-  },
-
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };

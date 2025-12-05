@@ -10,30 +10,38 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
 
     try {
       const res = await fetch("/api/register", {
-        method: "POST", // 👈 أهم شيء
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName,
           email,
           phone,
           password,
-          // role: "ADMIN", // لو تحب تسجّل نفسك كأدمن أول مرة
         }),
       });
 
-      const json = await res.json();
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch {
+        // تجاهل خطأ JSON لو الرد غير متوقع
+      }
 
-      if (!res.ok || !json.ok) {
-        alert(json.message || "حدث خطأ أثناء التسجيل.");
+      if (!res.ok || !json?.ok) {
+        console.error("REGISTER_FAIL", res.status, json);
+        alert(
+          json?.message ||
+            `حدث خطأ أثناء التسجيل. (حالة الخادم: ${res.status})`,
+        );
         return;
       }
 
@@ -41,7 +49,7 @@ export default function RegisterPage() {
       router.push("/login");
     } catch (err) {
       console.error(err);
-      alert("حدث خطأ أثناء التسجيل.");
+      setErrorMsg("حدث خطأ أثناء التسجيل.");
     } finally {
       setLoading(false);
     }
@@ -51,11 +59,17 @@ export default function RegisterPage() {
     <div className="min-h-[70vh] flex items-center justify-center">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md space-y-4 bg-zinc-900/60 p-6 rounded-2xl border border-zinc-800"
+        className="w-full max-w-md space-y-4 bg-zinc-900/60 p-6 rounded-2xl border border-zinc-800 text-right"
       >
         <h1 className="text-xl font-semibold text-center mb-2">
           إنشاء حساب جديد
         </h1>
+
+        {errorMsg && (
+          <div className="text-sm text-red-400 bg-red-900/30 border border-red-700/60 rounded-md px-3 py-2">
+            {errorMsg}
+          </div>
+        )}
 
         <div className="space-y-1">
           <label className="text-sm">الاسم الكامل</label>

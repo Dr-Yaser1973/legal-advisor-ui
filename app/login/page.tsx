@@ -1,117 +1,97 @@
- // app/login/page.tsx
-"use client";
+ "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok) return;
-        const session = await res.json();
-        const role = session?.user?.role;
-        if (role) redirectByRole(role, router);
-      } catch {}
-    })();
-  }, [router]);
-
-  const onSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
 
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+        callbackUrl,
+      });
 
-    setLoading(false);
+      if (!res) {
+        setErrorMsg("لم يتم استلام استجابة من خادم الدخول.");
+        return;
+      }
 
-    if (!res || res.error) {
-      alert("بيانات الدخول غير صحيحة");
-      return;
+      if (res.error) {
+        console.error("LOGIN_ERROR", res.error);
+        setErrorMsg(res.error || "بيانات الدخول غير صحيحة.");
+        return;
+      }
+
+      router.push(res.url || callbackUrl);
+    } catch (err) {
+      console.error("LOGIN_FETCH_ERROR", err);
+      setErrorMsg("حدث خطأ أثناء الاتصال بالخادم.");
+    } finally {
+      setLoading(false);
     }
-
-    const sessionRes = await fetch("/api/auth/session");
-    const session = await sessionRes.json();
-    const role = session?.user?.role;
-    redirectByRole(role, router);
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-      <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <h1 className="text-2xl font-semibold text-center mb-4 text-white">
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md space-y-4 bg-zinc-900/60 p-6 rounded-2xl border border-zinc-800 text-right"
+      >
+        <h1 className="text-xl font-semibold text-center mb-2">
           تسجيل الدخول
         </h1>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 text-sm text-zinc-300">
-              البريد الإلكتروني
-            </label>
-            <input
-              type="email"
-              className="w-full rounded-md bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+
+        {errorMsg && (
+          <div className="text-sm text-red-400 bg-red-900/30 border border-red-700/60 rounded-md px-3 py-2">
+            {errorMsg}
           </div>
-          <div>
-            <label className="block mb-1 text-sm text-zinc-300">
-              كلمة المرور
-            </label>
-            <input
-              type="password"
-              className="w-full rounded-md bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-emerald-600 hover:bg-emerald-700 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {loading ? "جارٍ التحقق..." : "دخول"}
-          </button>
-        </form>
-      </div>
+        )}
+
+        <div className="space-y-1">
+          <label className="text-sm">البريد الإلكتروني</label>
+          <input
+            className="w-full rounded-md bg-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-amber-500/70"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm">كلمة المرور</label>
+          <input
+            type="password"
+            className="w-full rounded-md bg-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-amber-500/70"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-amber-500 hover:bg-amber-400 text-black font-semibold py-2 text-sm transition disabled:opacity-60"
+        >
+          {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+        </button>
+      </form>
     </div>
   );
-}
-
-function redirectByRole(
-  role: string | undefined,
-  router: ReturnType<typeof useRouter>
-) {
-  switch (role) {
-    case "ADMIN":
-      router.push("/admin");
-      break;
-    case "LAWYER":
-      router.push("/lawyers/my-consults");
-      break;
-    case "TRANSLATION_OFFICE":
-      router.push("/translation-office/requests");
-      break;
-    case "COMPANY":
-      router.push("/cases");
-      break;
-    case "CLIENT":
-    default:
-      router.push("/");
-      break;
-  }
 }
