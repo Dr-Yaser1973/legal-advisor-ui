@@ -4,20 +4,25 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
+// مهم: params هنا Promise
+type RouteParams = Promise<{ id: string }>;
+
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: RouteParams }
 ) {
-  // 👈 أيضاً هنا نستخدم any لتفادي مشكلة نوع session
+  // نفكّ الـ Promise ونأخذ id
+  const { id } = await context.params;
+  const userId = Number(id);
+
   const session: any = await getServerSession(authOptions as any);
   const currentUser: any = session?.user ?? null;
 
-  // 🔐 فقط الأدمن يمكنه الاعتماد
+  // فقط الأدمن
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
   }
 
-  const userId = Number(params.id);
   if (Number.isNaN(userId)) {
     return NextResponse.json(
       { error: "معرّف مستخدم غير صالح" },
@@ -26,7 +31,6 @@ export async function POST(
   }
 
   try {
-    // نقرأ الحالة الحالية أولاً
     const existing = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, status: true },
@@ -39,7 +43,6 @@ export async function POST(
       );
     }
 
-    // لو كان PENDING نفعّله إلى ACTIVE
     const nextStatus =
       existing.status === "PENDING" ? "ACTIVE" : existing.status;
 

@@ -19,20 +19,25 @@ type BodyType = {
   subscriptionEndsAt?: string | null;
 };
 
+// مهم: params هنا Promise
+type RouteParams = Promise<{ id: string }>;
+
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: RouteParams }
 ) {
-  // 👈 نجبر TypeScript أن يعتبر الـ session من نوع any
+  // نفكّ الـ Promise ونأخذ id
+  const { id } = await context.params;
+  const userId = Number(id);
+
   const session: any = await getServerSession(authOptions as any);
   const currentUser: any = session?.user ?? null;
 
-  // 🔐 التحقق أن المستدعي هو ADMIN
+  // التحقق أن المستدعي هو ADMIN
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
-  const userId = Number(params.id);
   if (!userId || Number.isNaN(userId)) {
     return NextResponse.json(
       { error: "معرّف مستخدم غير صالح" },
@@ -41,7 +46,6 @@ export async function PATCH(
   }
 
   const body = (await req.json()) as BodyType;
-
   const data: any = {};
 
   if (body.status) {
