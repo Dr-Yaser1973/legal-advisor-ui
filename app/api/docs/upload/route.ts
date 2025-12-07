@@ -8,6 +8,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { parseLawText } from "@/lib/lawParser";
 import { splitIntoChunks } from "@/lib/chunks";
+import { LawCategory } from "@prisma/client"; // 👈 جديد
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,19 @@ export async function POST(req: Request) {
     const file = form.get("file") as File | null;
     const title = (form.get("title") as string | null) ?? "";
     const jurisdiction = (form.get("jurisdiction") as string | null) ?? "العراق";
-    const category = (form.get("category") as string | null) ?? "LAW";
+
+    // 👈 نقرأ القيمة كـ string ثم نحولها لـ LawCategory
+    const categoryRaw = (form.get("category") as string | null) ?? "LAW";
+    const upper = categoryRaw.toUpperCase();
+
+    // لو جاءت قيمة غريبة نرجّعها إلى LAW
+    const category: LawCategory =
+      upper === "FIQH"
+        ? LawCategory.FIQH
+        : upper === "ACADEMIC_STUDY"
+        ? LawCategory.ACADEMIC_STUDY
+        : LawCategory.LAW;
+
     const yearRaw = form.get("year") as string | null;
     const autoLawDoc = (form.get("autoLawDoc") as string | null) === "true";
 
@@ -93,7 +106,7 @@ export async function POST(req: Request) {
         data: {
           title,
           jurisdiction,
-          category,
+          category, // 👈 الآن نوعه LawCategory صحيح
           year,
           text: extractedText,
           filePath: `/uploads/docs/${safeName}`,
@@ -124,7 +137,7 @@ export async function POST(req: Request) {
         await prisma.legalDocChunk.createMany({
           data: chunks.map((c, idx) => ({
             documentId: legalDoc.id,
-            idx: idx,
+            idx,
             text: c,
           })),
         });
