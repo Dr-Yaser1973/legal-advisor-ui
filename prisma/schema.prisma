@@ -308,7 +308,7 @@ model LegalReference {
 model LegalDocument {
   id        Int      @id @default(autoincrement())
   title     String
-  filename  String
+  filename  String?
   mimetype  String
   size      Int
   createdAt DateTime @default(now())
