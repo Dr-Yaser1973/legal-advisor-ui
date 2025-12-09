@@ -6,12 +6,12 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+ // app/api/translation/office/requests/[id]/accept/route.ts
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 👈 مكتب الترجمة فقط
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
@@ -22,14 +22,30 @@ export async function POST(
       );
     }
 
-    // 👈 نقرأ id من params بشكل صحيح
-    const requestId = Number(params.id);
-    if (!Number.isFinite(requestId) || requestId <= 0) {
+    // 🔴 احذف هذا الجزء القديم:
+    //
+    // const requestId = Number(params.id);
+    // if (!Number.isFinite(requestId) || requestId <= 0) {
+    //   return NextResponse.json(
+    //     { ok: false, error: "رقم الطلب غير صالح" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    // ✅ وضع هذا بدلاً منه:
+    const rawId = params?.id;
+    const requestId = parseInt(rawId ?? "", 10);
+
+    if (!rawId || Number.isNaN(requestId) || requestId <= 0) {
       return NextResponse.json(
-        { ok: false, error: "رقم الطلب غير صالح" },
+        {
+          ok: false,
+          error: `رقم الطلب غير صالح (${rawId ?? "null"})`,
+        },
         { status: 400 }
       );
     }
+
 
     // 👈 بيانات العرض (السعر + العملة + الملاحظة)
     const body = await req.json();
