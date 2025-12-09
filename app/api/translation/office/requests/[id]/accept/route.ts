@@ -1,62 +1,49 @@
- import { NextRequest, NextResponse } from "next/server";
+ // app/api/translation/office/requests/[id]/accept/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-    const requestId = Number(id);
-
-    if (!requestId || Number.isNaN(requestId)) {
-      return NextResponse.json(
-        { ok: false, error: "معرّف الطلب غير صالح" },
-        { status: 400 }
-      );
-    }
-
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
-    if (!user) {
+    if (!user || user.role !== "TRANSLATION_OFFICE") {
       return NextResponse.json(
-        { ok: false, error: "يجب تسجيل الدخول" },
+        { ok: false, error: "غير مصرح" },
         { status: 401 }
       );
     }
 
-    if (user.role !== "TRANSLATION_OFFICE" || !user.status) {
+    const requestId = Number(params.id);
+    if (!requestId || Number.isNaN(requestId) || requestId <= 0) {
       return NextResponse.json(
-        { ok: false, error: "ليست لديك صلاحية قبول طلبات الترجمة الرسمية" },
-        { status: 403 }
+        { ok: false, error: "رقم الطلب غير صالح" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json();
+    const price = Number(body.price);
+    const currency: string = body.currency || "IQD";
+    const note: string | null = body.note || null;
+
+    if (!price || Number.isNaN(price) || price < 0) {
+      return NextResponse.json(
+        { ok: false, error: "السعر غير صالح" },
+        { status: 400 }
       );
     }
 
     const officeId = Number(user.id);
-    if (!officeId || Number.isNaN(officeId)) {
-      return NextResponse.json(
-        { ok: false, error: "هوية مكتب الترجمة غير صالحة" },
-        { status: 400 }
-      );
-    }
 
-    const body = await req.json().catch(() => ({} as any));
-    const price = Number(body.price);
-    const currency = (body.currency as string) || "IQD";
-    const note = (body.note as string) || "";
-
-    if (!price || Number.isNaN(price) || price <= 0) {
-      return NextResponse.json(
-        { ok: false, error: "يرجى إدخال سعر صحيح" },
-        { status: 400 }
-      );
-    }
-
+    // الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
     });
@@ -68,49 +55,54 @@ export async function POST(
       );
     }
 
-    if (request.officeId !== officeId || request.status !== "PENDING") {
+    if (request.officeId !== officeId) {
       return NextResponse.json(
-        { ok: false, error: "لا يمكن قبول هذا الطلب" },
-        { status: 400 }
+        { ok: false, error: "لا يمكنك قبول هذا الطلب" },
+        { status: 403 }
       );
     }
 
-    const updated = await prisma.translationRequest.update({
-      where: { id: requestId },
+    // إنشاء عرض جديد في TranslationOffer
+    await prisma.translationOffer.create({
       data: {
+        requestId: request.id,
+        officeId,
+        price,
+        currency,
+        note,
+        // status يبقى PENDING لغاية موافقة العميل
+      },
+    });
+
+    // تخزين السعر والملاحظة داخل TranslationRequest نفسه
+    const updatedRequest = await prisma.translationRequest.update({
+      where: { id: request.id },
+      data: {
+        price,
+        currency,
+        note,
         status: "ACCEPTED",
       },
     });
 
-    // TranslationOffer حسب سكيمتك
-    await prisma.translationOffer.create({
-      data: {
-        requestId: requestId,
-        officeId: officeId,
-        price,
-        currency,
-        note,
-      },
-    });
+    // إشعار للعميل بوجود عرض جديد
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: request.clientId,
+          title: "عرض جديد لطلب الترجمة",
+          body: `قام مكتب الترجمة بتحديد سعر لطلبك رقم ${request.id}.`,
+        },
+      });
+    } catch (err) {
+      console.error("notification error (ignored):", err);
+    }
 
-    // Notification حسب سكيمتك
-    await prisma.notification.create({
-      data: {
-        userId: request.clientId,
-        title: "تم قبول طلب الترجمة الرسمية",
-        body: `تم قبول طلب ترجمة المستند رقم ${request.sourceDocId} من مكتب الترجمة، بسعر ${price} ${currency}.`,
-      },
-    });
-
-    return NextResponse.json({
-      ok: true,
-      message: "تم قبول الطلب، ولن يظهر بعد الآن في قائمة الطلبات المتاحة.",
-      request: updated,
-    });
-  } catch (e) {
-    console.error(e);
+    return NextResponse.json({ ok: true, request: updatedRequest });
+  } catch (err) {
+    console.error("translation office accept error:", err);
     return NextResponse.json(
-      { ok: false, error: "حدث خطأ داخلي أثناء قبول الطلب" },
+      { ok: false, error: "حدث خطأ أثناء قبول الطلب" },
       { status: 500 }
     );
   }

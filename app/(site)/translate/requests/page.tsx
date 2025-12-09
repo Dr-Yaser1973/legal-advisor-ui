@@ -123,16 +123,28 @@ export default async function MyTranslationRequestsPage() {
                   </div>
                 )}
 
-                {r.status === "IN_PROGRESS" && (
+                 {r.status === "IN_PROGRESS" && (
                   <p className="mt-2 text-[11px] text-emerald-400">
                     تم قبول العرض، والطلب الآن قيد التنفيذ لدى مكتب الترجمة.
                   </p>
+                ) }
+                  {r.status === "COMPLETED" && r.note && (
+                  <p className="mt-2 text-[11px] text-zinc-300 whitespace-pre-line">
+                    ملاحظات التسليم من مكتب الترجمة:
+                  <br />
+                 {r.note}
+                  </p>
                 )}
+                
               </div>
+      
+              
             ))}
           </div>
         )}
       </div>
+       
+      
     </main>
   );
 }
