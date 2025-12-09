@@ -102,7 +102,7 @@ export default async function MyTranslationRequestsPage() {
                 {/* زر الموافقة على العرض يظهر فقط إذا:
                     - الطلب في حالة ACCEPTED (أي المكتب عيّن سعرًا)
                     - يوجد سعر */}
-                {r.status === "ACCEPTED" && r.price && (
+                {r.status === "ACCEPTED" && (
                   <div className="mt-3">
                     <p className="text-[11px] text-zinc-400 mb-1">
                       هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء
