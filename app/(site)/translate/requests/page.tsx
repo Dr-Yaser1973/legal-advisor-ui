@@ -3,25 +3,27 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { AcceptOfferButton } from "./AcceptOfferButton";
 
 export const dynamic = "force-dynamic";
 
-function statusLabel(status: string) {
+ function statusLabel(status: string) {
   switch (status) {
     case "PENDING":
-      return "بانتظار قبول مكتب الترجمة";
+      return "بانتظار قبول مكتب الترجمة للطلب وتحديد السعر";
     case "ACCEPTED":
-      return "تم القبول – بانتظار التنفيذ";
+      return "تم تسعير الطلب – بانتظار موافقتك على عرض المكتب";
     case "IN_PROGRESS":
-      return "قيد الترجمة";
+      return "الترجمة قيد التنفيذ لدى مكتب الترجمة";
     case "COMPLETED":
-      return "منجزة";
+      return "تم إنجاز الترجمة";
     case "CANCELED":
-      return "ملغاة";
+      return "تم إلغاء الطلب";
     default:
       return status;
   }
 }
+
 
 export default async function MyTranslationRequestsPage() {
   const session = (await getServerSession(authOptions as any)) as any;
@@ -40,7 +42,7 @@ export default async function MyTranslationRequestsPage() {
     },
   });
 
-  return (
+   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-4xl mx-auto px-4 py-10 text-right">
         <h1 className="text-2xl font-bold mb-4">طلباتي في الترجمة الرسمية</h1>
@@ -58,22 +60,63 @@ export default async function MyTranslationRequestsPage() {
               >
                 <div className="text-sm">
                   <span className="font-semibold">المستند:</span>{" "}
-                  {r.sourceDoc?.title || r.sourceDoc?.filename || `#${r.sourceDocId}`}
+                  {r.sourceDoc?.title ||
+                    r.sourceDoc?.filename ||
+                    `#${r.sourceDocId}`}
                 </div>
+
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">اللغة المستهدفة:</span>{" "}
                   {r.targetLang === "EN" ? "الإنجليزية" : "العربية"}
                 </div>
+
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">الحالة:</span>{" "}
                   {statusLabel(r.status)}
                 </div>
+
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
                   {r.office
-                    ? r.office.name || r.office.email || `مكتب رقم ${r.office.id}`
+                    ? r.office.name ||
+                      r.office.email ||
+                      `مكتب رقم ${r.office.id}`
                     : "لم يُحدَّد بعد"}
                 </div>
+
+                {/* عرض السعر والملاحظات إن وُجدت */}
+                {r.price && (
+                  <div className="text-xs text-zinc-300 mt-1">
+                    <span className="font-semibold">عرض المكتب:</span>{" "}
+                    {r.price} {r.currency || "IQD"}
+                  </div>
+                )}
+
+                {r.note && (
+                  <div className="text-xs text-zinc-400 mt-1">
+                    <span className="font-semibold">ملاحظة المكتب:</span>{" "}
+                    {r.note}
+                  </div>
+                )}
+
+                {/* زر الموافقة على العرض يظهر فقط إذا:
+                    - الطلب في حالة ACCEPTED (أي المكتب عيّن سعرًا)
+                    - يوجد سعر */}
+                {r.status === "ACCEPTED" && r.price && (
+                  <div className="mt-3">
+                    <p className="text-[11px] text-zinc-400 mb-1">
+                      هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء
+                      التنفيذ.
+                    </p>
+                    <AcceptOfferButton requestId={r.id} />
+                  </div>
+                )}
+
+                {r.status === "IN_PROGRESS" && (
+                  <p className="mt-2 text-[11px] text-emerald-400">
+                    تم قبول العرض، والطلب الآن قيد التنفيذ لدى مكتب الترجمة.
+                  </p>
+                )}
               </div>
             ))}
           </div>
