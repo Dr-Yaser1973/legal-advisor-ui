@@ -72,6 +72,20 @@ export default async function MyTranslationRequestsPage() {
                   <span className="font-semibold">الحالة:</span>{" "}
                   {statusLabel(r.status)}
                 </div>
+                {r.status === "ACCEPTED" && (
+  <div className="text-xs text-emerald-400">
+    <span className="font-semibold">سعر العرض:</span>{" "}
+    {r.price} {r.currency || "IQD"}
+  </div>
+)}
+
+{r.status === "ACCEPTED" && r.note && (
+  <div className="text-xs text-zinc-400">
+    <span className="font-semibold">ملاحظة المكتب:</span>{" "}
+    {r.note}
+  </div>
+)}
+
 
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
