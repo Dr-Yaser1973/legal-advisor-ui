@@ -1,4 +1,5 @@
- import { getServerSession } from "next-auth/next";
+ // app/(site)/translate/requests/page.tsx
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -82,23 +83,23 @@ export default async function MyTranslationRequestsPage() {
                     : "لم يُحدَّد بعد"}
                 </div>
 
-                {/* 🔢 السعر يظهر كرقم */}
+                {/* 🔹 السعر المعروض من المكتب (من TranslationRequest.price) */}
                 {typeof r.price === "number" && (
-                  <div className="text-xs text-emerald-400">
+                  <div className="text-xs text-emerald-400 mt-1">
                     <span className="font-semibold">سعر العرض:</span>{" "}
                     {r.price} {r.currency || "IQD"}
                   </div>
                 )}
 
-                {/* ملاحظة المكتب */}
+                {/* 🔹 ملاحظات المكتب */}
                 {r.note && (
-                  <div className="text-xs text-zinc-400">
+                  <div className="text-xs text-zinc-400 mt-1">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
                     {r.note}
                   </div>
                 )}
 
-                {/* زر الموافقة */}
+                {/* 🔹 زر الموافقة على العرض (عند ACCEPTED فقط) */}
                 {r.status === "ACCEPTED" && (
                   <div className="mt-3">
                     <p className="text-[11px] text-zinc-400 mb-1">

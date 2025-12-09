@@ -11,6 +11,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // 👈 مكتب الترجمة فقط
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
@@ -21,20 +22,25 @@ export async function POST(
       );
     }
 
+    // 👈 نقرأ id من params بشكل صحيح
     const requestId = Number(params.id);
-    if (!requestId || Number.isNaN(requestId) || requestId <= 0) {
+    if (!Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح" },
         { status: 400 }
       );
     }
 
+    // 👈 بيانات العرض (السعر + العملة + الملاحظة)
     const body = await req.json();
     const price = Number(body.price);
     const currency: string = body.currency || "IQD";
-    const note: string | null = body.note || null;
+    const note: string | null =
+      typeof body.note === "string" && body.note.trim()
+        ? body.note.trim()
+        : null;
 
-    if (!price || Number.isNaN(price) || price <= 0) {
+    if (!Number.isFinite(price) || price <= 0) {
       return NextResponse.json(
         { ok: false, error: "السعر غير صالح" },
         { status: 400 }
@@ -43,7 +49,7 @@ export async function POST(
 
     const officeId = Number(user.id);
 
-    // الطلب نفسه
+    // 👈 نحضر الطلب من قاعدة البيانات
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
     });
@@ -62,7 +68,17 @@ export async function POST(
       );
     }
 
-    // نسجّل العرض في TranslationOffer (تاريخياً)
+    if (request.status !== "PENDING") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "لا يمكن تسعير الطلب لأنه ليس في حالة بانتظار التسعير",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 👈 نسجّل العرض في TranslationOffer (تاريخياً)
     await prisma.translationOffer.create({
       data: {
         requestId: request.id,
@@ -73,7 +89,7 @@ export async function POST(
       },
     });
 
-    // نخزن السعر والملاحظة داخل TranslationRequest نفسه حتى يقرأها العميل بسهولة
+    // 👈 نخزن السعر والملاحظة داخل TranslationRequest ليسهل على العميل
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
@@ -84,7 +100,7 @@ export async function POST(
       },
     });
 
-    // إشعار للعميل بوجود عرض
+    // 👈 إشعار للعميل بوجود عرض جديد (اختياري)
     try {
       await prisma.notification.create({
         data: {
@@ -99,7 +115,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, request: updatedRequest });
   } catch (err) {
-    console.error("translation office accept error:", err);
+    console.error("office accept error:", err);
     return NextResponse.json(
       { ok: false, error: "حدث خطأ أثناء تسعير الطلب" },
       { status: 500 }
