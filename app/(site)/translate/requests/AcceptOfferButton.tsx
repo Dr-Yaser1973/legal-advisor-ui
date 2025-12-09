@@ -1,28 +1,24 @@
-"use client";
+ "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function AcceptOfferButton({ requestId }: { requestId: number }) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleClick = async () => {
+  async function handleClick() {
     setLoading(true);
-    setErr(null);
-    setOkMsg(null);
+    setMsg(null);
+    setError(null);
 
     try {
-      const res = await fetch(
-        `/api/translation/client/requests/${requestId}/accept-offer`,
-        {
-          method: "POST",
-        }
-      );
+      const res = await fetch("/api/translation/client/accept-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
 
-      // نستخدم نفس أسلوبك في OfficeRequestCard (نقرأ نص ثم نحاول JSON)
       const text = await res.text();
       let data: any = null;
       if (text) {
@@ -33,40 +29,38 @@ export function AcceptOfferButton({ requestId }: { requestId: number }) {
         }
       }
 
+      setLoading(false);
+
       if (!res.ok || !data?.ok) {
-        setErr(
+        const msg =
           data?.error ||
-            `تعذر تأكيد قبول العرض (رمز الحالة ${res.status}). حاول مرة أخرى لاحقًا.`
-        );
-        setLoading(false);
+          `تعذر تأكيد الموافقة (رمز الحالة ${res.status}). حاول مرة أخرى لاحقًا.`;
+        setError(msg);
         return;
       }
 
-      setOkMsg("تمت موافقتك على عرض المكتب، ويمكنه الآن البدء في تنفيذ الترجمة.");
-      setLoading(false);
-
-      // تحديث صفحة الطلبات لتغيير الحالة إلى IN_PROGRESS
-      router.refresh();
+      setMsg("تم قبول العرض، والطلب الآن قيد التنفيذ.");
+      // أبسط شيء: إعادة تحميل الصفحة لرؤية الحالة الجديدة
+      window.location.reload();
     } catch (e) {
       console.error(e);
-      setErr("حدث خطأ أثناء الاتصال بالخادم.");
       setLoading(false);
+      setError("حدث خطأ غير متوقع أثناء الاتصال بالخادم");
     }
-  };
+  }
 
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-1">
       <button
         type="button"
-        onClick={handleClick}
         disabled={loading}
+        onClick={handleClick}
         className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
       >
-        {loading ? "جارٍ تأكيد قبول العرض..." : "الموافقة على العرض وبدء التنفيذ"}
+        {loading ? "جارٍ تأكيد الموافقة..." : "الموافقة على العرض وبدء التنفيذ"}
       </button>
-      {okMsg && <p className="text-[11px] text-emerald-400">{okMsg}</p>}
-      {err && <p className="text-[11px] text-red-400">{err}</p>}
+      {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
     </div>
   );
 }
-

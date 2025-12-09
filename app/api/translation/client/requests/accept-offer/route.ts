@@ -1,4 +1,4 @@
- // app/api/translation/client/requests/[id]/accept-offer/route.ts
+// app/api/translation/client/accept-offer/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,10 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
@@ -21,7 +18,9 @@ export async function POST(
       );
     }
 
-    const requestId = Number(params.id);
+    const body = await req.json();
+    const requestId = Number(body.requestId);
+
     if (!requestId || Number.isNaN(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح" },
@@ -57,7 +56,7 @@ export async function POST(
       );
     }
 
-    // العثور على آخر عرض من المكتب
+    // نحدد آخر عرض ونحدّث حالته (اختياري)
     const latestOffer = await prisma.translationOffer.findFirst({
       where: { requestId },
       orderBy: { createdAt: "desc" },
@@ -70,7 +69,6 @@ export async function POST(
       });
     }
 
-    // تحويل الطلب إلى IN_PROGRESS
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
@@ -79,7 +77,7 @@ export async function POST(
       },
     });
 
-    // إشعار لمكتب الترجمة أن العميل وافق
+    // إشعار للمكتب
     if (request.officeId) {
       try {
         await prisma.notification.create({
@@ -89,8 +87,8 @@ export async function POST(
             body: `قام العميل بالموافقة على عرض طلب الترجمة رقم ${request.id}، ويمكنك البدء بالتنفيذ.`,
           },
         });
-      } catch (err) {
-        console.error("notification error (ignored):", err);
+      } catch (notifyErr) {
+        console.error("notification error (ignored):", notifyErr);
       }
     }
 
