@@ -13,11 +13,15 @@ export function AcceptOfferButton({ requestId }: { requestId: number }) {
     setError(null);
 
     try {
-      const res = await fetch("/api/translation/client/accept-offer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId }),
-      });
+       const res = await fetch(
+  "/api/translation/client/requests/accept-offer",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestId }),
+  }
+);
+
 
       const text = await res.text();
       let data: any = null;
