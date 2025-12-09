@@ -72,20 +72,6 @@ export default async function MyTranslationRequestsPage() {
                   <span className="font-semibold">الحالة:</span>{" "}
                   {statusLabel(r.status)}
                 </div>
-                {r.status === "ACCEPTED" && (
-  <div className="text-xs text-emerald-400">
-    <span className="font-semibold">سعر العرض:</span>{" "}
-    {r.price} {r.currency || "IQD"}
-  </div>
-)}
-
-{r.status === "ACCEPTED" && r.note && (
-  <div className="text-xs text-zinc-400">
-    <span className="font-semibold">ملاحظة المكتب:</span>{" "}
-    {r.note}
-  </div>
-)}
-
 
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
@@ -96,23 +82,23 @@ export default async function MyTranslationRequestsPage() {
                     : "لم يُحدَّد بعد"}
                 </div>
 
-                {/* عرض السعر إن وجد */}
+                {/* 🔢 السعر يظهر كرقم */}
                 {typeof r.price === "number" && (
-                  <div className="text-xs text-zinc-300 mt-1">
-                    <span className="font-semibold">عرض المكتب:</span>{" "}
+                  <div className="text-xs text-emerald-400">
+                    <span className="font-semibold">سعر العرض:</span>{" "}
                     {r.price} {r.currency || "IQD"}
                   </div>
                 )}
 
-                {/* ملاحظات المكتب إن وجدت */}
+                {/* ملاحظة المكتب */}
                 {r.note && (
-                  <div className="text-xs text-zinc-400 mt-1">
+                  <div className="text-xs text-zinc-400">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
                     {r.note}
                   </div>
                 )}
 
-                {/* زر الموافقة على العرض يظهر عندما يكون الطلب في حالة ACCEPTED */}
+                {/* زر الموافقة */}
                 {r.status === "ACCEPTED" && (
                   <div className="mt-3">
                     <p className="text-[11px] text-zinc-400 mb-1">
@@ -123,28 +109,22 @@ export default async function MyTranslationRequestsPage() {
                   </div>
                 )}
 
-                 {r.status === "IN_PROGRESS" && (
+                {r.status === "IN_PROGRESS" && (
                   <p className="mt-2 text-[11px] text-emerald-400">
                     تم قبول العرض، والطلب الآن قيد التنفيذ لدى مكتب الترجمة.
                   </p>
-                ) }
-                  {r.status === "COMPLETED" && r.note && (
-                  <p className="mt-2 text-[11px] text-zinc-300 whitespace-pre-line">
-                    ملاحظات التسليم من مكتب الترجمة:
-                  <br />
-                 {r.note}
+                )}
+
+                {r.status === "COMPLETED" && (
+                  <p className="mt-2 text-[11px] text-emerald-400">
+                    تم إنجاز الترجمة من مكتب الترجمة.
                   </p>
                 )}
-                
               </div>
-      
-              
             ))}
           </div>
         )}
       </div>
-       
-      
     </main>
   );
 }

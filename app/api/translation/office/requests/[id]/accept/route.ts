@@ -16,7 +16,7 @@ export async function POST(
 
     if (!user || user.role !== "TRANSLATION_OFFICE") {
       return NextResponse.json(
-        { ok: false, error: "غير مصرح" },
+        { ok: false, error: "غير مصرح لمكتب الترجمة" },
         { status: 401 }
       );
     }
@@ -34,7 +34,7 @@ export async function POST(
     const currency: string = body.currency || "IQD";
     const note: string | null = body.note || null;
 
-    if (!price || Number.isNaN(price) || price < 0) {
+    if (!price || Number.isNaN(price) || price <= 0) {
       return NextResponse.json(
         { ok: false, error: "السعر غير صالح" },
         { status: 400 }
@@ -43,7 +43,7 @@ export async function POST(
 
     const officeId = Number(user.id);
 
-    // الطلب
+    // الطلب نفسه
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
     });
@@ -57,12 +57,12 @@ export async function POST(
 
     if (request.officeId !== officeId) {
       return NextResponse.json(
-        { ok: false, error: "لا يمكنك قبول هذا الطلب" },
+        { ok: false, error: "لا يمكنك تسعير هذا الطلب" },
         { status: 403 }
       );
     }
 
-    // إنشاء عرض جديد في TranslationOffer
+    // نسجّل العرض في TranslationOffer (تاريخياً)
     await prisma.translationOffer.create({
       data: {
         requestId: request.id,
@@ -70,11 +70,10 @@ export async function POST(
         price,
         currency,
         note,
-        // status يبقى PENDING لغاية موافقة العميل
       },
     });
 
-    // تخزين السعر والملاحظة داخل TranslationRequest نفسه
+    // نخزن السعر والملاحظة داخل TranslationRequest نفسه حتى يقرأها العميل بسهولة
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
@@ -85,7 +84,7 @@ export async function POST(
       },
     });
 
-    // إشعار للعميل بوجود عرض جديد
+    // إشعار للعميل بوجود عرض
     try {
       await prisma.notification.create({
         data: {
@@ -94,15 +93,15 @@ export async function POST(
           body: `قام مكتب الترجمة بتحديد سعر لطلبك رقم ${request.id}.`,
         },
       });
-    } catch (err) {
-      console.error("notification error (ignored):", err);
+    } catch (notifyErr) {
+      console.error("notification error (ignored):", notifyErr);
     }
 
     return NextResponse.json({ ok: true, request: updatedRequest });
   } catch (err) {
     console.error("translation office accept error:", err);
     return NextResponse.json(
-      { ok: false, error: "حدث خطأ أثناء قبول الطلب" },
+      { ok: false, error: "حدث خطأ أثناء تسعير الطلب" },
       { status: 500 }
     );
   }
