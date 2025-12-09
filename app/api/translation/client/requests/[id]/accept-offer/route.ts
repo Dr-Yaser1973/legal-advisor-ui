@@ -54,25 +54,28 @@ export async function POST(
       );
     }
 
-    if (!request.price) {
-      return NextResponse.json(
-        { ok: false, error: "لا يوجد عرض سعر مسجّل يمكن قبوله" },
-        { status: 400 }
-      );
-    }
-
-    // إيجاد آخر عرض (اختياري لكن منطقي)
+       // إيجاد آخر عرض مقدَّم من المكتب لهذا الطلب
     const latestOffer = await prisma.translationOffer.findFirst({
       where: { requestId },
       orderBy: { createdAt: "desc" },
     });
 
-    if (latestOffer) {
-      await prisma.translationOffer.update({
-        where: { id: latestOffer.id },
-        data: { status: "ACCEPTED_BY_CLIENT" },
-      });
+    if (!latestOffer) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "لا يوجد عرض من مكتب الترجمة يمكن قبوله لهذا الطلب",
+        },
+        { status: 400 }
+      );
     }
+
+    // نحدّث حالة العرض إلى ACCEPTED_BY_CLIENT
+    await prisma.translationOffer.update({
+      where: { id: latestOffer.id },
+      data: { status: "ACCEPTED_BY_CLIENT" },
+    });
+
 
     // تحويل حالة الطلب إلى IN_PROGRESS وتسجيل وقت القبول
     const updatedRequest = await prisma.translationRequest.update({
