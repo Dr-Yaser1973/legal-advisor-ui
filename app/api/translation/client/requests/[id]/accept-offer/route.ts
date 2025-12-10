@@ -23,12 +23,17 @@ export async function POST(
     }
 
     // 2) فقط العميل (أو الشركة) هو من يؤكد العرض
-    if (user.role !== "CLIENT" && user.role !== "COMPANY") {
-      return NextResponse.json(
-        { ok: false, error: "ليست لديك صلاحية تأكيد هذا العرض" },
-        { status: 403 }
-      );
-    }
+     if (
+  user.role !== "CLIENT" &&
+  user.role !== "COMPANY" &&
+  user.role !== "ADMIN"
+) {
+  return NextResponse.json(
+    { ok: false, error: "ليست لديك صلاحية تأكيد هذا العرض" },
+    { status: 403 }
+  );
+}
+
 
     const requestId = Number(params.id);
     if (!Number.isFinite(requestId) || requestId <= 0) {
