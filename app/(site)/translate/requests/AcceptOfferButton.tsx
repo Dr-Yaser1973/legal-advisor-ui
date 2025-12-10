@@ -1,31 +1,18 @@
- // app/(site)/translate/requests/AcceptOfferButton.tsx
-"use client";
+ "use client";
 
 import { useState } from "react";
 
-type AcceptOfferButtonProps = {
-  requestId: number;
-};
-
-export default function AcceptOfferButton({
-  requestId,
-}: AcceptOfferButtonProps) {
+export default function AcceptOfferButton({ requestId }: { requestId: number }) {
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleClick = async () => {
-    if (!requestId || Number.isNaN(requestId)) {
-      alert("رقم الطلب غير صالح");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "هل أنت متأكد من الموافقة على عرض مكتب الترجمة والبدء بالتنفيذ؟"
-    );
-    if (!confirmed) return;
+  async function handleClick() {
+    setLoading(true);
+    setError(null);
+    setMsg(null);
 
     try {
-      setLoading(true);
-
       const res = await fetch(
         `/api/translation/client/requests/${requestId}/accept-offer`,
         {
@@ -33,35 +20,31 @@ export default function AcceptOfferButton({
         }
       );
 
-      const data = await res.json().catch(() => null);
+      const data = await res.json(); // ← الحل هنا
 
-      if (!res.ok || !data?.ok) {
-        alert(
-          data?.error ||
-            `تعذر تأكيد الموافقة (رمز الحالة ${res.status}). حاول مرة أخرى لاحقًا.`
-        );
+      setLoading(false);
+
+      if (!res.ok || !data.ok) {
+        setError(data.error || "تعذر تأكيد الموافقة");
         return;
       }
 
-      alert("تم تأكيد العرض، ويمكن لمكتب الترجمة البدء في التنفيذ.");
-      // تحديث الصفحة لعرض الحالة الجديدة IN_PROGRESS مثلاً
-      window.location.reload();
+      setMsg("تم تأكيد الموافقة! يمكنك الآن متابعة حالة الطلب.");
     } catch (err) {
       console.error(err);
-      alert("حدث خطأ غير متوقع أثناء تأكيد الموافقة على العرض.");
-    } finally {
       setLoading(false);
+      setError("حدث خطأ أثناء الاتصال بالخادم");
     }
-  };
+  }
 
   return (
     <button
       type="button"
       disabled={loading}
       onClick={handleClick}
-      className="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:opacity-60 text-sm font-semibold"
+      className="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-sm font-semibold"
     >
-      {loading ? "جار تأكيد الموافقة..." : "الموافقة على العرض وبدء التنفيذ"}
+      {loading ? "جارٍ تأكيد الموافقة…" : "الموافقة على العرض وبدء التنفيذ"}
     </button>
   );
 }
