@@ -14,7 +14,7 @@ export default function AcceptOfferButton({ requestId }: { requestId: number }) 
 
     try {
       const res = await fetch(
-        `/api/translation/client/requests/${requestId}/confirm`,
+        `/api/translation/client/requests/${requestId}/accept-offer`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
