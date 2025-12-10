@@ -1,20 +1,20 @@
- // app/(site)/translate/requests/page.tsx
-import { getServerSession } from "next-auth/next";
+ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import AcceptOfferButton from "./AcceptOfferButton";
+import { AcceptOfferButton } from "./AcceptOfferButton";
+
 
 export const dynamic = "force-dynamic";
 
 function statusLabel(status: string) {
   switch (status) {
     case "PENDING":
-      return "بانتظار قبول مكتب الترجمة وتسعير الطلب";
+      return "بانتظار قبول مكتب الترجمة";
     case "ACCEPTED":
       return "تم تسعير الطلب – بانتظار موافقتك على عرض المكتب";
     case "IN_PROGRESS":
-      return "قيد الترجمة لدى المكتب";
+      return "قيد الترجمة";
     case "COMPLETED":
       return "منجزة";
     case "CANCELED":
@@ -77,30 +77,33 @@ export default async function MyTranslationRequestsPage() {
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
                   {r.office
-                    ? r.office.name || r.office.email || `مكتب رقم ${r.office.id}`
+                    ? r.office.name ||
+                      r.office.email ||
+                      `مكتب رقم ${r.office.id}`
                     : "لم يُحدَّد بعد"}
                 </div>
 
-                {/* السعر والملاحظة إن وُجِدا */}
                 {r.price && (
-                  <div className="text-xs text-emerald-400 mt-1">
+                  <div className="text-xs text-emerald-400">
                     <span className="font-semibold">سعر العرض:</span>{" "}
                     {r.price} {r.currency || "IQD"}
                   </div>
                 )}
+
                 {r.note && (
-                  <div className="text-xs text-zinc-300 mt-1">
+                  <div className="text-[11px] text-zinc-400">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
                     {r.note}
                   </div>
                 )}
 
-                {/* زر موافقة العميل يظهر فقط لو الطلب في حالة ACCEPTED ومعه سعر */}
+                {/* زر الموافقة على العرض يظهر فقط إذا:
+                    - الطلب في حالة ACCEPTED (المكتب حدّد السعر)
+                    - يوجد سعر */}
                 {r.status === "ACCEPTED" && r.price && (
                   <div className="mt-3">
                     <p className="text-[11px] text-zinc-400 mb-1">
-                      هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء
-                      التنفيذ.
+                      هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء التنفيذ.
                     </p>
                     <AcceptOfferButton requestId={r.id} />
                   </div>
