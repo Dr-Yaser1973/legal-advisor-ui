@@ -1,4 +1,4 @@
- // app/api/translation/client/accept-offer/route.ts
+ // app/api/translation/client/requests/[id]/accept-offer/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
@@ -18,22 +21,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const requestId = Number(body.requestId);
+    const clientId = Number(user.id);
+    const requestId = Number(params.id);
 
-    if (!body.requestId || Number.isNaN(requestId) || requestId <= 0) {
+    if (!Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح" },
         { status: 400 }
       );
     }
 
-    const clientId = Number(user.id);
-
-    // ✅ نحضر الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
-      include: { office: true },
     });
 
     if (!request) {
@@ -45,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (request.clientId !== clientId) {
       return NextResponse.json(
-        { ok: false, error: "لا يمكنك التحكم بهذا الطلب" },
+        { ok: false, error: "لا يمكنك الموافقة على هذا الطلب" },
         { status: 403 }
       );
     }
@@ -54,7 +53,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: "لا يمكن قبول العرض في هذه الحالة الحالية للطلب",
+          error:
+            "لا يمكن تأكيد الموافقة لأن الطلب ليس في حالة تم تسعيره من مكتب الترجمة",
         },
         { status: 400 }
       );
@@ -62,49 +62,38 @@ export async function POST(req: NextRequest) {
 
     if (!request.price) {
       return NextResponse.json(
-        { ok: false, error: "لا يوجد عرض سعر مسجّل يمكن قبوله" },
+        {
+          ok: false,
+          error: "لا يوجد سعر مسجّل لهذا الطلب، لا يمكن تأكيد الموافقة",
+        },
         { status: 400 }
       );
     }
 
-    // ✅ نحدّث حالة آخر عرض أنّه قُبل من العميل (اختياري)
-    const latestOffer = await prisma.translationOffer.findFirst({
-      where: { requestId },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (latestOffer) {
-      await prisma.translationOffer.update({
-        where: { id: latestOffer.id },
-        data: { status: "ACCEPTED_BY_CLIENT" },
-      });
-    }
-
-    // ✅ نحول حالة الطلب إلى IN_PROGRESS ونحدد وقت القبول
-    const updatedRequest = await prisma.translationRequest.update({
-      where: { id: request.id },
+    const updated = await prisma.translationRequest.update({
+      where: { id: requestId },
       data: {
         status: "IN_PROGRESS",
         acceptedAt: new Date(),
       },
     });
 
-    // ✅ إشعار لمكتب الترجمة بأن العميل وافق على العرض
+    // إشعار اختياري لمكتب الترجمة ببدء العمل
     if (request.officeId) {
       try {
         await prisma.notification.create({
           data: {
             userId: request.officeId,
-            title: "موافقة العميل على عرض الترجمة",
-            body: `قام العميل بالموافقة على عرض طلب الترجمة رقم ${request.id}، ويمكنك البدء في التنفيذ.`,
+            title: "تأكيد موافقة العميل على عرض الترجمة",
+            body: `قام العميل بالموافقة على عرض طلب الترجمة رقم ${request.id}، ويمكنك البدء في تنفيذ الترجمة.`,
           },
         });
-      } catch (notifyErr) {
-        console.error("notification error (ignored):", notifyErr);
+      } catch (err) {
+        console.error("notification error (ignored):", err);
       }
     }
 
-    return NextResponse.json({ ok: true, request: updatedRequest });
+    return NextResponse.json({ ok: true, request: updated });
   } catch (err) {
     console.error("client accept-offer error:", err);
     return NextResponse.json(
