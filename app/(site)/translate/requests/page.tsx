@@ -1,13 +1,13 @@
- import { getServerSession } from "next-auth/next";
+ // app/(site)/translate/requests/page.tsx
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { AcceptOfferButton } from "./AcceptOfferButton";
-
+import { redirect } from "next/navigation";
+import AcceptOfferButton from "./AcceptOfferButton";
 
 export const dynamic = "force-dynamic";
 
-function statusLabel(status: string) {
+function statusLabel(status: string): string {
   switch (status) {
     case "PENDING":
       return "بانتظار قبول مكتب الترجمة";
@@ -28,7 +28,9 @@ export default async function MyTranslationRequestsPage() {
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
 
-  if (!user) redirect("/login");
+  if (!user) {
+    redirect("/login");
+  }
 
   const clientId = Number(user.id);
 
@@ -36,8 +38,20 @@ export default async function MyTranslationRequestsPage() {
     where: { clientId },
     orderBy: { createdAt: "desc" },
     include: {
-      sourceDoc: { select: { id: true, title: true, filename: true } },
-      office: { select: { id: true, name: true, email: true } },
+      sourceDoc: {
+        select: {
+          id: true,
+          title: true,
+          filename: true,
+        },
+      },
+      office: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
   });
 
@@ -57,6 +71,7 @@ export default async function MyTranslationRequestsPage() {
                 key={r.id}
                 className="border border-white/10 rounded-xl bg-zinc-900/40 p-4 space-y-2"
               >
+                {/* المستند */}
                 <div className="text-sm">
                   <span className="font-semibold">المستند:</span>{" "}
                   {r.sourceDoc?.title ||
@@ -64,16 +79,19 @@ export default async function MyTranslationRequestsPage() {
                     `#${r.sourceDocId}`}
                 </div>
 
+                {/* اللغة المستهدفة */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">اللغة المستهدفة:</span>{" "}
                   {r.targetLang === "EN" ? "الإنجليزية" : "العربية"}
                 </div>
 
+                {/* الحالة النصية */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">الحالة:</span>{" "}
                   {statusLabel(r.status)}
                 </div>
 
+                {/* مكتب الترجمة */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
                   {r.office
@@ -83,6 +101,7 @@ export default async function MyTranslationRequestsPage() {
                     : "لم يُحدَّد بعد"}
                 </div>
 
+                {/* سعر العرض إن وجد */}
                 {r.price && (
                   <div className="text-xs text-emerald-400">
                     <span className="font-semibold">سعر العرض:</span>{" "}
@@ -90,21 +109,26 @@ export default async function MyTranslationRequestsPage() {
                   </div>
                 )}
 
+                {/* ملاحظات المكتب إن وجدت */}
                 {r.note && (
-                  <div className="text-[11px] text-zinc-400">
+                  <div className="text-xs text-zinc-300">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
                     {r.note}
                   </div>
                 )}
 
+                {/* رسالة توضيحية أسفل الكارت */}
+                <div className="text-[11px] text-zinc-500 mt-1">
+                  هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء التنفيذ،
+                  إذا كانت حالته "تم تسعير الطلب – بانتظار موافقتك على عرض
+                  المكتب".
+                </div>
+
                 {/* زر الموافقة على العرض يظهر فقط إذا:
-                    - الطلب في حالة ACCEPTED (المكتب حدّد السعر)
+                    - الحالة ACCEPTED
                     - يوجد سعر */}
                 {r.status === "ACCEPTED" && r.price && (
                   <div className="mt-3">
-                    <p className="text-[11px] text-zinc-400 mb-1">
-                      هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء التنفيذ.
-                    </p>
                     <AcceptOfferButton requestId={r.id} />
                   </div>
                 )}
