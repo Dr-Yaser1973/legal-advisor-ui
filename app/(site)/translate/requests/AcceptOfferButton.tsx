@@ -9,8 +9,8 @@ export default function AcceptOfferButton({ requestId }: { requestId: number }) 
 
   async function handleClick() {
     setLoading(true);
-    setError(null);
     setMsg(null);
+    setError(null);
 
     try {
       const res = await fetch(
@@ -21,15 +21,19 @@ export default function AcceptOfferButton({ requestId }: { requestId: number }) 
         }
       );
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
       setLoading(false);
 
-      if (!res.ok || !data.ok) {
-        setError(data.error || `فشلت الموافقة (رمز ${res.status})`);
+      if (!res.ok || !data?.ok) {
+        const message =
+          data?.error ||
+          `تعذر تأكيد الموافقة (رمز الحالة ${res.status})، حاول مرة أخرى لاحقًا.`;
+        setError(message);
         return;
       }
 
-      setMsg("تمت الموافقة، سيبدأ مكتب الترجمة التنفيذ.");
+      setMsg("تمت الموافقة على العرض، وسيبدأ مكتب الترجمة تنفيذ الطلب.");
     } catch (e) {
       console.error(e);
       setLoading(false);
@@ -40,9 +44,10 @@ export default function AcceptOfferButton({ requestId }: { requestId: number }) 
   return (
     <div className="flex flex-col gap-2">
       <button
-        onClick={handleClick}
+        type="button"
         disabled={loading}
-        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
+        onClick={handleClick}
+        className="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-sm"
       >
         {loading ? "جاري تأكيد الموافقة..." : "الموافقة على العرض وبدء التنفيذ"}
       </button>
