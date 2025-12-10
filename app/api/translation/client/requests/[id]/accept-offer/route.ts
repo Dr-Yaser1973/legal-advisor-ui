@@ -8,13 +8,13 @@ export const runtime = "nodejs";
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
-    // 1) تأكد أن المستخدم مسجَّل دخول
+    // 1) التأكد من تسجيل الدخول
     if (!user) {
       return NextResponse.json(
         { ok: false, error: "يجب تسجيل الدخول" },
@@ -22,28 +22,29 @@ export async function POST(
       );
     }
 
-    // 2) فقط العميل (أو الشركة) هو من يؤكد العرض
-     if (
-  user.role !== "CLIENT" &&
-  user.role !== "COMPANY" &&
-  user.role !== "ADMIN"
-) {
-  return NextResponse.json(
-    { ok: false, error: "ليست لديك صلاحية تأكيد هذا العرض" },
-    { status: 403 }
-  );
-}
+    // 2) الأدوار المسموح لها بتأكيد العرض
+    //    CLIENT / COMPANY في العمل الحقيقي
+    //    نسمح بـ ADMIN الآن حتى تقدر تختبر بسهولة
+    const allowedRoles = ["CLIENT", "COMPANY", "ADMIN"];
+    if (!allowedRoles.includes(user.role)) {
+      return NextResponse.json(
+        { ok: false, error: "ليست لديك صلاحية تأكيد هذا العرض" },
+        { status: 403 }
+      );
+    }
 
+    // 3) قراءة رقم الطلب من params
+    const rawId = context?.params?.id;
+    const requestId = Number(rawId);
 
-    const requestId = Number(params.id);
-    if (!Number.isFinite(requestId) || requestId <= 0) {
+    if (!rawId || !Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح" },
         { status: 400 }
       );
     }
 
-    // 3) نجلب طلب الترجمة
+    // 4) جلب طلب الترجمة
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
     });
@@ -55,15 +56,19 @@ export async function POST(
       );
     }
 
-    // تأكد أن هذا الطلب ملك لهذا العميل
-    if (request.clientId !== Number(user.id)) {
+    // 5) التأكد أن الطلب يخص هذا العميل
+    //    نسمح لـ ADMIN يتجاوز هذا الشرط للفحص فقط
+    const isOwner = request.clientId === Number(user.id);
+    const isAdmin = user.role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
       return NextResponse.json(
         { ok: false, error: "لا يمكنك التحكم بهذا الطلب" },
         { status: 403 }
       );
     }
 
-    // يجب أن يكون المكتب قد وضع السعر (ACCEPTED عندنا = تم التسعير من المكتب)
+    // 6) يجب أن يكون المكتب قد وضع السعر (ACCEPTED = تم التسعير من المكتب)
     if (request.status !== "ACCEPTED") {
       return NextResponse.json(
         {
@@ -74,7 +79,8 @@ export async function POST(
       );
     }
 
-    if (!request.price) {
+    // لا يوجد عرض سعر مسجَّل
+    if (request.price == null) {
       return NextResponse.json(
         {
           ok: false,
@@ -84,7 +90,7 @@ export async function POST(
       );
     }
 
-    // 4) آخر عرض من المكتب (اختياري لكن منطقي)
+    // 7) تحديث آخر عرض في TranslationOffer (اختياري)
     const latestOffer = await prisma.translationOffer.findFirst({
       where: { requestId },
       orderBy: { createdAt: "desc" },
@@ -97,7 +103,7 @@ export async function POST(
       });
     }
 
-    // 5) تحويل حالة الطلب إلى IN_PROGRESS وتسجيل وقت القبول
+    // 8) تغيير حالة الطلب إلى IN_PROGRESS وتسجيل وقت القبول
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
@@ -106,7 +112,7 @@ export async function POST(
       },
     });
 
-    // 6) إشعار مكتب الترجمة بأن العميل وافق على العرض
+    // 9) إشعار مكتب الترجمة بأن العميل وافق على العرض
     if (request.officeId) {
       try {
         await prisma.notification.create({
@@ -121,11 +127,15 @@ export async function POST(
       }
     }
 
+    // 10) نجاح
     return NextResponse.json({ ok: true, request: updatedRequest });
   } catch (err) {
     console.error("client accept-offer error:", err);
     return NextResponse.json(
-      { ok: false, error: "حدث خطأ أثناء تأكيد الموافقة على العرض" },
+      {
+        ok: false,
+        error: "حدث خطأ أثناء تأكيد الموافقة على العرض",
+      },
       { status: 500 }
     );
   }
