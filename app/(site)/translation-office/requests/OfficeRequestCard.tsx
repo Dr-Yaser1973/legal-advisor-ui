@@ -1,4 +1,5 @@
- "use client";
+ // app/(site)/translation-office/requests/OfficeRequestCard.tsx
+"use client";
 
 import { useState } from "react";
 
@@ -40,6 +41,7 @@ export default function OfficeRequestCard({ item }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            requestId: item.id, // 👈 نرسل رقم الطلب صراحة
             price: Number(price),
             currency: "IQD",
             note,
@@ -47,7 +49,6 @@ export default function OfficeRequestCard({ item }: Props) {
         }
       );
 
-      // نقرأ الرد كنص أولاً ثم نحاول تحويله لـ JSON
       const text = await res.text();
       let data: any = null;
 
@@ -69,7 +70,7 @@ export default function OfficeRequestCard({ item }: Props) {
         return;
       }
 
-      setMsg("تم قبول الطلب، ولن يظهر بعد الآن في قائمة الطلبات المتاحة.");
+      setMsg("تم قبول الطلب وتحديد السعر، ولن يظهر بعد الآن في قائمة الطلبات الجديدة.");
     } catch (e) {
       console.error(e);
       setLoading(false);

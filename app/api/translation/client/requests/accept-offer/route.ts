@@ -1,4 +1,4 @@
-// app/api/translation/client/accept-offer/route.ts
+ // app/api/translation/client/accept-offer/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { ok: false, error: "غير مصرح" },
+        { ok: false, error: "يجب تسجيل الدخول" },
         { status: 401 }
       );
     }
@@ -21,15 +21,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const requestId = Number(body.requestId);
 
-    if (!requestId || Number.isNaN(requestId) || requestId <= 0) {
+    if (!body.requestId || Number.isNaN(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح" },
         { status: 400 }
       );
     }
 
+    const clientId = Number(user.id);
+
+    // ✅ نحضر الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
+      include: { office: true },
     });
 
     if (!request) {
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (request.clientId !== Number(user.id)) {
+    if (request.clientId !== clientId) {
       return NextResponse.json(
         { ok: false, error: "لا يمكنك التحكم بهذا الطلب" },
         { status: 403 }
@@ -56,7 +60,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // نحدد آخر عرض ونحدّث حالته (اختياري)
+    if (!request.price) {
+      return NextResponse.json(
+        { ok: false, error: "لا يوجد عرض سعر مسجّل يمكن قبوله" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ نحدّث حالة آخر عرض أنّه قُبل من العميل (اختياري)
     const latestOffer = await prisma.translationOffer.findFirst({
       where: { requestId },
       orderBy: { createdAt: "desc" },
@@ -69,6 +80,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ✅ نحول حالة الطلب إلى IN_PROGRESS ونحدد وقت القبول
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
@@ -77,14 +89,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // إشعار للمكتب
+    // ✅ إشعار لمكتب الترجمة بأن العميل وافق على العرض
     if (request.officeId) {
       try {
         await prisma.notification.create({
           data: {
             userId: request.officeId,
             title: "موافقة العميل على عرض الترجمة",
-            body: `قام العميل بالموافقة على عرض طلب الترجمة رقم ${request.id}، ويمكنك البدء بالتنفيذ.`,
+            body: `قام العميل بالموافقة على عرض طلب الترجمة رقم ${request.id}، ويمكنك البدء في التنفيذ.`,
           },
         });
       } catch (notifyErr) {
@@ -94,9 +106,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, request: updatedRequest });
   } catch (err) {
-    console.error("client accept offer error:", err);
+    console.error("client accept-offer error:", err);
     return NextResponse.json(
-      { ok: false, error: "حدث خطأ أثناء تأكيد قبول العرض" },
+      { ok: false, error: "حدث خطأ أثناء تأكيد الموافقة على العرض" },
       { status: 500 }
     );
   }

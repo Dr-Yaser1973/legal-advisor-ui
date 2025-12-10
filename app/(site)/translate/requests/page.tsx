@@ -3,22 +3,22 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { AcceptOfferButton } from "./AcceptOfferButton";
+import AcceptOfferButton from "./AcceptOfferButton";
 
 export const dynamic = "force-dynamic";
 
 function statusLabel(status: string) {
   switch (status) {
     case "PENDING":
-      return "بانتظار قبول مكتب الترجمة للطلب وتحديد السعر";
+      return "بانتظار قبول مكتب الترجمة وتسعير الطلب";
     case "ACCEPTED":
       return "تم تسعير الطلب – بانتظار موافقتك على عرض المكتب";
     case "IN_PROGRESS":
-      return "الترجمة قيد التنفيذ لدى مكتب الترجمة";
+      return "قيد الترجمة لدى المكتب";
     case "COMPLETED":
-      return "تم إنجاز الترجمة";
+      return "منجزة";
     case "CANCELED":
-      return "تم إلغاء الطلب";
+      return "ملغاة";
     default:
       return status;
   }
@@ -77,30 +77,26 @@ export default async function MyTranslationRequestsPage() {
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
                   {r.office
-                    ? r.office.name ||
-                      r.office.email ||
-                      `مكتب رقم ${r.office.id}`
+                    ? r.office.name || r.office.email || `مكتب رقم ${r.office.id}`
                     : "لم يُحدَّد بعد"}
                 </div>
 
-                {/* 🔹 السعر المعروض من المكتب (من TranslationRequest.price) */}
-                {typeof r.price === "number" && (
+                {/* السعر والملاحظة إن وُجِدا */}
+                {r.price && (
                   <div className="text-xs text-emerald-400 mt-1">
                     <span className="font-semibold">سعر العرض:</span>{" "}
                     {r.price} {r.currency || "IQD"}
                   </div>
                 )}
-
-                {/* 🔹 ملاحظات المكتب */}
                 {r.note && (
-                  <div className="text-xs text-zinc-400 mt-1">
+                  <div className="text-xs text-zinc-300 mt-1">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
                     {r.note}
                   </div>
                 )}
 
-                {/* 🔹 زر الموافقة على العرض (عند ACCEPTED فقط) */}
-                {r.status === "ACCEPTED" && (
+                {/* زر موافقة العميل يظهر فقط لو الطلب في حالة ACCEPTED ومعه سعر */}
+                {r.status === "ACCEPTED" && r.price && (
                   <div className="mt-3">
                     <p className="text-[11px] text-zinc-400 mb-1">
                       هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء
@@ -108,18 +104,6 @@ export default async function MyTranslationRequestsPage() {
                     </p>
                     <AcceptOfferButton requestId={r.id} />
                   </div>
-                )}
-
-                {r.status === "IN_PROGRESS" && (
-                  <p className="mt-2 text-[11px] text-emerald-400">
-                    تم قبول العرض، والطلب الآن قيد التنفيذ لدى مكتب الترجمة.
-                  </p>
-                )}
-
-                {r.status === "COMPLETED" && (
-                  <p className="mt-2 text-[11px] text-emerald-400">
-                    تم إنجاز الترجمة من مكتب الترجمة.
-                  </p>
                 )}
               </div>
             ))}
