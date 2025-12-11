@@ -1,61 +1,105 @@
- import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import pdfParse from "pdf-parse";
-import path from "path";
-import fs from "fs/promises";
+ // app/api/translation/extract/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // مهم لأننا نستخدم Buffer ومكتبات Node
+
+// حد أقصى لحجم الملف (5 ميغابايت مثلاً)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-    const form = await req.formData();
-    const file = form.get("file") as File | null;
+    // 1) نقرأ FormData بدلاً من json()
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
 
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json(
-        { ok: false, error: "لم يتم استلام أي ملف" },
+        { ok: false, error: "لم يتم إرسال أي ملف إلى الخادم" },
         { status: 400 }
       );
     }
 
+    if (file.size === 0) {
+      return NextResponse.json(
+        { ok: false, error: "الملف فارغ، لا يحتوي أي بيانات" },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "الملف كبير جدًا، الرجاء اختيار ملف بحجم أقل (5 ميغابايت أو أقل).",
+        },
+        { status: 413 }
+      );
+    }
+
+    // 2) نحول File إلى Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    const fileName = file.name || "document";
+    const contentType = (file.type || "").toLowerCase();
+
     let text = "";
-    if (file.type === "application/pdf") {
+
+    // 3) نحدد نوع الملف (PDF أو DOCX) ونستخرج النص
+    if (
+      contentType === "application/pdf" ||
+      fileName.toLowerCase().endsWith(".pdf")
+    ) {
+      const pdfParse = (await import("pdf-parse")).default;
       const result = await pdfParse(buffer);
-      text = result.text || "";
+      text = (result.text || "").trim();
+    } else if (
+      contentType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      fileName.toLowerCase().endsWith(".docx")
+    ) {
+      const mammoth = await import("mammoth");
+      const result = await mammoth.extractRawText({ buffer });
+      text = (result.value || "").trim();
     } else {
-      // ملفات نصية بسيطة
-      text = buffer.toString("utf-8");
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "نوع الملف غير مدعوم. حاليًا ندعم ملفات PDF و DOCX فقط للترجمة الذكية.",
+        },
+        { status: 415 }
+      );
     }
 
-    const uploadsDir = path.join(process.cwd(), "uploads", "translation");
-    await fs.mkdir(uploadsDir, { recursive: true });
+    // 4) لو النص فارغ، غالبًا PDF عبارة عن صور فقط (scan)
+    if (!text) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "تعذر استخراج نص من الملف. يبدو أن الملف لا يحتوي نصًا قابلاً للقراءة (ربما صور فقط).",
+        },
+        { status: 422 }
+      );
+    }
 
-    const storedName =
-      Date.now().toString() + "-" + file.name.replace(/\s+/g, "_");
-    const diskPath = path.join(uploadsDir, storedName);
-    await fs.writeFile(diskPath, buffer);
-
-    const doc = await prisma.legalDocument.create({
-      data: {
-        title: file.name,
-        filename: storedName,
-        mimetype: file.type || "application/octet-stream",
-        size: buffer.length,
-      },
-    });
-
-    return NextResponse.json({
-      ok: true,
-      text,
-      documentId: doc.id,
-    });
-  } catch (err) {
-    console.error(err);
+    // 5) نرجع النص المستخرج
     return NextResponse.json(
-      { ok: false, error: "فشل استخراج النص من الملف" },
+      {
+        ok: true,
+        text,
+        fileName,
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("❌ translation extract error:", err);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "حدث خطأ غير متوقع أثناء استخراج النص من الملف.",
+      },
       { status: 500 }
     );
   }

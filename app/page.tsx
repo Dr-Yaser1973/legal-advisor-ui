@@ -131,7 +131,7 @@ type Lang = "ar" | "en";
   {
     title: "Legal Translate",
     description: "Translate legal texts, contracts, and memos between Arabic and English, with an option for official translation.",
-    href: "/translation",
+    href: "/translate",
     icon: Languages,
   },
   {
