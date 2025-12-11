@@ -1,7 +1,8 @@
- import { getServerSession } from "next-auth/next";
+ // app/(site)/translation-office/requests/page.tsx
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import OfficeRequestCard, {
   OfficeRequestItem,
 } from "./OfficeRequestCard";
@@ -13,7 +14,8 @@ export default async function TranslationOfficeRequestsPage() {
   const user = session?.user as any;
 
   if (!user) redirect("/login");
-  if (user.role !== "TRANSLATION_OFFICE") {
+
+  if (user.role !== "TRANSLATION_OFFICE" && user.role !== "ADMIN") {
     redirect("/dashboard");
   }
 
@@ -22,9 +24,7 @@ export default async function TranslationOfficeRequestsPage() {
   const requests = await prisma.translationRequest.findMany({
     where: {
       officeId,
-      status: {
-        in: ["PENDING", "ACCEPTED", "IN_PROGRESS"],
-      },
+      status: "PENDING", // الذي بانتظار تسعير هذا المكتب
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -35,8 +35,6 @@ export default async function TranslationOfficeRequestsPage() {
 
   const items: OfficeRequestItem[] = requests.map((r) => ({
     id: r.id,
-    status: r.status as any,
-    hasPrice: r.price != null,
     targetLang: r.targetLang as "AR" | "EN",
     sourceDoc: {
       id: r.sourceDoc.id,
@@ -54,17 +52,17 @@ export default async function TranslationOfficeRequestsPage() {
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-4xl mx-auto px-4 py-10 text-right">
         <h1 className="text-2xl font-bold mb-4">
-          طلبات الترجمة الرسمية موجهة إلى مكتبك
+          طلبات الترجمة الرسمية المتاحة
         </h1>
 
         {items.length === 0 ? (
           <p className="text-sm text-zinc-400">
-            لا توجد طلبات حالية موجهة لهذا المكتب.
+            لا توجد طلبات جديدة حاليًا.
           </p>
         ) : (
           <div className="space-y-3">
-            {items.map((item) => (
-              <OfficeRequestCard key={item.id} item={item} />
+            {items.map((r) => (
+              <OfficeRequestCard key={r.id} item={r} />
             ))}
           </div>
         )}
