@@ -1,4 +1,3 @@
- // app/api/translation/office/requests/[id]/accept/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -14,31 +13,22 @@ export async function POST(
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
-    // ✅ فقط مكتب ترجمة معتمد
-    if (!user || user.role !== "TRANSLATION_OFFICE" || !user.isApproved) {
+    if (!user || user.role !== "TRANSLATION_OFFICE") {
       return NextResponse.json(
         { ok: false, error: "غير مصرح لمكتب الترجمة" },
         { status: 401 }
       );
     }
 
-    // ✅ نقرأ الـ body
-    const body = await req.json();
-
-    // نحاول أخذ رقم الطلب من body أولاً ثم من params كاحتياط
-    const rawId = body.requestId ?? params?.id;
-    const requestId = Number(rawId);
-
-    if (!rawId || Number.isNaN(requestId) || requestId <= 0) {
+    const requestId = Number(params.id);
+    if (!Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: `رقم الطلب غير صالح (${rawId ?? "null"})`,
-        },
+        { ok: false, error: "رقم الطلب غير صالح" },
         { status: 400 }
       );
     }
 
+    const body = await req.json();
     const price = Number(body.price);
     const currency: string = body.currency || "IQD";
     const note: string | null =
@@ -55,7 +45,6 @@ export async function POST(
 
     const officeId = Number(user.id);
 
-    // ✅ نحضر الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
     });
@@ -67,15 +56,13 @@ export async function POST(
       );
     }
 
-    // لو الطلب مخصّص لمكتب آخر
-    if (request.officeId && request.officeId !== officeId) {
+    if (request.officeId !== officeId) {
       return NextResponse.json(
         { ok: false, error: "لا يمكنك تسعير هذا الطلب" },
         { status: 403 }
       );
     }
 
-    // يجب أن يكون في حالة PENDING
     if (request.status !== "PENDING") {
       return NextResponse.json(
         {
@@ -86,37 +73,26 @@ export async function POST(
       );
     }
 
-    // ✅ لو لم يكن للمكتب معيَّن، نثبّت مكتب الترجمة لهذا الطلب
-    if (!request.officeId) {
-      await prisma.translationRequest.update({
-        where: { id: request.id },
-        data: { officeId },
-      });
-    }
-
-    // ✅ نسجّل العرض في جدول TranslationOffer (تاريخ التفاوض)
     await prisma.translationOffer.create({
       data: {
         requestId: request.id,
         officeId,
         price,
         currency,
-        note,
+        note: note || undefined,
       },
     });
 
-    // ✅ نخزن السعر والملاحظة داخل الطلب، ونغيّر الحالة إلى ACCEPTED
     const updatedRequest = await prisma.translationRequest.update({
       where: { id: request.id },
       data: {
         price,
         currency,
         note,
-        status: "ACCEPTED", // بانتظار موافقة العميل
+        status: "ACCEPTED",
       },
     });
 
-    // ✅ إشعار للعميل بوجود عرض جديد
     try {
       await prisma.notification.create({
         data: {
@@ -131,10 +107,11 @@ export async function POST(
 
     return NextResponse.json({ ok: true, request: updatedRequest });
   } catch (err) {
-    console.error("office accept error:", err);
+    console.error("office offer error:", err);
     return NextResponse.json(
       { ok: false, error: "حدث خطأ أثناء تسعير الطلب" },
       { status: 500 }
     );
   }
 }
+

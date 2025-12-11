@@ -10,11 +10,11 @@ export const dynamic = "force-dynamic";
 function statusLabel(status: string): string {
   switch (status) {
     case "PENDING":
-      return "بانتظار قبول مكتب الترجمة";
+      return "بانتظار تسعير مكتب الترجمة";
     case "ACCEPTED":
       return "تم تسعير الطلب – بانتظار موافقتك على عرض المكتب";
     case "IN_PROGRESS":
-      return "قيد الترجمة";
+      return "قيد الترجمة لدى المكتب";
     case "COMPLETED":
       return "منجزة";
     case "CANCELED":
@@ -71,7 +71,6 @@ export default async function MyTranslationRequestsPage() {
                 key={r.id}
                 className="border border-white/10 rounded-xl bg-zinc-900/40 p-4 space-y-2"
               >
-                {/* المستند */}
                 <div className="text-sm">
                   <span className="font-semibold">المستند:</span>{" "}
                   {r.sourceDoc?.title ||
@@ -79,19 +78,16 @@ export default async function MyTranslationRequestsPage() {
                     `#${r.sourceDocId}`}
                 </div>
 
-                {/* اللغة المستهدفة */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">اللغة المستهدفة:</span>{" "}
                   {r.targetLang === "EN" ? "الإنجليزية" : "العربية"}
                 </div>
 
-                {/* الحالة النصية */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">الحالة:</span>{" "}
                   {statusLabel(r.status)}
                 </div>
 
-                {/* مكتب الترجمة */}
                 <div className="text-xs text-zinc-400">
                   <span className="font-semibold">مكتب الترجمة:</span>{" "}
                   {r.office
@@ -101,7 +97,6 @@ export default async function MyTranslationRequestsPage() {
                     : "لم يُحدَّد بعد"}
                 </div>
 
-                {/* سعر العرض إن وجد */}
                 {r.price && (
                   <div className="text-xs text-emerald-400">
                     <span className="font-semibold">سعر العرض:</span>{" "}
@@ -109,7 +104,6 @@ export default async function MyTranslationRequestsPage() {
                   </div>
                 )}
 
-                {/* ملاحظات المكتب إن وجدت */}
                 {r.note && (
                   <div className="text-xs text-zinc-300">
                     <span className="font-semibold">ملاحظات المكتب:</span>{" "}
@@ -117,18 +111,12 @@ export default async function MyTranslationRequestsPage() {
                   </div>
                 )}
 
-                {/* رسالة توضيحية أسفل الكارت */}
-                <div className="text-[11px] text-zinc-500 mt-1">
-                  هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء التنفيذ،
-                  إذا كانت حالته "تم تسعير الطلب – بانتظار موافقتك على عرض
-                  المكتب".
-                </div>
-
-                {/* زر الموافقة على العرض يظهر فقط إذا:
-                    - الحالة ACCEPTED
-                    - يوجد سعر */}
                 {r.status === "ACCEPTED" && r.price && (
                   <div className="mt-3">
+                    <p className="text-[11px] text-zinc-500 mb-1">
+                      هذا الطلب بانتظار موافقتك على عرض مكتب الترجمة لبدء
+                      التنفيذ.
+                    </p>
                     <AcceptOfferButton requestId={r.id} />
                   </div>
                 )}

@@ -28,9 +28,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const officeId = Number(body.officeId);
     const sourceDocId = Number(body.documentId);
-    const targetLang = body.targetLang === "AR" ? "AR" : "EN";
+    const targetLang = body.targetLang === "EN" ? "EN" : "AR";
 
-    if (!officeId || Number.isNaN(officeId) || !sourceDocId || Number.isNaN(sourceDocId)) {
+    if (
+      !officeId ||
+      Number.isNaN(officeId) ||
+      !sourceDocId ||
+      Number.isNaN(sourceDocId)
+    ) {
       return NextResponse.json(
         { ok: false, error: "بيانات الطلب غير مكتملة" },
         { status: 400 }
@@ -46,6 +51,19 @@ export async function POST(req: NextRequest) {
         status: "PENDING",
       },
     });
+
+    // إشعار للمكتب
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: officeId,
+          title: "طلب ترجمة رسمية جديد",
+          body: `تم إرسال طلب ترجمة رسمي جديد برقم ${request.id}.`,
+        },
+      });
+    } catch (e) {
+      console.error("notification error (ignored)", e);
+    }
 
     return NextResponse.json({ ok: true, requestId: request.id });
   } catch (e) {

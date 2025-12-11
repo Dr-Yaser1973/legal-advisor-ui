@@ -1,5 +1,4 @@
- // app/api/translation/extract/route.ts
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import pdfParse from "pdf-parse";
 import path from "path";
@@ -10,98 +9,53 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
-    const file = form.get("file");
+    const file = form.get("file") as File | null;
 
-    if (!file || !(file instanceof File)) {
+    if (!file) {
       return NextResponse.json(
-        { error: "لم يتم استلام أي ملف صالح" },
+        { ok: false, error: "لم يتم استلام أي ملف" },
         { status: 400 }
       );
     }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const mime = file.type || "application/octet-stream";
 
-    // 1) استخراج النص (PDF أو TXT)
     let text = "";
-
-    if (mime.includes("pdf") || file.name.toLowerCase().endsWith(".pdf")) {
-      try {
-        const result = await pdfParse(buffer);
-        text = result.text || "";
-      } catch (err) {
-        console.error("pdf-parse error:", err);
-        return NextResponse.json(
-          { error: "تعذّر استخراج النص من ملف الـ PDF" },
-          { status: 500 }
-        );
-      }
-    } else if (
-      mime.startsWith("text/") ||
-      file.name.toLowerCase().endsWith(".txt")
-    ) {
-      text = buffer.toString("utf-8");
+    if (file.type === "application/pdf") {
+      const result = await pdfParse(buffer);
+      text = result.text || "";
     } else {
-      return NextResponse.json(
-        { error: "نوع الملف غير مدعوم، الرجاء رفع PDF أو TXT" },
-        { status: 400 }
-      );
+      // ملفات نصية بسيطة
+      text = buffer.toString("utf-8");
     }
 
-    // 2) تحديد مسار الحفظ
-    // على Vercel نستخدم /tmp لأنه المسار الوحيد القابل للكتابة
-    const isVercel = !!process.env.VERCEL;
+    const uploadsDir = path.join(process.cwd(), "uploads", "translation");
+    await fs.mkdir(uploadsDir, { recursive: true });
 
-    let storedName: string | null = null;
-    let fileUrl: string | null = null;
+    const storedName =
+      Date.now().toString() + "-" + file.name.replace(/\s+/g, "_");
+    const diskPath = path.join(uploadsDir, storedName);
+    await fs.writeFile(diskPath, buffer);
 
-    try {
-      const safeOriginalName = file.name.replace(/\s+/g, "_");
-      storedName = `${Date.now()}-${safeOriginalName}`;
-
-      const baseDir = isVercel
-        ? path.join("/tmp") // لا يمكن خدمته للجمهور، لكنه يصلح للتخزين المؤقت
-        : path.join(process.cwd(), "public"); // محليًا فقط
-
-      const uploadsDir = path.join(baseDir, "uploads", "translation");
-      await fs.mkdir(uploadsDir, { recursive: true });
-
-      const diskPath = path.join(uploadsDir, storedName);
-      await fs.writeFile(diskPath, buffer);
-
-      // رابط عام فقط في البيئة المحلية (على Vercel هذا لن يكون متاحًا من /tmp)
-      if (!isVercel) {
-        fileUrl = `/uploads/translation/${storedName}`;
-      }
-    } catch (fileErr) {
-      // مهم: لا نكسر العملية لو فشل الحفظ، طالما استطعنا استخراج النص
-      console.error("file save error:", fileErr);
-      storedName = null;
-      fileUrl = null;
-    }
-
-    // 3) إنشاء سجل LegalDocument حسب السكيمة التي أرسلتها
     const doc = await prisma.legalDocument.create({
       data: {
         title: file.name,
-        filename: storedName,   // يمكن أن يكون null إذا لم نستطع الحفظ
-        mimetype: mime,
+        filename: storedName,
+        mimetype: file.type || "application/octet-stream",
         size: buffer.length,
       },
     });
 
-    // 4) إرجاع النتيجة للواجهة
     return NextResponse.json({
       ok: true,
       text,
       documentId: doc.id,
-      fileUrl, // غالبًا يكون null على Vercel حالياً
     });
-  } catch (e) {
-    console.error("translation/extract error:", e);
+  } catch (err) {
+    console.error(err);
     return NextResponse.json(
-      { error: "فشل استخراج النص من الملف (خطأ في الخادم)" },
+      { ok: false, error: "فشل استخراج النص من الملف" },
       { status: 500 }
     );
   }

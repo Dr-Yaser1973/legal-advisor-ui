@@ -1,12 +1,11 @@
- import { NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/translation/office/requests
-export async function GET() {
+export async function GET(_req: NextRequest) {
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
 
@@ -17,22 +16,23 @@ export async function GET() {
     );
   }
 
-  if (user.role !== "TRANSLATION_OFFICE" || !user.isApproved) {
+  if (user.role !== "TRANSLATION_OFFICE") {
     return NextResponse.json(
       { ok: false, error: "ليست لديك صلاحية عرض طلبات الترجمة الرسمية" },
       { status: 403 }
     );
   }
 
-  // نعرض الطلبات المعلّقة غير المخصّصة لأي مكتب بعد
+  const officeId = Number(user.id);
+
   const requests = await prisma.translationRequest.findMany({
     where: {
-      status: "PENDING", // TranslationStatus.PENDING
-      officeId: null,
+      officeId,
+      status: {
+        in: ["PENDING", "ACCEPTED", "IN_PROGRESS"],
+      },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
     include: {
       client: {
         select: {
@@ -53,9 +53,9 @@ export async function GET() {
 
   const items = requests.map((r) => ({
     id: r.id,
-    note: null as string | null, // يمكن لاحقاً إضافة حقل ملاحظات من العميل لو موجود في الجدول
-    createdAt: r.createdAt.toISOString(),
-    targetLang: r.targetLang, // "AR" أو "EN"
+    status: r.status,
+    targetLang: r.targetLang,
+    hasPrice: r.price != null,
     sourceDoc: {
       id: r.sourceDoc.id,
       title: r.sourceDoc.title,

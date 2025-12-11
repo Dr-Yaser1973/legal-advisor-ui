@@ -1,10 +1,11 @@
- // app/(site)/translation-office/requests/OfficeRequestCard.tsx
-"use client";
+ "use client";
 
 import { useState } from "react";
 
 export type OfficeRequestItem = {
   id: number;
+  status: "PENDING" | "ACCEPTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED";
+  hasPrice: boolean;
   targetLang: "AR" | "EN";
   sourceDoc: {
     id: number;
@@ -28,20 +29,28 @@ export default function OfficeRequestCard({ item }: Props) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
 
-  async function handleAccept() {
+  const canOffer = item.status === "PENDING" || (!item.hasPrice && item.status === "ACCEPTED");
+  const canComplete = item.status === "IN_PROGRESS";
+
+  async function sendOffer() {
+    if (!price.trim()) {
+      alert("يرجى إدخال سعر الترجمة");
+      return;
+    }
+
     setLoading(true);
     setMsg(null);
     setError(null);
 
     try {
       const res = await fetch(
-        `/api/translation/office/requests/${item.id}/accept`,
+        `/api/translation/office/requests/${item.id}/offer`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            requestId: item.id, // 👈 نرسل رقم الطلب صراحة
             price: Number(price),
             currency: "IQD",
             note,
@@ -49,32 +58,56 @@ export default function OfficeRequestCard({ item }: Props) {
         }
       );
 
-      const text = await res.text();
-      let data: any = null;
-
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          console.error("Response is not valid JSON:", text);
-        }
-      }
-
+      const data = await res.json().catch(() => null);
       setLoading(false);
 
       if (!res.ok || !data?.ok) {
-        const msg =
+        setError(
           data?.error ||
-          `تعذر قبول الطلب (رمز الحالة ${res.status}). حاول مرة أخرى لاحقًا.`;
-        setError(msg);
+            `تعذر إرسال العرض (رمز الحالة ${res.status}). حاول لاحقًا.`
+        );
         return;
       }
 
-      setMsg("تم قبول الطلب وتحديد السعر، ولن يظهر بعد الآن في قائمة الطلبات الجديدة.");
-    } catch (e) {
-      console.error(e);
+      setMsg("تم إرسال عرض السعر للعميل.");
+    } catch (err) {
+      console.error(err);
       setLoading(false);
       setError("حدث خطأ غير متوقع أثناء الاتصال بالخادم");
+    }
+  }
+
+  async function markCompleted() {
+    if (!confirm("تأكيد: هل تريد تعليم هذا الطلب كمكتمل؟")) return;
+
+    setCompleting(true);
+    setError(null);
+    setMsg(null);
+
+    try {
+      const res = await fetch(
+        `/api/translation/office/requests/${item.id}/complete`,
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await res.json().catch(() => null);
+      setCompleting(false);
+
+      if (!res.ok || !data?.ok) {
+        setError(
+          data?.error ||
+            `تعذر تعليم الطلب كمكتمل (رمز الحالة ${res.status}).`
+        );
+        return;
+      }
+
+      setMsg("تم تعليم الطلب كمكتمل.");
+    } catch (err) {
+      console.error(err);
+      setCompleting(false);
+      setError("حدث خطأ أثناء الاتصال بالخادم");
     }
   }
 
@@ -91,34 +124,53 @@ export default function OfficeRequestCard({ item }: Props) {
           اللغة المستهدفة:{" "}
           {item.targetLang === "EN" ? "الإنجليزية" : "العربية"}
         </div>
+        <div className="text-xs text-zinc-400">
+          الحالة الحالية: {item.status}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2 mt-2">
-        <input
-          type="number"
-          placeholder="سعر الترجمة (مثلاً 25000)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
-        />
-        <textarea
-          placeholder="ملاحظات إضافية (اختياري)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
-          rows={2}
-        />
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleAccept}
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
-        >
-          {loading ? "جارٍ قبول الطلب..." : "قبول الطلب بهذا السعر"}
-        </button>
-        {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
-        {error && <p className="text-[11px] text-red-400">{error}</p>}
-      </div>
+      {canOffer && (
+        <div className="flex flex-col gap-2 mt-2">
+          <input
+            type="number"
+            placeholder="سعر الترجمة (مثلاً 25000)"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
+          />
+          <textarea
+            placeholder="ملاحظات إضافية (اختياري)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
+            rows={2}
+          />
+          <button
+            type="button"
+            disabled={loading}
+            onClick={sendOffer}
+            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
+          >
+            {loading ? "جارٍ إرسال العرض..." : "إرسال عرض السعر للعميل"}
+          </button>
+        </div>
+      )}
+
+      {canComplete && (
+        <div className="mt-2">
+          <button
+            type="button"
+            disabled={completing}
+            onClick={markCompleted}
+            className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-xs"
+          >
+            {completing ? "جارٍ التعليم كمكتمل..." : "تعليم الطلب كمكتمل"}
+          </button>
+        </div>
+      )}
+
+      {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
     </div>
   );
 }
