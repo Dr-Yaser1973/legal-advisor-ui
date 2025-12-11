@@ -10,7 +10,7 @@ export default function OfficialTranslationRequestSection(props: {
   const [loading, setLoading] = useState(false);
 
   async function handleOfficialRequest() {
-    if (!props.savedDocumentId) {
+     {
       alert("يجب أولاً رفع المستند وحفظه قبل طلب الترجمة الرسمية.");
       return;
     }
