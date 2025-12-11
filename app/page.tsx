@@ -48,7 +48,7 @@ type Lang = "ar" | "en";
   {
     title: "الترجمة القانونية",
     description: "ترجمة النصوص والعقود والمذكرات القانونية بين العربية والإنجليزية مع خيار الترجمة الرسمية.",
-    href: "/translation",
+    href: "/translate",
     icon: Languages,
   },
   {
@@ -129,7 +129,7 @@ type Lang = "ar" | "en";
     icon: FileText,
   },
   {
-    title: "Legal Translation",
+    title: "Legal Translate",
     description: "Translate legal texts, contracts, and memos between Arabic and English, with an option for official translation.",
     href: "/translation",
     icon: Languages,
@@ -209,7 +209,7 @@ export default function HomePage() {
                 {lang === "ar" ? "العقود" : "Contracts"}
               </Link>
               <span className="opacity-30">•</span>
-              <Link href="/translation" className="hover:text-white transition">
+              <Link href="/translate" className="hover:text-white transition">
                 {lang === "ar" ? "الترجمة" : "Translation"}
               </Link>
               <span className="opacity-30">•</span>
