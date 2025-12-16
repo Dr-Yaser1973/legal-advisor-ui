@@ -1,105 +1,74 @@
  // app/api/translation/extract/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export const runtime = "nodejs"; // مهم لأننا نستخدم Buffer ومكتبات Node
+export const runtime = "nodejs";
 
-// حد أقصى لحجم الملف (5 ميغابايت مثلاً)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-    // 1) نقرأ FormData بدلاً من json()
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
-    if (!file || typeof file === "string") {
-      return NextResponse.json(
-        { ok: false, error: "لم يتم إرسال أي ملف إلى الخادم" },
-        { status: 400 }
-      );
-    }
-
-    if (file.size === 0) {
-      return NextResponse.json(
-        { ok: false, error: "الملف فارغ، لا يحتوي أي بيانات" },
-        { status: 400 }
-      );
+    if (!file || typeof file === "string" || file.size === 0) {
+      return NextResponse.json({ ok: false, error: "ملف غير صالح" }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "الملف كبير جدًا، الرجاء اختيار ملف بحجم أقل (5 ميغابايت أو أقل).",
-        },
-        { status: 413 }
-      );
+      return NextResponse.json({ ok: false, error: "الملف كبير جداً (الحد الأقصى 5MB)" }, { status: 413 });
     }
 
-    // 2) نحول File إلى Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
     const fileName = file.name || "document";
-    const contentType = (file.type || "").toLowerCase();
+    const contentType = file.type.toLowerCase();
 
     let text = "";
 
-    // 3) نحدد نوع الملف (PDF أو DOCX) ونستخرج النص
-    if (
-      contentType === "application/pdf" ||
-      fileName.toLowerCase().endsWith(".pdf")
-    ) {
-      const pdfParse = (await import("pdf-parse")).default;
-      const result = await pdfParse(buffer);
-      text = (result.text || "").trim();
-    } else if (
-      contentType ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-      fileName.toLowerCase().endsWith(".docx")
-    ) {
+    if (contentType === "application/pdf" || fileName.endsWith(".pdf")) {
+      try {
+        const pdfParse = (await import("pdf-parse")).default;
+        const result = await pdfParse(buffer);
+        text = result.text || "";
+      } catch (pdfError) {
+        return NextResponse.json({ ok: false, error: "فشل استخراج النص من ملف PDF" }, { status: 422 });
+      }
+    } else if (contentType.includes("officedocument.wordprocessingml.document") || fileName.endsWith(".docx")) {
       const mammoth = await import("mammoth");
       const result = await mammoth.extractRawText({ buffer });
-      text = (result.value || "").trim();
+      text = result.value || "";
     } else {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            "نوع الملف غير مدعوم. حاليًا ندعم ملفات PDF و DOCX فقط للترجمة الذكية.",
-        },
-        { status: 415 }
-      );
+      return NextResponse.json({ ok: false, error: "نوع الملف غير مدعوم" }, { status: 415 });
     }
 
-    // 4) لو النص فارغ، غالبًا PDF عبارة عن صور فقط (scan)
+    text = text.trim();
     if (!text) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            "تعذر استخراج نص من الملف. يبدو أن الملف لا يحتوي نصًا قابلاً للقراءة (ربما صور فقط).",
-        },
-        { status: 422 }
-      );
+      return NextResponse.json({ ok: false, error: "المستند فارغ أو عبارة عن صور فقط" }, { status: 422 });
     }
 
-    // 5) نرجع النص المستخرج
-    return NextResponse.json(
-      {
-        ok: true,
-        text,
-        fileName,
+    // إنشاء سجل LegalDocument — بدون clientId لأن السكيمة لا تحتوي عليه
+    const doc = await prisma.legalDocument.create({
+      data: {
+        title: fileName,
+        filename: fileName,
+        mimetype: contentType,
+        size: file.size,
       },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("❌ translation extract error:", err);
+    });
+
+    return NextResponse.json({
+      ok: true,
+      text,
+      documentId: doc.id,
+      fileName,
+    });
+
+  } catch (err: any) {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "حدث خطأ غير متوقع أثناء استخراج النص من الملف.",
-      },
+      { ok: false, error: "خطأ داخلي في الخادم", details: err.message },
       { status: 500 }
     );
   }

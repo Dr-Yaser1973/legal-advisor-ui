@@ -50,6 +50,7 @@ interface HumanRequestItem {
   createdAt: string;
   consultation: HumanConsultationInfo | null;
   offers: Offer[];
+    chatRoom?: { id: number } | null; // ✅ أضف هذا
 }
 
 interface AiHistoryApiResponse {
@@ -508,10 +509,16 @@ export default function ConsultationsPage() {
                   ) : (
                     <div className="space-y-3">
                       {humanRequests.map((req) => {
+                        const chatRoomId = req.chatRoom?.id;
+
                         const created = new Date(req.createdAt);
                         const hasAcceptedOffer = req.offers.some(
                           (o) => o.status === "ACCEPTED_BY_CLIENT"
                         );
+                        const canOpenChat =
+  !!chatRoomId &&
+  ["ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(req.status);
+
 
                         return (
                           <div
@@ -532,6 +539,18 @@ export default function ConsultationsPage() {
                                   {statusLabel(req.status)}
                                 </span>
                               </div>
+                              {canOpenChat && (
+  <div className="mt-2 flex justify-end">
+    <button
+       onClick={() => (window.location.href = `/chat/${chatRoomId}`)}
+
+      className="px-3 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-white/10"
+    >
+      فتح المحادثة
+    </button>
+  </div>
+)}
+
                               <div className="text-xs text-zinc-500">
                                 {created.toLocaleString("ar-IQ")}
                               </div>

@@ -1,6 +1,6 @@
  "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
   roomId: number;
@@ -11,42 +11,66 @@ export default function ChatRoomClient({ roomId, userId }: Props) {
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [polling, setPolling] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // جلب الرسائل
   const loadMessages = async () => {
-    const res = await fetch(`/api/chat/${roomId}/messages`);
-    const data = await res.json();
-    setMessages(data);
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    try {
+      const res = await fetch(`/api/chat/${roomId}/messages`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setMessages(data);
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    } catch {
+      // تجاهل مؤقتًا
+    }
   };
 
   useEffect(() => {
+    // ✅ عند فتح الغرفة أو تغيير roomId
     loadMessages();
-    const interval = setInterval(loadMessages, 3000);
-    return () => clearInterval(interval);
-  }, []);
+
+    setPolling(true);
+    const interval = setInterval(loadMessages, 2000); // أسرع قليلاً
+
+    return () => {
+      clearInterval(interval);
+      setPolling(false);
+    };
+  }, [roomId]); // ✅ مهم
 
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    const t = text.trim();
+    if (!t) return;
 
     setLoading(true);
+    try {
+      // ✅ هذا هو المسار الصحيح حسب API الذي أرسلته: /api/chat/[roomId]/send
+      const res = await fetch(`/api/chat/${roomId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: t }),
+      });
 
-    const res = await fetch(`/api/chat/${roomId}/messages/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
 
-    setText("");
-    setLoading(false);
-    await loadMessages();
+      setText("");
+      await loadMessages();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col h-[70vh] border border-zinc-700 rounded-xl bg-zinc-900">
-      {/* الرسائل */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((m) => (
           <div
@@ -63,26 +87,26 @@ export default function ChatRoomClient({ roomId, userId }: Props) {
             </div>
           </div>
         ))}
-
-        <div ref={bottomRef}></div>
+        <div ref={bottomRef} />
       </div>
 
-      {/* مربع الإدخال */}
       <div className="border-t border-zinc-700 p-3 flex gap-2">
         <input
           type="text"
           className="flex-1 rounded-md bg-zinc-800 border border-zinc-600 px-3 py-2 text-sm"
-          placeholder="اكتب رسالة..."
+          placeholder={polling ? "اكتب رسالة..." : "تحميل..."}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") sendMessage();
+          }}
         />
-
         <button
           onClick={sendMessage}
           disabled={loading}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md disabled:opacity-60"
         >
-          إرسال
+          {loading ? "..." : "إرسال"}
         </button>
       </div>
     </div>

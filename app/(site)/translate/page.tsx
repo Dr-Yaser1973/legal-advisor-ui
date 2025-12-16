@@ -229,11 +229,12 @@ export default function LegalTranslationPage() {
               المتعاونة مع المنصّة.
             </p>
 
-            <RequestOfficialTranslationButton
-              documentId={documentId}
-              targetLang={toLang}
-              disabled={!canRequestOfficial}
-            />
+             <RequestOfficialTranslationButton
+  savedDocumentId={documentId}
+  targetLang={toLang}
+  disabled={!canRequestOfficial}
+/>
+
 
             <p className="text-[11px] text-zinc-500 mt-2">
               يجب أولًا رفع المستند واستخراج النص، ثم اختيار لغة الهدف قبل

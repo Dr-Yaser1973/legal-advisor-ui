@@ -1,45 +1,68 @@
  "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
-export default function ChatRoomPage(props: { params: Promise<{ roomId: string }> }) {
+export default function ChatRoomPage(props: {
+  params: Promise<{ roomId: string }>;
+}) {
   const [roomId, setRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
+  const [loadingSend, setLoadingSend] = useState(false);
 
-  // 🔥 هنا نقوم بعمل unwrap للـ params لأنها Promise في Next.js 16
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // unwrap params (Next.js 16)
   useEffect(() => {
-    async function unwrapParams() {
+    let mounted = true;
+    (async () => {
       const resolved = await props.params;
-      setRoomId(Number(resolved.roomId));
-    }
-    unwrapParams();
+      const id = Number(resolved.roomId);
+      if (mounted) setRoomId(Number.isFinite(id) ? id : null);
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [props.params]);
 
   async function loadMessages(id: number) {
-    const res = await fetch(`/api/chat/${id}/messages`);
-    if (res.ok) {
-      setMessages(await res.json());
-    }
+    const res = await fetch(`/api/chat/${id}/messages`, { cache: "no-store" });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    setMessages(data);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   async function sendMessage() {
-    if (!text.trim() || roomId === null) return;
+    const t = text.trim();
+    if (!t || roomId === null) return;
 
-    const res = await fetch(`/api/chat/${roomId}/send`, {
-      method: "POST",
-      body: JSON.stringify({ text }),
-      headers: { "Content-Type": "application/json" },
-    });
+    setLoadingSend(true);
+    try {
+      const res = await fetch(`/api/chat/${roomId}/send`, {
+        method: "POST",
+        body: JSON.stringify({ text: t }),
+        headers: { "Content-Type": "application/json" },
+      });
 
-    if (res.ok) {
+      if (!res.ok) return;
+
       setText("");
-      loadMessages(roomId);
+      await loadMessages(roomId);
+    } finally {
+      setLoadingSend(false);
     }
   }
 
+  // ✅ load + polling لتحقيق التزامن
   useEffect(() => {
-    if (roomId !== null) loadMessages(roomId);
+    if (roomId === null) return;
+
+    loadMessages(roomId);
+    const interval = setInterval(() => loadMessages(roomId), 2000);
+
+    return () => clearInterval(interval);
   }, [roomId]);
 
   if (roomId === null) {
@@ -56,9 +79,10 @@ export default function ChatRoomPage(props: { params: Promise<{ roomId: string }
             <div className="text-zinc-300 text-sm">
               {m.sender?.name || "مستخدم"} ({m.sender?.role})
             </div>
-            <div className="text-white">{m.text}</div>
+            <div className="text-white whitespace-pre-wrap">{m.text}</div>
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
 
       <div className="mt-4 flex gap-2">
@@ -67,12 +91,16 @@ export default function ChatRoomPage(props: { params: Promise<{ roomId: string }
           onChange={(e) => setText(e.target.value)}
           className="flex-1 p-2 bg-zinc-900 border border-white/20 rounded"
           placeholder="اكتب رسالة..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") sendMessage();
+          }}
         />
         <button
           onClick={sendMessage}
-          className="px-4 py-2 bg-blue-600 rounded"
+          disabled={loadingSend}
+          className="px-4 py-2 bg-blue-600 rounded disabled:opacity-60"
         >
-          إرسال
+          {loadingSend ? "..." : "إرسال"}
         </button>
       </div>
     </div>

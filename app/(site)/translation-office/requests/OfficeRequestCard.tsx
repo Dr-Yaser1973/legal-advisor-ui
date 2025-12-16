@@ -34,8 +34,9 @@ export default function OfficeRequestCard({ item }: Props) {
     setError(null);
 
     try {
+      // ✅ نرسل إلى مسار offer وليس accept
       const res = await fetch(
-        `/api/translation/office/requests/${item.id}/accept`,
+        `/api/translation/office/requests/${item.id}/offer`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -68,7 +69,7 @@ export default function OfficeRequestCard({ item }: Props) {
         return;
       }
 
-      setMsg("تم تسعير الطلب، ولن يظهر بعد الآن في قائمة الطلبات المتاحة.");
+      setMsg("تم إرسال العرض المسعّر للعميل، ولن يظهر الطلب بعد الآن في قائمة الطلبات المتاحة.");
     } catch (e) {
       console.error(e);
       setLoading(false);
@@ -112,7 +113,7 @@ export default function OfficeRequestCard({ item }: Props) {
           onClick={handleAccept}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
         >
-          {loading ? "جارٍ إرسال العرض..." : "تحديد السعر وقبول الطلب"}
+          {loading ? "جارٍ إرسال العرض..." : "تحديد السعر وإرسال العرض"}
         </button>
         {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
         {error && <p className="text-[11px] text-red-400">{error}</p>}

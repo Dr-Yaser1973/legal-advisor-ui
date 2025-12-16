@@ -26,6 +26,11 @@ export async function GET() {
         id: true,
         status: true,
         createdAt: true,
+         chatRoom: {
+    select: {
+      id: true,
+    },
+  },
 
         // الاستشارة الأصلية (الذكاء الاصطناعي) إن وجدت
         consultation: {
@@ -67,7 +72,11 @@ export async function GET() {
         },
       },
     });
-
+      // ✅ نرجّع chatRoomId بشكل مباشر حتى تستخدمه الصفحة بسهولة
+    const mapped = items.map((r: any) => ({
+      ...r,
+      chatRoomId: r.chatRoom?.id ?? null,
+    }));
     return NextResponse.json({ items });
   } catch (error) {
     console.error("Error in /api/consultations/human/my:", error);

@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useState } from "react";
 
@@ -45,17 +45,7 @@ export default function OfficeInProgressCard({
         }
       );
 
-      const text = await res.text();
-      let data: any = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          console.error("Response is not valid JSON:", text);
-        }
-      }
-
-      setLoading(false);
+      const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.ok) {
         const msg =
@@ -65,11 +55,16 @@ export default function OfficeInProgressCard({
         return;
       }
 
-      setMsg("تم إنهاء الطلب، ولن يظهر بعد الآن في قائمة الطلبات قيد التنفيذ.");
+      setMsg(
+        data.message ||
+          "تم إنهاء الطلب، ولن يظهر بعد الآن في قائمة الطلبات قيد التنفيذ."
+      );
     } catch (e) {
       console.error(e);
-      setLoading(false);
       setError("حدث خطأ غير متوقع أثناء الاتصال بالخادم");
+    } finally {
+      // مهم حتى لا يبقى الزر على "جارٍ إنهاء الطلب..."
+      setLoading(false);
     }
   }
 
@@ -106,18 +101,23 @@ export default function OfficeInProgressCard({
           className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
           rows={3}
         />
+
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || !!msg} // نمنع الضغط بعد النجاح
           onClick={handleComplete}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
         >
-          {loading ? "جارٍ إنهاء الطلب..." : "تأكيد إنهاء الترجمة"}
+          {loading
+            ? "جارٍ إنهاء الطلب..."
+            : msg
+            ? "تم إنهاء الطلب ✅"
+            : "تأكيد إنهاء الترجمة"}
         </button>
+
         {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
         {error && <p className="text-[11px] text-red-400">{error}</p>}
       </div>
     </div>
   );
 }
-
