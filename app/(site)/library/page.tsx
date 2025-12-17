@@ -95,24 +95,12 @@ export default async function LibraryPage({ searchParams }: PageProps) {
             className="block rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-4 hover:border-emerald-500/70 hover:shadow-lg hover:shadow-emerald-500/10 transition"
           >
             <div className="text-[11px] text-zinc-400 mb-1 flex flex-wrap gap-2 justify-end">
-              <span className="px-2 py-0.5 rounded-full bg-zinc-900/80 border border-zinc-700/70">
-                {doc.jurisdiction}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-zinc-900/80 border border-zinc-700/70">
-                {categoryLabel(doc.category)}
-              </span>
-              {doc.year && (
-                <span className="px-2 py-0.5 rounded-full bg-zinc-900/80 border border-zinc-700/70">
-                  {doc.year}
-                </span>
-              )}
+                
             </div>
             <div className="text-lg font-semibold mb-2">{doc.title}</div>
-            {doc.text && (
-              <p className="text-sm text-zinc-400 line-clamp-3">
-                {doc.text.slice(0, 220)}…
-              </p>
-            )}
+             
+               
+           
           </Link>
         ))}
 
