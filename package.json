@@ -13,8 +13,8 @@
   "postinstall": "prisma generate"
 },
   "prisma": {
-    "config": "prisma/prisma.config.ts",
-    "seed": "ts-node prisma/seed.ts"
+    "config": "prisma/prisma.config.ts"
+    
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

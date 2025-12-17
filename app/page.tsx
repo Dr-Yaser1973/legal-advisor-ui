@@ -60,7 +60,7 @@ type Lang = "ar" | "en";
   {
     title: "الاستشارات الذكية",
     description: "استشارات فورية للموضوعات القانونية عبر الذكاء الاصطناعي.",
-    href: "/consultations/ai",
+    href: "/consultations",
     icon: Scale,
   },
   {
@@ -143,7 +143,7 @@ type Lang = "ar" | "en";
   {
     title: "Smart Consultations",
     description: "Instant AI-powered consultations for various legal topics.",
-    href: "/consultations/ai",
+    href: "/consultations",
     icon: Scale,
   },
   {

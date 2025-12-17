@@ -1,11 +1,11 @@
- // prisma/seed.ts
-import {
+ // prisma/seed.js
+const {
   PrismaClient,
   UserRole,
   LawCategory,
   Language,
-} from "@prisma/client";
-import bcrypt from "bcrypt";
+} = require("@prisma/client");
+const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
@@ -20,7 +20,6 @@ async function main() {
   const admin = await prisma.user.upsert({
     where: { email },
     update: {
-      // لو موجود نضمن أن دوره أدمن ومفعّل
       role: UserRole.ADMIN,
       isApproved: true,
     },
@@ -35,7 +34,7 @@ async function main() {
 
   console.log(`✅ Admin created or already exists: ${admin.email}`);
 
-  // ============= 2️⃣ إنشاء مستخدمين تجريبيين لكل دور =============
+  // ============= 2️⃣ مستخدمين تجريبيين =============
   const demoPassword = process.env.DEMO_PASSWORD || "Pass1234!";
   const demoHashed = await bcrypt.hash(demoPassword, 10);
 
@@ -50,7 +49,7 @@ async function main() {
       email: "lawyer@example.com",
       name: "محامٍ تجريبي",
       role: UserRole.LAWYER,
-      isApproved: true, // كأن الأدمن وافق عليه
+      isApproved: true,
     },
     {
       email: "company@example.com",
@@ -64,7 +63,7 @@ async function main() {
       role: UserRole.TRANSLATION_OFFICE,
       isApproved: true,
     },
-  ] as const;
+  ];
 
   for (const u of demoUsers) {
     const user = await prisma.user.upsert({
@@ -82,14 +81,13 @@ async function main() {
         isApproved: u.isApproved,
       },
     });
+
     console.log(`✅ ${u.role} user seeded: ${user.email}`);
   }
 
-  console.log(
-    `🔐 Demo password for all demo users: ${demoPassword}`
-  );
+  console.log(`🔐 Demo password for all demo users: ${demoPassword}`);
 
-  // ============= 3️⃣ إدخال قوالب العقود الجاهزة =============
+  // ============= 3️⃣ قوالب العقود =============
   await prisma.contractTemplate.createMany({
     data: [
       {
@@ -97,19 +95,21 @@ async function main() {
         slug: "fixed-term-employment",
         bodyHtml: "<p>هذا نموذج عقد عمل محدد المدة بين طرفين...</p>",
         language: Language.AR,
+        createdById: admin.id,
       },
       {
         title: "عقد إيجار شقة سكنية",
         slug: "residential-lease",
         bodyHtml: "<p>هذا نموذج عقد إيجار شقة سكنية...</p>",
         language: Language.AR,
+        createdById: admin.id,
       },
       {
         title: "عقد بيع منقول",
         slug: "movable-sale",
-        bodyHtml:
-          "<p>هذا نموذج عقد بيع منقول (سيارة، معدات، ...)</p>",
+        bodyHtml: "<p>هذا نموذج عقد بيع منقول (سيارة، معدات، ...)</p>",
         language: Language.AR,
+        createdById: admin.id,
       },
     ],
     skipDuplicates: true,
@@ -117,39 +117,35 @@ async function main() {
 
   console.log("✅ Contract templates seeded (or already exist).");
 
-  // ============= 4️⃣ قوانين تجريبية للمكتبة (LawDoc + LawArticle) =============
+  // ============= 4️⃣ مكتبة قانونية تجريبية =============
 
-  // قانون 1: مثال قانون عراقي
   const law1 = await prisma.lawDoc.create({
     data: {
-      title:
-        "قانون إدارة المحافظات غير المنتظمة في إقليم (مثال تجريبي)",
+      title: "قانون إدارة المحافظات غير المنتظمة في إقليم (مثال)",
       category: LawCategory.LAW,
       jurisdiction: "العراق",
       year: 2008,
       text:
-        "هذا نص تجريبي لقانون إدارة المحافظات غير المنتظمة في إقليم. " +
-        "يمكنك استبداله لاحقًا بالنص الحقيقي من خلال واجهة الأدمن أو رفع ملف PDF.",
+        "هذا نص تجريبي لقانون إدارة المحافظات غير المنتظمة في إقليم.",
       articles: {
         create: [
           {
             ordinal: 1,
             number: "1",
             text:
-              "المادة الأولى: تسري أحكام هذا القانون على جميع المحافظات غير المنتظمة في إقليم.",
+              "المادة الأولى: تسري أحكام هذا القانون على جميع المحافظات.",
           },
           {
             ordinal: 2,
             number: "2",
             text:
-              "المادة الثانية: تتمتع المحافظة بالشخصية المعنوية والاستقلال المالي والإداري ضمن الحدود المقررة في الدستور.",
+              "المادة الثانية: تتمتع المحافظة بالشخصية المعنوية.",
           },
         ],
       },
     },
   });
 
-  // قانون 2: مثال كتاب فقهي
   const fiqh1 = await prisma.lawDoc.create({
     data: {
       title: "كتاب فقهي تجريبي في أحكام البيوع",
@@ -157,56 +153,54 @@ async function main() {
       jurisdiction: "فقه إسلامي",
       year: 2020,
       text:
-        "هذا نص تجريبي لكتاب فقهي في أحكام البيوع، الغرض منه فقط اختبار عرض النصوص في المكتبة.",
+        "هذا نص تجريبي لكتاب فقهي في أحكام البيوع.",
       articles: {
         create: [
           {
             ordinal: 1,
             number: "باب 1",
             text:
-              "الباب الأول: تعريف البيع وشروط صحته وفقًا لأقوال الفقهاء.",
+              "تعريف البيع وشروط صحته.",
           },
           {
             ordinal: 2,
             number: "باب 2",
             text:
-              "الباب الثاني: أحكام الخيار والعيب في عقد البيع.",
+              "أحكام الخيار والعيب.",
           },
         ],
       },
     },
   });
 
-  // قانون 3: مثال دراسة أكاديمية
   const study1 = await prisma.lawDoc.create({
     data: {
-      title:
-        "دراسة أكاديمية تجريبية في النظام الدستوري العراقي",
+      title: "دراسة أكاديمية تجريبية في النظام الدستوري العراقي",
       category: LawCategory.ACADEMIC_STUDY,
       jurisdiction: "العراق",
       year: 2015,
       text:
-        "هذه دراسة أكاديمية تجريبية في النظام الدستوري العراقي، فقط لأغراض الاختبار في مكتبة المستشار القانوني.",
+        "هذه دراسة أكاديمية تجريبية في النظام الدستوري العراقي.",
       articles: {
         create: [
           {
             ordinal: 1,
             number: "فصل 1",
             text:
-              "الفصل الأول: التطور التاريخي للنظام الدستوري في العراق بعد عام 2003.",
+              "التطور التاريخي للنظام الدستوري بعد 2003.",
           },
           {
             ordinal: 2,
             number: "فصل 2",
             text:
-              "الفصل الثاني: مبدأ الفصل بين السلطات في الدستور العراقي النافذ.",
+              "مبدأ الفصل بين السلطات.",
           },
         ],
       },
     },
   });
 
-  console.log("✅ LawDocs seeded with sample articles:", {
+  console.log("✅ LawDocs seeded:", {
     law1: law1.id,
     fiqh1: fiqh1.id,
     study1: study1.id,
@@ -218,7 +212,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error("❌ Seed error:", e);
     await prisma.$disconnect();
     process.exit(1);
   });

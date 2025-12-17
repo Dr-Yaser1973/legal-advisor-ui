@@ -71,7 +71,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
               <NavLink href="/consultations" label="الاستشارات" />
               <NavLink href="/smart-lawyer" label="المحامي الذكي" />
               <NavLink href="/cases" label="إدارة القضايا" />
-              <NavLink href="/translation" label="الترجمة القانونية" />
+              <NavLink href="/translate" label="الترجمة القانونية" />
               <NavLink href="/lawyers" label="المحامون" />
                 {/* روابط خاصة بالأدوار (لكن الحماية الحقيقية داخل الصفحات نفسها) */}
               <NavLink href="/lawyers/my-consults" label="استشاراتي كمحامٍ" />
