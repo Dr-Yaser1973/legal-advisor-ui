@@ -38,7 +38,6 @@ export async function GET(
     const pdfBuffer = await renderContractPdfBuffer(htmlBody);
 
     return new Response(new Uint8Array(pdfBuffer), {
-
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="contract-${gc.id}.pdf"`,

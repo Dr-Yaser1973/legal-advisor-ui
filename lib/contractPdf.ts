@@ -1,10 +1,11 @@
  // lib/contractPdf.ts
-import path from "path";
 import fs from "fs";
-import puppeteer from "puppeteer";
+import path from "path";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
 
 /**
- * ✅ يولّد PDF في الذاكرة ويرجعه Buffer (مناسب لـ Vercel)
+ * ✅ يولّد PDF في الذاكرة (Buffer) — مناسب لـ Vercel
  */
 export async function renderContractPdfBuffer(htmlBody: string): Promise<Buffer> {
   const fontPath = path.join(
@@ -28,31 +29,30 @@ export async function renderContractPdfBuffer(htmlBody: string): Promise<Buffer>
       font-weight: 400;
       font-style: normal;
     }
-    body {
-      font-family: "NotoNaskhArabic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    body{
+      font-family:"NotoNaskhArabic", system-ui, -apple-system, "Segoe UI", sans-serif;
       direction: rtl;
       text-align: right;
       font-size: 13px;
       line-height: 1.8;
       margin: 2cm;
     }
-    h1, h2, h3 { text-align: center; margin-bottom: 0.5rem; }
-    h1 { font-size: 18px; }
-    h2 { font-size: 16px; }
-    p { margin: 0.2rem 0; }
-    .clause { margin-top: 0.5rem; }
-    .parties { margin-top: 1rem; border-top: 1px solid #000; padding-top: 0.5rem; }
+    h1,h2,h3{ text-align:center; margin-bottom:.5rem }
+    h1{ font-size:18px } h2{ font-size:16px }
+    p{ margin:.2rem 0 }
   </style>
 </head>
 <body>
-  ${htmlBody}
+${htmlBody}
 </body>
 </html>`;
 
-  const browser = await puppeteer.launch({
-    headless: true,
+  const executablePath = await chromium.executablePath();
 
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath,
+    headless: true,
   });
 
   try {
