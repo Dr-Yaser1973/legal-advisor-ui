@@ -1,57 +1,54 @@
  import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
+import { renderContractPdfBuffer } from "@/lib/contractPdf";
+
+export const runtime = "nodejs";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ❗ الآن params عبارة عن Promise، لذلك نعمل await
     const { id } = await context.params;
-
     const numericId = Number(id);
 
     if (Number.isNaN(numericId)) {
-      return NextResponse.json(
-        { error: "معرف العقد غير صالح" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "معرف العقد غير صالح" }, { status: 400 });
     }
 
     const gc = await prisma.generatedContract.findUnique({
       where: { id: numericId },
+      select: { id: true, title: true, data: true },
     });
 
-    if (!gc || !gc.pdfPath) {
+    if (!gc) {
+      return NextResponse.json({ error: "العقد غير موجود" }, { status: 404 });
+    }
+
+    const data = (gc.data || {}) as any;
+    const htmlBody = data.htmlBody as string | undefined;
+
+    if (!htmlBody) {
       return NextResponse.json(
-        { error: "العقد غير موجود أو لم يتم توليد PDF" },
-        { status: 404 }
+        { error: "لا يوجد محتوى (HTML) محفوظ لهذا العقد" },
+        { status: 400 }
       );
     }
 
-    const filepath = path.join(process.cwd(), "public", gc.pdfPath);
+    const pdfBuffer = await renderContractPdfBuffer(htmlBody);
 
-    if (!fs.existsSync(filepath)) {
-      return NextResponse.json(
-        { error: "ملف PDF غير موجود على الخادم" },
-        { status: 404 }
-      );
-    }
+    return new Response(new Uint8Array(pdfBuffer), {
 
-    const fileBuffer = fs.readFileSync(filepath);
-
-    return new Response(fileBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=contract-${numericId}.pdf`,
+        "Content-Disposition": `attachment; filename="contract-${gc.id}.pdf"`,
+        "Cache-Control": "no-store",
       },
     });
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    console.error("contracts/generated/[id]/pdf error:", error);
     return NextResponse.json(
-      { error: "حدث خطأ أثناء تحميل العقد." },
+      { error: error?.message ?? "حدث خطأ أثناء تحميل العقد." },
       { status: 500 }
     );
   }
