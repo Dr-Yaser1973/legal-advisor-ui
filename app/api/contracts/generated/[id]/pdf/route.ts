@@ -1,54 +1,57 @@
  import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { renderContractPdfBuffer } from "@/lib/contractPdf";
 
 export const runtime = "nodejs";
 
 export async function GET(
   _req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  try {
-    const { id } = await context.params;
-    const numericId = Number(id);
+  const id = Number(params.id);
 
-    if (Number.isNaN(numericId)) {
-      return NextResponse.json({ error: "معرف العقد غير صالح" }, { status: 400 });
-    }
+  const gc = await prisma.generatedContract.findUnique({
+    where: { id },
+    select: { data: true },
+  });
 
-    const gc = await prisma.generatedContract.findUnique({
-      where: { id: numericId },
-      select: { id: true, title: true, data: true },
-    });
+  if (!gc) {
+    return NextResponse.json({ error: "العقد غير موجود" }, { status: 404 });
+  }
 
-    if (!gc) {
-      return NextResponse.json({ error: "العقد غير موجود" }, { status: 404 });
-    }
-
-    const data = (gc.data || {}) as any;
-    const htmlBody = data.htmlBody as string | undefined;
-
-    if (!htmlBody) {
-      return NextResponse.json(
-        { error: "لا يوجد محتوى (HTML) محفوظ لهذا العقد" },
-        { status: 400 }
-      );
-    }
-
-    const pdfBuffer = await renderContractPdfBuffer(htmlBody);
-
-    return new Response(new Uint8Array(pdfBuffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="contract-${gc.id}.pdf"`,
-        "Cache-Control": "no-store",
-      },
-    });
-  } catch (error: any) {
-    console.error("contracts/generated/[id]/pdf error:", error);
+  const htmlBody = (gc.data as any)?.htmlBody;
+  if (!htmlBody) {
     return NextResponse.json(
-      { error: error?.message ?? "حدث خطأ أثناء تحميل العقد." },
+      { error: "لا يوجد HTML محفوظ للعقد" },
+      { status: 400 }
+    );
+  }
+
+  const res = await fetch(
+    "https://legal-advisor-pdf-service.onrender.com/render/pdf",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        html: htmlBody,
+        filename: `contract-${id}.pdf`,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    return NextResponse.json(
+      { error: "فشل توليد PDF" },
       { status: 500 }
     );
   }
+
+  const buffer = await res.arrayBuffer();
+
+  return new Response(buffer, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="contract-${id}.pdf"`,
+      "Cache-Control": "no-store",
+    },
+  });
 }
