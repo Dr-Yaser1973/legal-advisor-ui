@@ -16,9 +16,84 @@ function getPdfServiceBaseUrl() {
   return base.replace(/\/$/, "");
 }
 
+function normalizeContractHtml(inputHtml: string) {
+  const html = (inputHtml ?? "").trim();
+  if (!html) return "";
+
+  // إذا كان محفوظ كوثيقة HTML كاملة، نحقن/نضمن RTL داخلها
+  const hasHtmlTag = /<html\b/i.test(html);
+  const hasHeadTag = /<head\b/i.test(html);
+  const hasBodyTag = /<body\b/i.test(html);
+
+  const rtlCss = `
+    <style>
+      html, body{
+        direction: rtl;
+        unicode-bidi: isolate;
+        text-align: right;
+        margin: 40px 50px;
+        line-height: 1.9;
+        font-family: "Cairo","Noto Naskh Arabic",Arial,sans-serif;
+      }
+      .rtl{
+        direction: rtl;
+        unicode-bidi: plaintext;
+        text-align: right;
+      }
+      h1{ text-align:center; font-size:28px; margin:0 0 22px; }
+      h2{ font-size:20px; margin:26px 0 10px; }
+      p{ margin:10px 0; }
+      ol{ padding-right:22px; }
+      li{ margin:8px 0; }
+    </style>
+  `.trim();
+
+  if (hasHtmlTag && hasHeadTag && hasBodyTag) {
+    // 1) تأكد من dir=rtl و lang=ar على html
+    let out = html
+      .replace(/<html\b([^>]*)>/i, (m, attrs) => {
+        const hasDir = /\bdir\s*=\s*["']rtl["']/i.test(attrs);
+        const hasLang = /\blang\s*=\s*["'][^"']+["']/i.test(attrs);
+        const nextAttrs = [
+          attrs?.trim() || "",
+          hasLang ? "" : `lang="ar"`,
+          hasDir ? "" : `dir="rtl"`,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        return `<html${nextAttrs ? " " + nextAttrs : ""}>`;
+      });
+
+    // 2) حقن CSS قبل </head> إذا لم يكن موجودًا
+    if (!/unicode-bidi:\s*plaintext/i.test(out)) {
+      out = out.replace(/<\/head>/i, `${rtlCss}\n</head>`);
+    }
+
+    // 3) لفّ محتوى body داخل .rtl لضمان اتجاه السطر حتى لو داخل عناصر LTR
+    out = out.replace(/<body\b([^>]*)>/i, `<body$1><div class="rtl">`);
+    out = out.replace(/<\/body>/i, `</div></body>`);
+    return out;
+  }
+
+  // إذا كان Fragment (بدون html/head/body) نلفّه داخل وثيقة كاملة RTL
+  return `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+${rtlCss}
+</head>
+<body>
+  <div class="rtl">
+    ${html}
+  </div>
+</body>
+</html>`;
+}
+
 export async function GET(_req: Request, context: { params: RouteParams }) {
   try {
-    // ✅ (اختياري لكنه مهم) حماية: لازم يكون المستخدم مسجّل دخول
     const session: any = await getServerSession(authOptions as any);
     if (!session) {
       return NextResponse.json(
@@ -34,14 +109,13 @@ export async function GET(_req: Request, context: { params: RouteParams }) {
       return NextResponse.json({ error: "معرف العقد غير صالح" }, { status: 400 });
     }
 
-    // ✅ جلب العقد من DB
     const contract = await prisma.generatedContract.findUnique({
       where: { id: numericId },
       select: {
         id: true,
         title: true,
         data: true,
-        createdById: true, // إن لم يكن موجود في سكيمتك أخبرني وسأحذفه فورًا
+        createdById: true, // إذا غير موجود في سكيمتك احذفه من هنا ومن التحقق أدناه
       },
     });
 
@@ -49,25 +123,34 @@ export async function GET(_req: Request, context: { params: RouteParams }) {
       return NextResponse.json({ error: "العقد غير موجود" }, { status: 404 });
     }
 
-    // ✅ صلاحيات: Admin أو صاحب العقد (إن كان createdById موجوداً)
     const role = session?.user?.role;
     const userId = session?.user?.id ? Number(session.user.id) : null;
-    if (role !== "ADMIN" && contract.createdById && userId && contract.createdById !== userId) {
+
+    if (
+      role !== "ADMIN" &&
+      contract.createdById &&
+      userId &&
+      contract.createdById !== userId
+    ) {
       return NextResponse.json({ error: "غير مصرح لك بتحميل هذا العقد." }, { status: 403 });
     }
 
-    // ✅ استخراج HTML من JsonValue بشكل آمن
-    const data = contract.data as any; // Prisma.JsonValue
-    const html = (data?.htmlBody ?? data?.html ?? "") as string;
+    const data = contract.data as any;
+    const rawHtml = (data?.htmlBody ?? data?.html ?? "") as string;
 
-    if (!html || typeof html !== "string") {
+    if (!rawHtml || typeof rawHtml !== "string") {
       return NextResponse.json(
         { error: "لا يوجد محتوى (HTML) محفوظ لهذا العقد" },
         { status: 400 }
       );
     }
 
-    // ✅ طلب توليد PDF من Render
+    // ✅ هنا أصل الإصلاح: نضمن RTL داخل HTML قبل إرساله لـ Render
+    const html = normalizeContractHtml(rawHtml);
+    if (!html) {
+      return NextResponse.json({ error: "HTML فارغ بعد المعالجة" }, { status: 400 });
+    }
+
     const base = getPdfServiceBaseUrl();
     const url = `${base}/render/pdf`;
 
@@ -75,7 +158,6 @@ export async function GET(_req: Request, context: { params: RouteParams }) {
       "Content-Type": "application/json",
     };
 
-    // (اختياري) توكن حماية بين Vercel و Render
     const token = process.env.PDF_SERVICE_TOKEN?.trim();
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -99,7 +181,6 @@ export async function GET(_req: Request, context: { params: RouteParams }) {
 
     const pdfArrayBuffer = await res.arrayBuffer();
 
-    // ✅ إرجاع PDF للمتصفح
     return new Response(pdfArrayBuffer, {
       headers: {
         "Content-Type": "application/pdf",
