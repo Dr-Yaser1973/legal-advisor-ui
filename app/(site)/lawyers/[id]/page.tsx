@@ -2,29 +2,34 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
+type ParamsLike = { id?: string } | Promise<{ id?: string }>;
+
 interface PageProps {
-  params: { id: string };
+  params: ParamsLike;
 }
 
 export default async function LawyerDetailsPage({ params }: PageProps) {
-  const id = Number(params.id);
-  if (Number.isNaN(id)) {
+  // ✅ علاج جذري: params قد تكون Promise في بعض بيئات Next 16
+  const resolved = await Promise.resolve(params);
+  const rawId = resolved?.id;
+
+  const id = Number(rawId);
+  if (!rawId || Number.isNaN(id) || id <= 0) {
     notFound();
   }
 
-  // نقرأ من User + LawyerProfile حسب السكيمة النهائية
+  // نقرأ من User + LawyerProfile حسب السكيمة
   const lawyer = await prisma.user.findUnique({
     where: { id },
-    include: {
-      lawyerProfile: true,
-    },
+    include: { lawyerProfile: true },
   });
 
-  // إذا لم يوجد أو ليس دوره LAWYER نرجع 404
-  if (!lawyer || lawyer.role !== "LAWYER") {
+  // ✅ استخدم enum بدل string لتفادي أي اختلافات
+  if (!lawyer || lawyer.role !== UserRole.LAWYER) {
     notFound();
   }
 
@@ -38,14 +43,11 @@ export default async function LawyerDetailsPage({ params }: PageProps) {
   const rating = profile?.rating ?? 0;
   const phone = profile?.phone ?? "";
   const bio = profile?.bio ?? "";
-  const experience = profile?.consultFee ?? null; // أو عدّلها لحقل مناسب لسنوات الخبرة
-  const isAvailable = lawyer.isApproved; // يمكنك تغييره لاحقًا حسب منطقك
+  const experience = profile?.consultFee ?? null; // كما عندك
+  const isAvailable = lawyer.isApproved; // كما عندك
 
   return (
-    <main
-      className="p-6 max-w-3xl mx-auto space-y-6 text-right"
-      dir="rtl"
-    >
+    <main className="p-6 max-w-3xl mx-auto space-y-6 text-right" dir="rtl">
       {/* رأس الصفحة */}
       <header className="flex items-center gap-4">
         <img
@@ -58,9 +60,7 @@ export default async function LawyerDetailsPage({ params }: PageProps) {
           <div className="text-sm text-zinc-300">
             {specialties} • {city}
           </div>
-          <div className="text-sm text-yellow-400 mt-1">
-            ⭐ {rating.toFixed(1)}
-          </div>
+          <div className="text-sm text-yellow-400 mt-1">⭐ {rating.toFixed(1)}</div>
           <div className="text-xs mt-1">
             {isAvailable ? "متاح للاستشارة عبر المنصة" : "غير متاح حاليًا"}
           </div>
@@ -71,9 +71,7 @@ export default async function LawyerDetailsPage({ params }: PageProps) {
       {bio && (
         <section className="space-y-2">
           <h2 className="font-semibold text-lg">نبذة عن المحامي</h2>
-          <p className="whitespace-pre-wrap text-sm text-zinc-100">
-            {bio}
-          </p>
+          <p className="whitespace-pre-wrap text-sm text-zinc-100">{bio}</p>
         </section>
       )}
 
@@ -81,9 +79,7 @@ export default async function LawyerDetailsPage({ params }: PageProps) {
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
           <div className="text-zinc-400">سنوات الخبرة (أو أجر الاستشارة)</div>
-          <div className="font-semibold text-zinc-100">
-            {experience ?? "غير محدد"}
-          </div>
+          <div className="font-semibold text-zinc-100">{experience ?? "غير محدد"}</div>
         </div>
 
         <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
@@ -104,16 +100,11 @@ export default async function LawyerDetailsPage({ params }: PageProps) {
       {/* تنبيه عن طريقة الاستشارة */}
       <section className="border border-blue-500/40 rounded-lg p-4 bg-blue-500/5 text-sm text-zinc-100">
         <p>
-          يتم طلب الاستشارة من هذا المحامي عبر نظام الاستشارات البشرية في
-          صفحة{" "}
-          <Link
-            href="/consultations"
-            className="underline text-blue-300 hover:text-blue-200"
-          >
+          يتم طلب الاستشارة من هذا المحامي عبر نظام الاستشارات البشرية في صفحة{" "}
+          <Link href="/consultations" className="underline text-blue-300 hover:text-blue-200">
             الاستشارات القانونية
           </Link>{" "}
-          وليس عبر تواصل مباشر، لضمان توثيق الطلب وفتح غرفة محادثة رسمية عبر
-          المنصة.
+          وليس عبر تواصل مباشر، لضمان توثيق الطلب وفتح غرفة محادثة رسمية عبر المنصة.
         </p>
       </section>
 

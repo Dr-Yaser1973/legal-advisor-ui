@@ -1,5 +1,4 @@
- // components/admin/AdminSidebar.tsx
-"use client";
+ "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +7,8 @@ import {
   BookOpen,
   Users,
   MessageCircle,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 
 const links = [
@@ -18,6 +19,16 @@ const links = [
     href: "/admin/consultations",
     label: "الاستشارات القانونية",
     icon: MessageCircle,
+  },
+  {
+    href: "/admin/contracts-stats",
+    label: "إحصائيات العقود",
+    icon: FileText,
+  },
+  {
+    href: "/admin/translation-stats",
+    label: "إحصاءات الترجمة",
+    icon: BarChart3, // ✅ أيقونة مضافة
   },
 ];
 

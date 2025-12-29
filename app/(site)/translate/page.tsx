@@ -3,6 +3,8 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import RequestOfficialTranslationButton from "./RequestOfficialTranslationButton";
+import Link from "next/link";
+
 
 type TargetLang = "AR" | "EN";
 
@@ -219,10 +221,20 @@ export default function LegalTranslationPage() {
           </div>
 
           {/* كارت طلب الترجمة الرسمية من مكتب معتمد */}
+    
           <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4">
             <h2 className="text-xl font-semibold mb-2">
-              ٣) طلب ترجمة رسمية من مكتب معتمد
+           ٣ طلب ترجمة رسمية من مكتب معتمد
             </h2>
+                           <Link
+           href="/translation-offices"
+           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+               bg-emerald-600 hover:bg-emerald-500
+               text-white text-sm font-medium"
+            >
+            عرض مكاتب الترجمة المعتمدة
+            </Link>
+</div>
             <p className="text-sm text-zinc-400 mb-3">
               إذا كنت بحاجة إلى ترجمة رسمية مصدّقة (للدوائر الرسمية، المحاكم،
               الجامعات)، يمكنك إرسال طلبك إلى أحد مكاتب الترجمة المعتمدة
@@ -230,9 +242,9 @@ export default function LegalTranslationPage() {
             </p>
 
              <RequestOfficialTranslationButton
-  savedDocumentId={documentId}
-  targetLang={toLang}
-  disabled={!canRequestOfficial}
+             savedDocumentId={documentId}
+             targetLang={toLang}
+             disabled={!canRequestOfficial}
 />
 
 
@@ -257,6 +269,9 @@ export default function LegalTranslationPage() {
                 عرض طلباتي في الترجمة الرسمية ↗
               </a>
             </div>
+            <div className="flex justify-end mb-6">
+      
+
           </div>
         </div>
       </div>

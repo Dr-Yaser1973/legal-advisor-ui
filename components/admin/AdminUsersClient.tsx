@@ -185,7 +185,8 @@ export default function AdminUsersClient({
                   <button
                     onClick={() => handleApprove(u.id)}
                     disabled={savingId === u.id}
-                    className="rounded-md bg-emerالد-500 hover:bg-emerald-400 text-black px-3 py-1 text-xs disabled:opacity-50"
+                    className="rounded-md  bg-emerald-500
+ hover:bg-emerald-400 text-black px-3 py-1 text-xs disabled:opacity-50"
                   >
                     {savingId === u.id ? "جاري الاعتماد..." : "اعتماد + تفعيل"}
                   </button>
