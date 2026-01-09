@@ -74,16 +74,24 @@ export async function POST(req: NextRequest) {
 
     // تأكيد أن المستند موجود في LegalDocument
     const doc = await prisma.legalDocument.findUnique({
-      where: { id: sourceDocId },
-      select: { id: true },
-    });
+  where: { id: sourceDocId },
+  select: {
+    id: true,
+    filePath: true, // ⭐ مهم
+  },
+});
 
-    if (!doc) {
-      return NextResponse.json(
-        { ok: false, error: "المستند المطلوب ترجمته غير موجود في النظام." },
-        { status: 400 }
-      );
-    }
+if (!doc || !doc.filePath) {
+  return NextResponse.json(
+    {
+      ok: false,
+      error:
+        "المستند المطلوب ترجمته لا يحتوي على ملف مرفوع.",
+    },
+    { status: 400 }
+  );
+}
+
 
     // إنشاء TranslationRequest مطابق للسكيمة:
     // clientId, officeId, sourceDocId, targetLang: Language, status: TranslationStatus

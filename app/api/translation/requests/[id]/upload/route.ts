@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin } from "@/lib/supabase";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -21,6 +21,14 @@ export async function POST(
       return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
     }
 
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase غير متاح حاليًا" },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const note = formData.get("note") as string | null;
@@ -29,24 +37,22 @@ export async function POST(
       return NextResponse.json({ error: "الملف مطلوب" }, { status: 400 });
     }
 
-    // ✅ السماح بـ PDF فقط
     if (file.type !== "application/pdf") {
       return NextResponse.json(
         { error: "يسمح برفع ملفات PDF فقط" },
         { status: 400 }
       );
     }
-     const officeId = Number(user.id);
 
-    // تأكد أن الطلب يخص هذا المكتب
-     const request = await prisma.translationRequest.findFirst({
-  where: {
-    id: requestId,
-    officeId: officeId, // ✅ رقم
-    status: { in: ["IN_PROGRESS", "ACCEPTED"] },
-  },
-});
+    const officeId = Number(user.id);
 
+    const request = await prisma.translationRequest.findFirst({
+      where: {
+        id: requestId,
+        officeId,
+        status: { in: ["IN_PROGRESS", "ACCEPTED"] },
+      },
+    });
 
     if (!request) {
       return NextResponse.json(
@@ -55,41 +61,33 @@ export async function POST(
       );
     }
 
-    // اسم ملف احترافي
-    const filePath = `translation-${requestId}-${Date.now()}.pdf`;
-
+    const filePath = `translations/translation-${requestId}-${Date.now()}.pdf`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // ⬆️ رفع إلى Supabase Storage
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("translations")
+    const { error: uploadError } = await supabase.storage
+      .from("files")
       .upload(filePath, buffer, {
         contentType: "application/pdf",
         upsert: false,
       });
 
-    if (uploadError) {
-      throw uploadError;
-    }
+    if (uploadError) throw uploadError;
 
-    // 🔗 الحصول على رابط موقّت (Signed URL)
-    const { data: signed } = await supabaseAdmin.storage
-      .from("translations")
-      .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 أيام
+    const { data: signed } = await supabase.storage
+      .from("files")
+      .createSignedUrl(filePath, 60 * 60 * 24 * 7);
 
-    // 💾 تحديث الطلب
-     await prisma.translationRequest.update({
-  where: { id: requestId },
-  data: {
-    translatedFilePath: filePath,
-    translatedFileUrl: signed?.signedUrl, // اختياري
-    deliveredAt: new Date(),
-    completedAt: new Date(),
-    note: note ?? undefined,
-    status: "COMPLETED",
-  },
-});
-
+    await prisma.translationRequest.update({
+      where: { id: requestId },
+      data: {
+        translatedFilePath: filePath,
+        translatedFileUrl: signed?.signedUrl ?? null,
+        deliveredAt: new Date(),
+        completedAt: new Date(),
+        note: note ?? undefined,
+        status: "COMPLETED",
+      },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -100,4 +98,3 @@ export async function POST(
     );
   }
 }
-

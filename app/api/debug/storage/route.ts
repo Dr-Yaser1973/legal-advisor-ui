@@ -1,6 +1,6 @@
- // app/api/debug/supabase/route.ts
+// app/api/debug/supabase/route.ts
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,8 +11,21 @@ export async function GET() {
     const hasUrl = !!process.env.SUPABASE_URL;
     const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json(
+        {
+          ok: false,
+          step: "init",
+          env: { hasUrl, hasServiceKey },
+          error: "Supabase admin غير متاح (غالبًا أثناء build)",
+        },
+        { status: 500 }
+      );
+    }
+
     // 2) قراءة قائمة الـ buckets (أقوى اختبار)
-    const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
+    const { data: buckets, error } = await supabase.storage.listBuckets();
 
     if (error) {
       return NextResponse.json(
@@ -33,7 +46,7 @@ export async function GET() {
     // 3) أسماء الـ buckets
     const names = (buckets || []).map((b: any) => b.name);
 
-    // 4) اختبر bucket معيّن (اختياري)
+    // 4) اختبار bucket معيّن
     const target = "library-documents";
     const exists = names.includes(target);
 
@@ -44,7 +57,7 @@ export async function GET() {
       check: { target, exists },
       hint: exists
         ? "الاتصال ممتاز — bucket موجود ويُرى من السيرفر."
-        : "bucket غير ظاهر من السيرفر — غالباً SUPABASE_URL أو SERVICE_ROLE_KEY لمشروع آخر.",
+        : "bucket غير ظاهر — تأكد أن المشروع والمفاتيح صحيحة.",
     });
   } catch (e: any) {
     return NextResponse.json(
@@ -57,3 +70,4 @@ export async function GET() {
     );
   }
 }
+ 

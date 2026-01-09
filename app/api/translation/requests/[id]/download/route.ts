@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin } from "@/lib/supabase";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,6 @@ export async function GET(
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    // جلب الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
       select: {
@@ -44,7 +43,6 @@ export async function GET(
       );
     }
 
-    // 🔐 تحقق الصلاحيات
     const isAllowed =
       user.role === "ADMIN" ||
       user.id === request.clientId ||
@@ -57,16 +55,22 @@ export async function GET(
       );
     }
 
-    // ⬇️ جلب الملف من Supabase Storage
-    const { data, error } = await supabaseAdmin.storage
-      .from("translations")
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase غير متاح حاليًا" },
+        { status: 500 }
+      );
+    }
+
+    const { data, error } = await supabase.storage
+      .from("files")
       .download(request.translatedFilePath);
 
     if (error || !data) {
       throw error || new Error("Download failed");
     }
 
-    // إعادة الملف كبث PDF
     return new NextResponse(data, {
       headers: {
         "Content-Type": "application/pdf",
@@ -81,4 +85,3 @@ export async function GET(
     );
   }
 }
-

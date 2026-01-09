@@ -1,7 +1,7 @@
  // app/api/translation/extract/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,14 @@ const SOURCE_BUCKET = "library-documents";
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json(
+        { ok: false, error: "Supabase غير متاح حاليًا" },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -28,8 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
     const originalFileName = file.name || "document";
     const contentType = file.type.toLowerCase();
 
@@ -62,12 +69,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3️⃣ تجهيز اسم ومسار الملف (آمن 100%)
+    // 3️⃣ مسار آمن
     const safeFileName = originalFileName.replace(/[^\w.-]+/g, "_");
     const filePath = `translation/source/${Date.now()}-${safeFileName}`;
 
-    // 4️⃣ رفع الملف الأصلي إلى Supabase Storage
-    const { error: uploadError } = await supabaseAdmin.storage
+    // 4️⃣ رفع الملف إلى Storage
+    const { error: uploadError } = await supabase.storage
       .from(SOURCE_BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -79,18 +86,18 @@ export async function POST(req: NextRequest) {
       throw uploadError;
     }
 
-    // 5️⃣ حفظ سجل المستند في قاعدة البيانات
+    // 5️⃣ حفظ السجل
     const doc = await prisma.legalDocument.create({
       data: {
         title: originalFileName,
         filename: originalFileName,
         mimetype: contentType,
         size: file.size,
-        filePath, // ⭐ مهم لمكتب الترجمة
+        filePath,
       },
     });
 
-    // 6️⃣ الاستجابة النهائية
+    // 6️⃣ الاستجابة
     return NextResponse.json({
       ok: true,
       text,

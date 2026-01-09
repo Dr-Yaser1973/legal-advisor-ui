@@ -29,7 +29,7 @@ export default async function TranslationOfficeRequestsPage() {
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true, email: true } },
-      sourceDoc: { select: { id: true, title: true, filename: true } },
+      sourceDoc: { select: { id: true, title: true, filename: true, filePath: true } },
     },
   });
 

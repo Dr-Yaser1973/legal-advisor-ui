@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -50,13 +50,21 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase غير متاح حاليًا" },
+        { status: 500 }
+      );
+    }
+
     // 1️⃣ Signed URL
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await supabase.storage
       .from(BUCKET)
       .createSignedUrl(request.sourceDoc.filePath, 60);
 
     if (error || !data?.signedUrl) {
-      throw error;
+      throw error || new Error("Failed to create signed URL");
     }
 
     // 2️⃣ جلب الملف فعليًا
@@ -71,13 +79,13 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        "Content-Type": request.sourceDoc.mimetype || "application/octet-stream",
+        "Content-Type":
+          request.sourceDoc.mimetype || "application/octet-stream",
         "Content-Disposition": `attachment; filename="${encodeURIComponent(
           request.sourceDoc.filename || "document"
         )}"`,
       },
     });
-
   } catch (err) {
     console.error("🔥 download error:", err);
     return NextResponse.json(
