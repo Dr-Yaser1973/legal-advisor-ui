@@ -9,6 +9,7 @@ export type OfficeRequestItem = {
     id: number;
     title: string | null;
     filename: string | null;
+     filePath?: string | null;
   };
   client: {
     id: number;
@@ -91,6 +92,14 @@ export default function OfficeRequestCard({ item }: Props) {
           {item.targetLang === "EN" ? "الإنجليزية" : "العربية"}
         </div>
       </div>
+      <a
+  href={`/api/translation/requests/${item.id}/source`}
+  target="_blank"
+  className="text-emerald-400 text-xs underline"
+>
+  تحميل ملف الترجمة المطلوب (PDF)
+</a>
+
 
       <div className="flex flex-col gap-2 mt-2">
         <input

@@ -25,51 +25,58 @@ export default function OfficeInProgressCard({
 }: {
   item: OfficeInProgressItem;
 }) {
+  const [file, setFile] = useState<File | null>(null);
   const [deliveryNote, setDeliveryNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleComplete() {
+    if (!file) {
+      setError("يجب رفع ملف الترجمة (PDF) قبل إنهاء الطلب");
+      return;
+    }
+
     setLoading(true);
     setMsg(null);
     setError(null);
 
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (deliveryNote) {
+        formData.append("note", deliveryNote);
+      }
+
       const res = await fetch(
-        `/api/translation/office/requests/${item.id}/complete`,
+        `/api/translation/requests/${item.id}/upload`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deliveryNote }),
+          body: formData,
         }
       );
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.ok) {
-        const msg =
+        setError(
           data?.error ||
-          `تعذر إنهاء الطلب (رمز الحالة ${res.status}). حاول مرة أخرى لاحقًا.`;
-        setError(msg);
+            `تعذر تسليم الترجمة (رمز ${res.status})`
+        );
         return;
       }
 
-      setMsg(
-        data.message ||
-          "تم إنهاء الطلب، ولن يظهر بعد الآن في قائمة الطلبات قيد التنفيذ."
-      );
+      setMsg("تم تسليم الترجمة بنجاح ولن يظهر الطلب ضمن الطلبات الجارية");
     } catch (e) {
       console.error(e);
       setError("حدث خطأ غير متوقع أثناء الاتصال بالخادم");
     } finally {
-      // مهم حتى لا يبقى الزر على "جارٍ إنهاء الطلب..."
       setLoading(false);
     }
   }
 
   return (
-    <div className="border border-emerald-700/40 rounded-xl bg-zinc-900/50 p-4 space-y-2">
+    <div className="border border-emerald-700/40 rounded-xl bg-zinc-900/50 p-4 space-y-3">
       <div className="text-sm text-zinc-200">
         <div className="font-semibold mb-1">
           الملف: {item.sourceDoc.title || item.sourceDoc.filename}
@@ -83,41 +90,48 @@ export default function OfficeInProgressCard({
         </div>
         {typeof item.price === "number" && (
           <div className="text-xs text-zinc-300 mt-1">
-            السعر المتفق عليه: {item.price} {item.currency || "IQD"}
-          </div>
-        )}
-        {item.note && (
-          <div className="text-[11px] text-zinc-400 mt-1 whitespace-pre-line">
-            ملاحظات العرض: {item.note}
+            السعر: {item.price} {item.currency || "IQD"}
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-2 mt-2">
-        <textarea
-          placeholder="ملاحظات التسليم أو رابط الملف النهائي (اختياري)"
-          value={deliveryNote}
-          onChange={(e) => setDeliveryNote(e.target.value)}
-          className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
-          rows={3}
+      {/* رفع ملف PDF */}
+      <div className="space-y-1">
+        <label className="text-xs text-zinc-400">
+          ملف الترجمة (PDF فقط)
+        </label>
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="text-xs text-zinc-300"
         />
-
-        <button
-          type="button"
-          disabled={loading || !!msg} // نمنع الضغط بعد النجاح
-          onClick={handleComplete}
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
-        >
-          {loading
-            ? "جارٍ إنهاء الطلب..."
-            : msg
-            ? "تم إنهاء الطلب ✅"
-            : "تأكيد إنهاء الترجمة"}
-        </button>
-
-        {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
-        {error && <p className="text-[11px] text-red-400">{error}</p>}
       </div>
+
+      {/* ملاحظات التسليم */}
+      <textarea
+        placeholder="ملاحظات التسليم (اختياري)"
+        value={deliveryNote}
+        onChange={(e) => setDeliveryNote(e.target.value)}
+        className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 text-xs text-right"
+        rows={3}
+      />
+
+      <button
+        type="button"
+        disabled={loading || !!msg}
+        onClick={handleComplete}
+        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs"
+      >
+        {loading
+          ? "جارٍ تسليم الترجمة..."
+          : msg
+          ? "تم التسليم ✅"
+          : "تسليم الترجمة"}
+      </button>
+
+      {msg && <p className="text-[11px] text-emerald-400">{msg}</p>}
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
     </div>
   );
 }

@@ -125,8 +125,28 @@ export default async function MyTranslationRequestsPage() {
                       التنفيذ.
                     </p>
                     <AcceptOfferButton requestId={r.id} />
+                    
                   </div>
                 )}
+                     {/* تحميل الترجمة بعد اكتمال الطلب */}
+                    {r.status === "COMPLETED" && r.translatedFilePath && (
+                 <div className="mt-3">
+                <a
+                href={`/api/translation/requests/${r.id}/download`}
+                target="_blank"
+                className="inline-flex items-center gap-2 text-sm
+                 text-emerald-500 hover:underline"
+    >
+                📥 تحميل الترجمة الرسمية (PDF)
+               </a>
+
+               {!r.receivedAt && (
+               <p className="text-[11px] text-zinc-400 mt-1">
+              يرجى تحميل الملف ثم تأكيد الاستلام.
+              </p>
+              )}
+             </div>
+            )}
               </div>
             ))}
           </div>
