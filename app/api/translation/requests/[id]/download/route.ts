@@ -6,6 +6,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
+const RESULT_BUCKET = "translations"; // ✅ الملف المترجم فقط
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +16,13 @@ export async function GET(
     const { id } = await params;
     const requestId = Number(id);
 
+    if (!Number.isFinite(requestId)) {
+      return NextResponse.json(
+        { error: "معرّف الطلب غير صالح" },
+        { status: 400 }
+      );
+    }
+
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
@@ -21,6 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
+    // جلب الطلب
     const request = await prisma.translationRequest.findUnique({
       where: { id: requestId },
       select: {
@@ -43,6 +53,7 @@ export async function GET(
       );
     }
 
+    // تحقق الصلاحيات
     const isAllowed =
       user.role === "ADMIN" ||
       user.id === request.clientId ||
@@ -63,11 +74,13 @@ export async function GET(
       );
     }
 
+    // تحميل الملف من bucket الصحيح
     const { data, error } = await supabase.storage
-      .from("files")
+      .from(RESULT_BUCKET)
       .download(request.translatedFilePath);
 
     if (error || !data) {
+      console.error("Supabase download error:", error);
       throw error || new Error("Download failed");
     }
 
