@@ -134,6 +134,52 @@ export default function LawyersPage() {
       alert("فشل إنشاء محامٍ");
     }
   }
+  function AdminUploadAvatar({
+  lawyerId,
+  onUploaded,
+}: {
+  lawyerId: number;
+  onUploaded?: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    const form = new FormData();
+    form.append("file", file);
+    form.append("lawyerId", String(lawyerId));
+
+    const res = await fetch("/api/lawyers/avatar/upload", {
+      method: "POST",
+      body: form,
+    });
+
+    setLoading(false);
+
+    if (res.ok) {
+      alert("تم رفع صورة المحامي بنجاح");
+      onUploaded?.();
+    } else {
+      alert("فشل رفع الصورة");
+    }
+  }
+
+  return (
+    <label className="cursor-pointer text-xs px-3 py-1 rounded-lg border border-blue-500/40 text-blue-300 hover:bg-blue-500/10 transition">
+      {loading ? "جارٍ الرفع..." : "رفع صورة"}
+      <input
+        type="file"
+        hidden
+        accept="image/*"
+        onChange={handleChange}
+      />
+    </label>
+  );
+}
+
 
   // -------------------- حالة طلبات الاستشارة للمحامين --------------------
   const [requests, setRequests] = useState<HumanRequestItem[]>([]);
@@ -334,6 +380,15 @@ export default function LawyersPage() {
                         >
                           {l.available ? "✔" : "⏸"}
                         </span>
+                        {role === "ADMIN" && (
+  <div className="mt-2">
+    <AdminUploadAvatar
+      lawyerId={l.id}
+      onUploaded={() => fetchLawyers(data.page)}
+    />
+  </div>
+)}
+
                       </div>
 
                       <div className="mt-2 flex items-center gap-2 text-base font-semibold text-white">

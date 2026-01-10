@@ -95,7 +95,7 @@ model LawyerProfile {
   consultCurrency String?       @default("IQD")
   consultFee      Int?
   officeAddress   String?
-   avatarPath      String?       // ⭐ مسار صورة المحامي في Storage
+  avatarPath      String?
   appointments    Appointment[]
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
