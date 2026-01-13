@@ -31,18 +31,27 @@ export default function BetaAnnouncementModal() {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 shadow-2xl overflow-hidden text-right">
+      <div
+        className="
+          relative w-full max-w-3xl
+          rounded-3xl border border-white/10
+          bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950
+          shadow-2xl overflow-hidden text-right
 
+          max-h-[90vh] sm:max-h-none
+          flex flex-col
+        "
+      >
         {/* زر الإغلاق */}
         <button
           onClick={close}
-          className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/40 p-1.5 text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+          className="absolute left-3 top-3 z-10 rounded-full border border-white/10 bg-black/40 p-1.5 text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
           aria-label="إغلاق"
         >
           <X className="h-4 w-4" />
         </button>
 
-        {/* شريط علوي */}
+        {/* الشريط العلوي */}
         <div className="flex items-center justify-between px-6 pt-4 pb-2 border-b border-white/10 bg-zinc-900/60">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-400/50">
@@ -63,8 +72,8 @@ export default function BetaAnnouncementModal() {
           </span>
         </div>
 
-        {/* المحتوى */}
-        <div className="px-6 py-5 space-y-5">
+        {/* المحتوى (Scrollable في الموبايل) */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
           {/* عربي */}
           <section>
             <h2 className="text-lg font-bold text-white mb-2">
@@ -109,12 +118,21 @@ export default function BetaAnnouncementModal() {
           </section>
         </div>
 
-        {/* الأزرار */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-6 pb-5 pt-3 border-t border-white/10 bg-zinc-900/60">
-          <div className="text-[11px] text-zinc-400 text-right sm:text-right leading-5">
+        {/* الأزرار (ثابتة في الأسفل للموبايل) */}
+        <div className="
+          flex flex-col sm:flex-row
+          items-stretch sm:items-center
+          justify-between gap-3
+          px-6 pb-5 pt-3
+          border-t border-white/10
+          bg-zinc-900/80
+          sticky bottom-0
+        ">
+          <div className="text-[11px] text-zinc-400 text-right leading-5">
             <p>باستمرارك في استخدام المنصة، فإنك تقرّ بأن هذه نسخة تجريبية.</p>
             <p className="mt-0.5">
-              By continuing to use the platform, you acknowledge that this is a beta version.
+              By continuing to use the platform, you acknowledge that this is a beta
+              version.
             </p>
           </div>
 
@@ -123,11 +141,17 @@ export default function BetaAnnouncementModal() {
               href="/terms"
               className="rounded-xl border border-white/15 px-3 py-1.5 text-[12px] text-zinc-100 hover:bg-zinc-800/80 transition"
             >
-              عرض الشروط وإخلاء المسؤولية / View Terms
+              عرض الشروط / View Terms
             </Link>
+
             <button
               onClick={close}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 text-[12px] font-medium text-white shadow-md"
+              className="
+                rounded-xl bg-emerald-600 hover:bg-emerald-700
+                px-4 py-2 sm:py-1.5
+                text-sm sm:text-[12px]
+                font-medium text-white shadow-md
+              "
             >
               متابعة واستخدام المنصة
             </button>

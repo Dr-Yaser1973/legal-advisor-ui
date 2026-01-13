@@ -17,7 +17,7 @@ type Plan = {
   whatsappMessage?: string;
 };
 
-const WHATSAPP_NUMBER = "9647XXXXXXXXX"; // ضع رقمك بصيغة دولية بدون + (مثال: 9647...)
+const WHATSAPP_NUMBER = "9647719183785"; // ضع رقمك بصيغة دولية بدون + (مثال: 9647...)
 const SUPPORT_EMAIL = "support@legal-advisor.iq"; // اختياري (حتى لو الدومين غير جاهز اتركه فارغاً)
 
 const formatIQD = (n: number) => new Intl.NumberFormat("ar-IQ").format(n);
@@ -89,11 +89,11 @@ const plans: Plan[] = [
 ];
 
 export default function PricingPage() {
-  const WHATSAPP_NUMBER: string = "9647XXXXXXXXX";
+  const WHATSAPP_NUMBER: string = "9647719183785";
 
   const hasWhatsapp =
     WHATSAPP_NUMBER &&
-    WHATSAPP_NUMBER !== "9647XXXXXXXXX" &&
+    WHATSAPP_NUMBER !== "9647719183785" &&
     WHATSAPP_NUMBER.length >= 10;
 
   return (
@@ -200,7 +200,7 @@ export default function PricingPage() {
                   ].join(" ")}
                 >
                   {plan.ctaType === "whatsapp" && !hasWhatsapp
-                    ? "أضف رقم واتساب لتفعيل الزر"
+                    ? "9647719183785"
                     : plan.ctaLabel}
                 </Link>
 

@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { getSupabaseAdmin } from "@/lib/supabase";
+
 
 export const runtime = "nodejs";
 
@@ -73,20 +75,37 @@ export async function GET(req: Request) {
       take: pageSize,
     });
 
-    const items = users.map((u) => ({
+       const supabase = getSupabaseAdmin();
+
+const items = await Promise.all(
+  users.map(async (u) => {
+    let avatarUrl = "";
+
+    const avatarPath = u.lawyerProfile?.avatarPath;
+
+    if (avatarPath && supabase) {
+      const { data } = await supabase.storage
+        .from("lawyer-avatars")
+        .createSignedUrl(avatarPath, 60 * 60); // صالح لساعة
+
+      avatarUrl = data?.signedUrl || "";
+    }
+
+    return {
       id: u.id,
       fullName: u.name || "",
       email: u.email || "",
       phone: u.lawyerProfile?.phone || "",
       specialization: u.lawyerProfile?.specialties || "",
       bio: u.lawyerProfile?.bio || "",
-      experience: null as number | null, // لا يوجد حقل experience حالياً
+      experience: null as number | null,
       location: u.lawyerProfile?.city || "",
       rating: u.lawyerProfile?.rating ?? 0,
-      avatarUrl: u.image || "",
-      // لا يوجد حقل available في السكيمة، نفترض أنه متاح دائماً
+      avatarUrl, // ⭐ هنا الحل
       available: true,
-    }));
+    };
+  })
+);
 
     return NextResponse.json({
       items,

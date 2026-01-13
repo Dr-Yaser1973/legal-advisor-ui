@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "المستشار القانوني",
   description: "منصة عربية ذكية لتوليد العقود وإدارة العمل القانوني",
+    icons: {
+    icon: "/brand/icon.png",
+    apple: "/brand/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
