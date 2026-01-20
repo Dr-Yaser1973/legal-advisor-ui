@@ -47,6 +47,11 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
+  // ✅ السماح لـ API المكتبة العامة
+if (pathname.startsWith("/api/library")) {
+  return NextResponse.next();
+}
+
 
   // مسارات عامة لا تحتاج تسجيل دخول
   if (isPublicPath(pathname)) {
@@ -147,7 +152,8 @@ export async function middleware(req: NextRequest) {
 
  export const config = {
   matcher: [
-    "/((?!login|register|api/register|api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/((?!login|register|api/register|api/auth|_next/static|_next/image|favicon.ico|library).*)",
   ],
 };
+
 

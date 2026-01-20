@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { BookOpen, Users, MessageCircle } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import LibraryStatsPanel from "@/components/admin/LibraryStatsPanel";
+
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +47,7 @@ export default async function AdminHomePage() {
               استخدم هذه الصفحة لمتابعة محتوى المكتبة وضبط جودته قبل ظهوره
               للمستخدمين.
             </p>
+ 
           </Link>
 
           {/* إدارة المستخدمين والأدوار */}
@@ -90,7 +93,13 @@ export default async function AdminHomePage() {
               المحامين.
             </p>
           </Link>
+
+          
         </section>
+                   <h1 className="text-3xl font-bold mb-6">
+           احصائيات ادارة المكتبة
+</h1>
+              <LibraryStatsPanel />
       </section>
     </div>
   );

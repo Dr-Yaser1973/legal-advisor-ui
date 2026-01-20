@@ -1,117 +1,75 @@
- // app/(site)/library/[id]/page.tsx
-import { prisma } from "@/lib/prisma";
-import ReadingModeToggle from "./ReadingModeToggle";
+ import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// 🚩 في Next 16 params هي Promise
-interface PageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
-
-function categoryLabel(category: string | null | undefined) {
-  switch (category) {
-    case "LAW":
-      return "قانون عراقي";
-    case "FIQH":
-      return "كتاب فقهي";
-    case "ACADEMIC_STUDY":
-      return "دراسة أكاديمية";
-    default:
-      return "مواد قانونية";
-  }
-}
+import LawUnitViewClient from "./view.client";
 
 export const dynamic = "force-dynamic";
 
-export default async function LawDocPage(props: PageProps) {
-  const { id: idParam } = await props.params;
-  const id = Number(idParam);
+/**
+ * حلّ آمن لاستخراج Base URL (يعمل محليًا وعلى Vercel)
+ */
+async function getBaseUrl() {
+  const h = await headers();
+  const host = h.get("host");
 
-  let doc = null;
+  if (!host) throw new Error("Cannot resolve host");
 
-  if (!Number.isNaN(id)) {
-    doc = await prisma.lawDoc.findUnique({
-      where: { id },
+  const proto =
+    process.env.NODE_ENV === "development" ? "http" : "https";
+
+  return `${proto}://${host}`;
+}
+
+/**
+ * جلب المادة القانونية + العلاقات + الأسئلة الشائعة
+ */
+async function getLawUnit(id: string) {
+  try {
+    const baseUrl = await getBaseUrl();
+
+    const res = await fetch(`${baseUrl}/api/library/${id}`, {
+      cache: "no-store",
     });
+
+    if (!res.ok) {
+      console.error("API ERROR:", res.status, await res.text());
+      return null;
+    }
+
+    return res.json();
+  } catch (err) {
+    console.error("FETCH LAW UNIT ERROR:", err);
+    return null;
+  }
+}
+
+export default async function LawUnitPage(props: {
+  params: Promise<{ id: string }>;
+}) {
+  // 🔥 فك الـ Promise حسب Next 16
+  const { id } = await props.params;
+
+  const data = await getLawUnit(id);
+
+  if (!data?.ok) {
+    notFound();
   }
 
-  if (!doc) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-right" dir="rtl">
-        <h1 className="text-2xl font-bold mb-2">المصدر غير موجود</h1>
-        <p className="text-sm text-zinc-400">
-          لا يوجد مصدر قانوني بالمعرّف: {idParam}
-        </p>
-      </div>
-    );
-  }
+  // 🛡️ جلب الجلسة لتحديد الصلاحيات
+  const session = (await getServerSession(authOptions as any)) as any;
+  const user = session?.user;
 
-  const hasFile = !!doc.filePath;
-  const hasText = !!doc.text && doc.text.trim().length > 0;
+  const canEdit = ["ADMIN", "LAWYER"].includes(user?.role);
 
   return (
-    <div
-      className="max-w-5xl mx-auto px-4 py-8 text-right reading-root"
-      dir="rtl"
-    >
-      {/* العنوان + زر وضع القراءة */}
-      <div className="flex items-center justify-between mb-4 gap-4">
-        <h1 className="text-2xl font-bold">{doc.title}</h1>
-        <ReadingModeToggle />
-      </div>
-
-      <div className="text-xs text-zinc-400 mb-4 flex flex-wrap gap-2 justify-end">
-        <span>{doc.jurisdiction || "غير محدد"}</span>
-        <span>· {categoryLabel(doc.category)}</span>
-        <span>· {doc.year ?? "بدون سنة"}</span>
-      </div>
-
-      {/* 📄 الحالة 1: عندنا PDF → نعرض الـ PDF فقط */}
-      {hasFile && (
-        <section className="mb-8 reading-container">
-          <div className="w-full border border-zinc-800 rounded-2xl overflow-hidden bg-black/40">
-            <object
-              data={doc.filePath!}
-              type="application/pdf"
-              className="w-full h-[90vh] pdf-frame"
-            >
-              <p className="p-4 text-sm text-zinc-300">
-                لا يمكن عرض ملف الـ PDF داخل المتصفّح.
-              </p>
-            </object>
-          </div>
-        </section>
-      )}
-
-      {/* ✍️ الحالة 2: لا يوجد PDF لكن يوجد نص مكتوب يدويًا → نعرض النص */}
-      {!hasFile && hasText && (
-        <section className="mb-8 reading-container">
-          <h2 className="text-lg font-semibold mb-2">النص الكامل</h2>
-          <div
-            className="
-              whitespace-pre-line
-              leading-8
-              text-base
-              bg-zinc-900/60
-              border border-zinc-800
-              rounded-2xl
-              p-4
-              text-zinc-100
-              reading-text
-            "
-          >
-            {doc.text}
-          </div>
-        </section>
-      )}
-
-      {/* لا PDF ولا نص */}
-      {!hasFile && !hasText && (
-        <p className="text-sm text-zinc-400">
-          لا يوجد نص محفوظ لهذا المصدر حتى الآن.
-        </p>
-      )}
-    </div>
+    <LawUnitViewClient
+      doc={data.doc}
+      relations={data.relations}
+      faqs={data.faqs}
+      canEdit={canEdit}
+      userRole={user?.role || "GUEST"}
+    />
   );
 }

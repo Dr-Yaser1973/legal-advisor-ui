@@ -225,6 +225,7 @@ model LegalDocument {
   generatedContracts  GeneratedContract[]
   chunks              LegalDocChunk[]
   TranslationRequests TranslationRequest[]
+  lawUnits            LawUnitDocument[]
 }
 
 model LegalDocChunk {
@@ -374,6 +375,7 @@ model LawDoc {
   articles     LawArticle[]
   createdBy    User?        @relation(fields: [createdById], references: [id])
   tags         TagOnDoc[]
+  faqs  LawDocFaq[]
 
   @@index([category])
   @@index([jurisdiction])
@@ -566,4 +568,79 @@ enum UserStatus {
   PENDING
   SUSPENDED
   EXPIRED
+}
+
+enum LawRelationType {
+  AMENDS // يعدّل
+  REPEALS // يلغي
+  INTERPRETS // يفسّر
+  REFERENCES // إحالة
+  RELATED // صلة عامة
+  APPLIES_TO // ينطبق على
+}
+
+model LawUnitDocument {
+  id         Int @id @default(autoincrement())
+  lawUnitId  Int
+  documentId Int
+
+  lawUnit  LawUnit       @relation(fields: [lawUnitId], references: [id], onDelete: Cascade)
+  document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([lawUnitId, documentId])
+  @@index([lawUnitId])
+  @@index([documentId])
+}
+
+model LawUnit {
+  id           Int     @id @default(autoincrement())
+  title        String
+  content      String
+  simplified   String?
+  practicalUse String?
+
+  category LawCategory
+  status   DocStatus
+
+  relationsFrom LawRelation[] @relation("FromLawUnit")
+  relationsTo   LawRelation[] @relation("ToLawUnit")
+
+  documents LawUnitDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+model LawRelation {
+  id     Int             @id @default(autoincrement())
+  fromId Int
+  toId   Int
+  type   LawRelationType
+  note   String?
+
+  from LawUnit @relation("FromLawUnit", fields: [fromId], references: [id], onDelete: Cascade)
+  to   LawUnit @relation("ToLawUnit", fields: [toId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([fromId, toId, type])
+  @@index([fromId])
+  @@index([toId])
+}
+model LawDocFaq {
+  id        Int      @id @default(autoincrement())
+  docId     Int
+  question  String
+  answer    String
+
+  doc       LawDoc   @relation(fields: [docId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([docId])
 }

@@ -25,7 +25,8 @@ export default function UploadPdfCard() {
     }
 
     try {
-      const res = await fetch("/api/docs/upload", {
+       const res = await fetch("/api/library/upload", {
+
         method: "POST",
         body: formData,
       });

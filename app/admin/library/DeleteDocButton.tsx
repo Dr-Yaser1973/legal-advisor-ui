@@ -2,28 +2,40 @@
 
 import { useTransition } from "react";
 
-export default function DeleteDocButton({ id }: { id: number }) {
+export default function DeleteDocButton({
+  id,
+  soft = false,
+}: {
+  id: number;
+  soft?: boolean;
+}) {
   const [pending, start] = useTransition();
 
   function onDelete() {
-    if (!confirm("هل أنت متأكد من حذف هذا المصدر وجميع مواده؟")) return;
+    const msg = soft
+      ? "هل أنت متأكد من أرشفة هذا القانون؟ يمكن استعادته لاحقًا."
+      : "⚠️ هل أنت متأكد من الحذف النهائي؟ سيتم حذف القانون وجميع ملفاته وروابطه نهائيًا.";
+
+    if (!confirm(msg)) return;
 
     start(async () => {
       const res = await fetch("/api/library/delete", {
-        method: "POST",
+        method: "DELETE", // ✅ الطريقة الصحيحة
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }), // ✅ نرسل id في الـ body كما يتوقع الـ API
+        body: JSON.stringify({
+          docId: id,     // ✅ الاسم الصحيح الذي يتوقعه الـ API
+          soft,         // true = أرشفة / false = حذف نهائي
+        }),
       });
 
       const json = await res.json().catch(() => ({} as any));
 
-      if (!res.ok) {
-        alert(json.error || "فشل حذف المصدر.");
+      if (!res.ok || !json.ok) {
+        alert(json.error || "فشل حذف القانون.");
         return;
       }
 
       // نجاح الحذف
-      // يمكنك استخدام router.refresh بدل reload لو أحببت، لكن reload أبسط
       window.location.reload();
     });
   }
@@ -34,8 +46,9 @@ export default function DeleteDocButton({ id }: { id: number }) {
       onClick={onDelete}
       disabled={pending}
       className="text-xs px-3 py-1 rounded-lg border border-red-500 text-red-300 hover:bg-red-900/30 disabled:opacity-60"
+      title={soft ? "أرشفة القانون" : "حذف القانون نهائيًا"}
     >
-      حذف
+      {soft ? "أرشفة" : "حذف"}
     </button>
   );
 }
