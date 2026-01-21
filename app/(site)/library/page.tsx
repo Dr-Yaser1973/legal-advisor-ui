@@ -1,40 +1,65 @@
- import LawCard from "./_components/LawCard";
-import { headers } from "next/headers";
+ "use client";
 
-export const dynamic = "force-dynamic";
+import { useEffect, useState } from "react";
+import LawCard from "./_components/LawCard";
 
-async function getBaseUrl() {
-  const h = await headers();
-  const host = h.get("host");
+/* =========================
+   الأنواع
+========================= */
+type TabKey = "ALL" | "LAW" | "FIQH" | "ACADEMIC_STUDY";
 
-  if (!host) {
-    throw new Error("Cannot determine host");
-  }
+type LawUnit = {
+  id: number;
+  title: string;
+   category: "LAW" | "FIQH" | "ACADEMIC_STUDY";
+   status: "PUBLISHED" | "DRAFT" | "ARCHIVED";
 
-  const protocol =
-    process.env.NODE_ENV === "development" ? "http" : "https";
+  pdfUrl?: string | null;
+  hasText?: boolean;
+  isScanned?: boolean;
+  createdAt: string;
+};
 
-  return `${protocol}://${host}`;
-}
+export default function LibraryPage() {
+  const [docs, setDocs] = useState<LawUnit[]>([]);
+  const [tab, setTab] = useState<TabKey>("ALL");
+  const [loading, setLoading] = useState(true);
 
-async function getLibrary() {
-  const baseUrl = await getBaseUrl();
+  /* =========================
+     جلب البيانات
+  ========================= */
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/library", {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        setDocs(Array.isArray(json?.docs) ? json.docs : []);
+      } catch (e) {
+        console.error("Library fetch error:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const res = await fetch(`${baseUrl}/api/library`, {
-    cache: "no-store",
-  });
+    load();
+  }, []);
 
-  if (!res.ok) {
-    console.error("Library API error:", res.status, await res.text());
-    return { ok: false, docs: [] };
-  }
+  /* =========================
+     التبويبات
+  ========================= */
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "ALL", label: "الكل" },
+    { key: "LAW", label: "قوانين" },
+    { key: "FIQH", label: "كتب فقه" },
+    { key: "ACADEMIC_STUDY", label: "دراسات أكاديمية" },
+  ];
 
-  return res.json();
-}
-
-export default async function LibraryPage() {
-  const data = await getLibrary();
-  const docs = Array.isArray(data?.docs) ? data.docs : [];
+  const filtered =
+    tab === "ALL"
+      ? docs
+      : docs.filter((d) => d.category === tab);
 
   return (
     <main className="p-6 space-y-6" dir="rtl">
@@ -42,15 +67,43 @@ export default async function LibraryPage() {
         المكتبة القانونية
       </h1>
 
-      {docs.length > 0 ? (
+      {/* ================= التبويبات ================= */}
+      <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-3">
+        {tabs.map((t) => {
+          const active = tab === t.key;
+
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`rounded-full px-4 py-1.5 text-sm transition border
+                ${
+                  active
+                    ? "border-emerald-500 bg-emerald-900/30 text-emerald-300"
+                    : "border-zinc-700 text-zinc-300 hover:border-emerald-500 hover:text-emerald-400"
+                }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ================= المحتوى ================= */}
+      {loading ? (
+        <p className="text-center text-zinc-400">
+          جارٍ تحميل المكتبة...
+        </p>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {docs.map((unit: any) => (
+          {filtered.map((unit) => (
             <LawCard key={unit.id} unit={unit} />
           ))}
         </div>
       ) : (
         <p className="text-center text-zinc-400">
-          لا توجد قوانين منشورة حاليًا
+          لا توجد مواد في هذا التصنيف
         </p>
       )}
     </main>

@@ -11,9 +11,9 @@ export async function GET(req: Request) {
     const take = Math.min(parseInt(searchParams.get("take") || "50", 10), 100);
     const skip = parseInt(searchParams.get("skip") || "0", 10);
 
-     const SUPABASE_URL =
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-
+    const SUPABASE_URL =
+      process.env.SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const units = await prisma.lawUnit.findMany({
       where: {
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
             document: {
               select: {
                 id: true,
-                filename: true, // نخزن المسار الكامل هنا
+                filename: true,
               },
             },
           },
@@ -39,12 +39,35 @@ export async function GET(req: Request) {
     });
 
     const docs = units.map((unit) => {
-      const firstDoc = unit.documents[0]?.document || null;
+      // جميع الملفات المرتبطة
+      const filenames = unit.documents
+        .map((d) => d.document.filename)
+        .filter(Boolean) as string[];
+
+      // استخراج الامتدادات
+      const fileTypes = filenames.map((f) => {
+        const parts = f.split(".");
+        return parts.length > 1
+          ? parts.pop()!.toLowerCase()
+          : "unknown";
+      });
+
+      // أول ملف لعرض الرابط السريع
+      const firstFile = filenames[0] || null;
 
       const pdfUrl =
-        firstDoc && SUPABASE_URL
-          ? `${SUPABASE_URL}/storage/v1/object/public/library/${firstDoc.filename}`
+        firstFile && SUPABASE_URL
+          ? `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/library/${firstFile}`
           : null;
+
+      const hasText = Boolean(unit.content && unit.content.trim().length > 0);
+
+      // ممسوح ضوئيًا = كل الملفات صور
+      const isScanned =
+        fileTypes.length > 0 &&
+        fileTypes.every((t) =>
+          ["jpg", "jpeg", "png", "webp", "tiff"].includes(t)
+        );
 
       return {
         id: unit.id,
@@ -56,7 +79,12 @@ export async function GET(req: Request) {
         status: unit.status,
         createdAt: unit.createdAt,
         updatedAt: unit.updatedAt,
+
+        // الحقول الجديدة للواجهة
         pdfUrl,
+        hasText,
+        isScanned,
+        fileTypes, // ✅ جديد: كل أنواع الملفات
       };
     });
 
