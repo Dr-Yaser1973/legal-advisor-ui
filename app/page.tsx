@@ -1,228 +1,270 @@
- // app/(site)/page.tsx
-"use client";
+ "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, FileText, Scale, MessageCircle, Languages } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  Languages,
+  MessageSquare,
+  Briefcase,
+  Sparkles,
+  ShieldCheck,
+  BadgeCheck,
+  Scale,
+  ArrowLeft,
+  ChevronLeft,
+  Globe,
+  CheckCircle2,
+} from "lucide-react";
 
 type Lang = "ar" | "en";
 
- const content = {
+type Service = {
+  title: string;
+  desc: string;
+  href: string;
+  icon: React.ElementType;
+};
+
+const CONTENT = {
   ar: {
     dir: "rtl" as const,
-    label: "العربية",
-    heroTitle: "منصة المستشار القانوني",
+    langLabel: "العربية",
+    brand: "منصة المستشار القانوني الذكي",
+    portal: "البوابة الرقمية للخدمات القانونية",
+    portalEn: "Digital Legal Services Portal",
+    topNote: "واجهة رسمية • ثنائية اللغة • محسّنة للموبايل",
+    heroTitle: "بوابة رسمية موثوقة للخدمات القانونية الرقمية",
     heroSubtitle:
-      "منصّة قانونية ذكية تجمع بين المكتبة القانونية المتقدمة، توليد العقود، الترجمة القانونية، والاستشارات مع محامين معتمدين.",
-    heroPrimary: "ابدأ الآن",
-    heroSecondary: "تعرّف على الخدمات",
-    badge: "نسخة تجريبية",
+      "وصول سريع إلى المكتبة القانونية، توليد العقود، الترجمة القانونية، والاستشارات — بتجربة مؤسسية جاذبة تعمل بسلاسة على الموبايل.",
+    heroPrimary: "الدخول إلى المكتبة القانونية",
+    heroSecondary: "إنشاء حساب",
+    heroTertiary: "تسجيل الدخول",
 
-    sections: {
-      servicesTitle: "خدمات المنصة",
-      servicesSubtitle: "مجموعة من الأدوات القانونية الذكية الموجهة للمحامين، الشركات، والأفراد.",
-      aboutTitle: "لماذا المستشار القانوني؟",
-      aboutBody:
-        "تم تطوير هذه المنصة بواسطة د. ياسر حسن حسين الزبيدي، الحاصل على درجة الدكتوراه في القانون العام، "
-        + "والذي يمتلك أيضًا بكالوريوس في الإحصاء ونظم المعلومات وخبرة عملية في المجالين القانوني والاقتصادي. "
-        + "تهدف المنصة إلى تقديم خدمات قانونية رقمية ذات جودة عالية تجمع بين الدقة القانونية والذكاء الاصطناعي.",
-      ctaTitle: "جاهز لتجربة المنصة؟",
-      ctaBody:
-        "ابدأ الآن باستخدام المكتبة القانونية، أو جرّب توليد عقد قانوني، أو اطلب استشارة من محامٍ معتمد.",
-    },
+    quickActionsTitle: "الخدمات الأساسية",
+    quickActionsHint:
+      "اختر خدمة للبدء. المكتبة متاحة للعامة بدون تسجيل — بينما الخدمات المهنية تتطلب حسابًا.",
 
-    // 🔹 هنا أصبح عدد الخدمات 6
-     services: [
-  {
-    title: "المكتبة القانونية الذكية",
-    description: "بحث في القوانين والكتب الفقهية والدراسات الأكاديمية مع إمكانات بحث نصي ودلالي.",
-    href: "/library",
-    icon: BookOpen,
-  },
-  {
-    title: "توليد العقود القانونية",
-    description: "إنشاء عقود قانونية ذكية باللغة العربية بصيغة PDF وفق نماذج جاهزة وقابلة للتخصيص.",
-    href: "/contracts",
-    icon: FileText,
-  },
-  {
-    title: "الترجمة القانونية",
-    description: "ترجمة النصوص والعقود والمذكرات القانونية بين العربية والإنجليزية مع خيار الترجمة الرسمية.",
-    href: "/translate",
-    icon: Languages,
-  },
-  {
-    title: "المحامي الذكي",
-    description: "تحليل ذكي للمستندات وتقديم بيانات رأي قانونية.",
-    href: "/smart-lawyer",
-    icon: MessageCircle,
-  },
-  {
-    title: "الاستشارات الذكية",
-    description: "استشارات فورية للموضوعات القانونية عبر الذكاء الاصطناعي.",
-    href: "/consultations",
-    icon: Scale,
-  },
-  {
-    title: "استشارات من محامين معتمدين",
-    description: "طلب استشارة قانونية من محامين معتمدين داخل المنصة ومتابعة حالة الطلب.",
-    href: "/consultations",
-    icon: Scale,
-  },
+    servicesTitle: "دليل الخدمات",
+    servicesSubtitle:
+      "خدمات قانونية رقمية مصممة لتناسب المستخدم العادي والمهني والمؤسسات.",
+
+    audiencesTitle: "الفئات المستفيدة",
+    audiencesSubtitle:
+      "بوابة موحّدة تخدم الأفراد والمحامين والشركات ومكاتب الترجمة.",
+
+    trustTitle: "الخصوصية والموثوقية",
+    trustSubtitle:
+      "تم تصميم المنصة وفق مبادئ السلامة الرقمية وتجربة استخدام رسمية.",
+
+    trust: [
       {
-        title: "إدارة القضايا للشركات",
-        description: "لوحة لإدارة ومتابعة القضايا الخاصة بالشركات ومكاتب المحاماة (قابلة للتطوير في الإصدارات القادمة).",
-        href: "/cases", // عدّل المسار إذا لديك مسار آخر
-        icon: Scale,
+        title: "حماية البيانات",
+        desc: "ضوابط وصول وأذونات واضحة للبيانات والملفات.",
+      },
+      {
+        title: "مخرجات قانونية احترافية",
+        desc: "قوالب عقود وتوثيق منظم لطلبات الخدمات.",
+      },
+      {
+        title: "جاهزية الموبايل",
+        desc: "واجهة خفيفة وسريعة مناسبة للأجهزة المحمولة.",
       },
     ],
 
-    stats: [
-      { label: "الخدمات الأساسية في النسخة التجريبية", value: "6+" },
-      { label: "مجالات قانونية مدعومة", value: "متعددة" },
-      { label: "لغة الواجهة", value: "العربية والإنجليزية" },
+    audience: [
+      {
+        title: "المستخدم العادي",
+        points: ["تصفح وبحث", "نماذج عقود", "استشارات عند الحاجة"],
+      },
+      {
+        title: "المحامي",
+        points: ["حضور مهني", "طلبات واستشارات", "مكتبة قوية للبحث"],
+      },
+      {
+        title: "الشركات",
+        points: ["إدارة قضايا", "عقود مؤسسية", "ملفات وامتثال"],
+      },
+      {
+        title: "مكتب ترجمة",
+        points: ["طلبات منظمة", "رفع صور/مسح", "مسار ترجمة رسمية"],
+      },
     ],
 
     footer: {
-      about: "من نحن",
-      privacy: "الخصوصية والشروط",
       rights: "جميع الحقوق محفوظة",
+      about: "من نحن",
+      privacy: "الخصوصية",
+      terms: "الشروط",
+      disclaimer: "إخلاء المسؤولية",
     },
+
+    mobileCta: "المكتبة القانونية",
   },
 
   en: {
     dir: "ltr" as const,
-    label: "English",
-    heroTitle: "Legal Advisor Platform",
+    langLabel: "English",
+    brand: "Smart Legal Advisor Platform",
+    portal: "Digital Legal Services Portal",
+    portalEn: "البوابة الرقمية للخدمات القانونية",
+    topNote: "Official • Bilingual • Mobile-Optimized",
+    heroTitle: "A Trusted Official Gateway for Digital Legal Services",
     heroSubtitle:
-      "A smart legal platform combining an advanced legal library, contract generation, legal translation, and consultations with licensed lawyers.",
-    heroPrimary: "Get started",
-    heroSecondary: "Explore services",
-    badge: "Beta Version",
+      "Fast access to the legal library, contract generation, legal translation, and consultations — with an institutional, mobile-first experience.",
+    heroPrimary: "Open Legal Library",
+    heroSecondary: "Create Account",
+    heroTertiary: "Sign In",
 
-    sections: {
-      servicesTitle: "Platform Services",
-      servicesSubtitle:
-        "A set of intelligent legal tools tailored for lawyers, companies, and individuals.",
-      aboutTitle: "Why Legal Advisor?",
-      aboutBody:
-        "This platform was developed by Dr. Yaser Hassan Hussein Al-Zubaidi, who holds a PhD in Public Law "
-        + "and a BSc in Statistics and Information Systems, with professional experience in both legal and economic fields. "
-        + "The platform aims to deliver high-quality digital legal services that combine legal accuracy with artificial intelligence.",
-      ctaTitle: "Ready to try the platform?",
-      ctaBody:
-        "Start using the legal library, generate a legal contract, or request a consultation from a licensed lawyer.",
-    },
+    quickActionsTitle: "Core Services",
+    quickActionsHint:
+      "Pick a service to start. The library is public (no sign-in). Professional services require an account.",
 
-    // 🔹 نفس الفكرة بالإنجليزي: 6 خدمات
-     services: [
-  {
-    title: "Smart Legal Library",
-    description: "Search Iraqi laws, fiqh books, and academic studies with full-text and semantic search capabilities.",
-    href: "/library",
-    icon: BookOpen,
-  },
-  {
-    title: "Contract Generator",
-    description: "Create Arabic legal contracts in PDF format using customizable ready-made templates.",
-    href: "/contracts",
-    icon: FileText,
-  },
-  {
-    title: "Legal Translate",
-    description: "Translate legal texts, contracts, and memos between Arabic and English, with an option for official translation.",
-    href: "/translate",
-    icon: Languages,
-  },
-  {
-    title: "smart-lawyer",
-    description: "Intelligent document analysis and generation of legal opinion information.",
-    href: "/smart-lawyer",
-    icon: MessageCircle,
-  },
-  {
-    title: "Smart Consultations",
-    description: "Instant AI-powered consultations for various legal topics.",
-    href: "/consultations",
-    icon: Scale,
-  },
-  {
-    title: "Consultations from Licensed Lawyers",
-    description: "Request legal consultations from verified lawyers and track the status of your request.",
-    href: "/consultations",
-    icon: Scale,
-  },
+    servicesTitle: "Services Directory",
+    servicesSubtitle:
+      "Digital legal services designed for individuals, professionals, and organizations.",
+
+    audiencesTitle: "Who Is It For?",
+    audiencesSubtitle:
+      "A unified portal serving individuals, lawyers, companies, and translation offices.",
+
+    trustTitle: "Privacy & Reliability",
+    trustSubtitle:
+      "Built with digital safety principles and an official user experience in mind.",
+
+    trust: [
       {
-        title: "Case Management for Companies",
-        description:
-          "A dedicated area to manage and follow up legal cases for companies and law firms (extensible in future releases).",
-        href: "/cases",
-        icon: Scale,
+        title: "Data Protection",
+        desc: "Clear access controls and secure handling for documents.",
+      },
+      {
+        title: "Professional Output",
+        desc: "Structured workflows and professional contract templates.",
+      },
+      {
+        title: "Mobile-First",
+        desc: "Fast, lightweight interface optimized for mobile devices.",
       },
     ],
 
-    stats: [
-      { label: "Core services in beta", value: "6+" },
-      { label: "Supported legal domains", value: "Multiple" },
-      { label: "Interface language", value: "Arabic & English" },
+    audience: [
+      {
+        title: "Individuals",
+        points: ["Browse & search", "Contract templates", "On-demand advice"],
+      },
+      {
+        title: "Lawyers",
+        points: ["Professional presence", "Requests & consultations", "Powerful research library"],
+      },
+      {
+        title: "Companies",
+        points: ["Case management", "Corporate contracts", "Files & compliance"],
+      },
+      {
+        title: "Translation Offices",
+        points: ["Organized requests", "Image/scan upload", "Official translation flow"],
+      },
     ],
 
     footer: {
-      about: "About Us",
-      privacy: "Privacy & Terms",
       rights: "All rights reserved",
+      about: "About",
+      privacy: "Privacy",
+      terms: "Terms",
+      disclaimer: "Disclaimer",
     },
+
+    mobileCta: "Legal Library",
   },
-};
+} as const;
 
-
-export default function HomePage() {
+export default function HomeGovPortal() {
   const [lang, setLang] = useState<Lang>("ar");
-  const t = content[lang];
+  const t = CONTENT[lang];
+
+  const services: Service[] = useMemo(
+    () => [
+      {
+        title: lang === "ar" ? "المكتبة القانونية" : "Legal Library",
+        desc:
+          lang === "ar"
+            ? "بحث وقراءة وPDF أصلي وشرح متعدد المستويات."
+            : "Search, read, original PDFs, and layered explanations.",
+        href: "/library",
+        icon: BookOpen,
+      },
+      {
+        title: lang === "ar" ? "العقود الذكية" : "Smart Contracts",
+        desc:
+          lang === "ar"
+            ? "نماذج احترافية + توليد PDF سريع."
+            : "Professional templates + fast PDF generation.",
+        href: "/contracts",
+        icon: FileText,
+      },
+      {
+        title: lang === "ar" ? "الترجمة القانونية" : "Legal Translation",
+        desc:
+          lang === "ar"
+            ? "طلبات منظمة + دعم صور/مسح من الموبايل."
+            : "Organized requests + mobile image/scan support.",
+        href: "/translate",
+        icon: Languages,
+      },
+      {
+        title: lang === "ar" ? "الاستشارات" : "Consultations",
+        desc:
+          lang === "ar"
+            ? "طلبات واضحة ومحادثات منظمة."
+            : "Clear requests and organized conversations.",
+        href: "/consultations",
+        icon: MessageSquare,
+      },
+      {
+        title: lang === "ar" ? "إدارة القضايا" : "Case Management",
+        desc:
+          lang === "ar"
+            ? "للشركات: متابعة القضايا والملفات والمهام."
+            : "For companies: track cases, files, and tasks.",
+        href: "/cases",
+        icon: Briefcase,
+      },
+      {
+        title: lang === "ar" ? "المحامي الذكي" : "Smart Lawyer",
+        desc:
+          lang === "ar"
+            ? "مساند بحثي وتحليل أولي مدعوم بالذكاء."
+            : "AI-assisted research and preliminary legal analysis.",
+        href: "/smart-lawyer",
+        icon: Sparkles,
+      },
+    ],
+    [lang],
+  );
 
   return (
-    <main
-      dir={t.dir}
-      className="min-h-screen bg-zinc-950 text-zinc-50"
-    >
-      {/* أعلى الصفحة + تبديل اللغة */}
+    <main dir={t.dir} className="min-h-screen bg-zinc-950 text-zinc-50">
+      {/* TOP BAR (Official) */}
       <div className="border-b border-white/10 bg-zinc-950/80 backdrop-blur">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Scale className="w-6 h-6 text-yellow-400" />
-            <span className="text-lg font-semibold tracking-tight">
-              {lang === "ar" ? "المستشار القانوني" : "Legal Advisor"}
-            </span>
-            <span className="ms-2 rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-300">
-              {t.badge}
-            </span>
+        <div className="mx-auto max-w-6xl px-4 py-2 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <Scale className="h-4 w-4 text-amber-300" />
+            <span className="font-semibold text-zinc-100">{t.portal}</span>
+            <span className="opacity-40">•</span>
+            <span className="hidden sm:inline">{t.topNote}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* روابط سريعة أعلى الصفحة (يمكنك حذفها إذا كان لديك Navbar في layout.tsx) */}
-            <div className="hidden md:flex items-center gap-2 text-sm text-zinc-300">
-              <Link href="/library" className="hover:text-white transition">
-                {lang === "ar" ? "المكتبة" : "Library"}
-              </Link>
-              <span className="opacity-30">•</span>
-              <Link href="/contracts" className="hover:text-white transition">
-                {lang === "ar" ? "العقود" : "Contracts"}
-              </Link>
-              <span className="opacity-30">•</span>
-              <Link href="/translate" className="hover:text-white transition">
-                {lang === "ar" ? "الترجمة" : "Translation"}
-              </Link>
-              <span className="opacity-30">•</span>
-              <Link href="/lawyers" className="hover:text-white transition">
-                {lang === "ar" ? "المحامون" : "Lawyers"}
-              </Link>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-400">
+              <Globe className="h-4 w-4" />
+              <span>{lang === "ar" ? "Language" : "اللغة"}</span>
             </div>
 
-            {/* زرّي اللغة */}
-            <div className="flex rounded-full border border-white/10 bg-zinc-900/80 p-1 text-xs">
+            <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1 text-xs">
               <button
                 onClick={() => setLang("ar")}
-                className={`px-3 py-1 rounded-full ${
+                className={`px-3 py-1 rounded-full transition ${
                   lang === "ar"
                     ? "bg-zinc-100 text-zinc-900 font-semibold"
                     : "text-zinc-300 hover:text-white"
@@ -232,257 +274,364 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setLang("en")}
-                className={`px-3 py-1 rounded-full ${
+                className={`px-3 py-1 rounded-full transition ${
                   lang === "en"
                     ? "bg-zinc-100 text-zinc-900 font-semibold"
                     : "text-zinc-300 hover:text-white"
                 }`}
               >
-                English
+                EN
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* المحتوى الرئيسي */}
-      <div className="container mx-auto px-4 py-10 md:py-16">
-        {/* Hero Section */}
-        <section className="grid gap-10 md:grid-cols-2 items-center">
-          <div className={lang === "ar" ? "text-right" : "text-left"}>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4">
-              {t.heroTitle}
-            </h1>
-            <p className="text-sm md:text-base text-zinc-300 mb-6">
-              {t.heroSubtitle}
-            </p>
-
-            <div className="flex flex-wrap gap-3 mb-6">
-              <Link
-                href="/library"
-                className="inline-flex items-center justify-center rounded-full bg-yellow-500 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-yellow-400 transition"
-              >
-                {t.heroPrimary}
-              </Link>
-              <a
-                href="#services"
-                className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-sm text-zinc-100 hover:bg-white/5 transition"
-              >
-                {t.heroSecondary}
-              </a>
+      {/* HEADER */}
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/70 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl border border-white/10 bg-zinc-900/50 grid place-items-center">
+              <Scale className="h-5 w-5 text-amber-300" />
             </div>
-
-            {/* إحصائيات بسيطة */}
-            <div className="grid grid-cols-3 gap-3 text-xs md:text-sm">
-              {t.stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-2"
-                >
-                  <div className="text-lg md:text-xl font-semibold text-yellow-300">
-                    {s.value}
-                  </div>
-                  <div className="text-zinc-400">{s.label}</div>
-                </div>
-              ))}
+            <div className="leading-tight">
+              <div className="text-sm sm:text-base font-bold">{t.brand}</div>
+              <div className="text-[11px] text-zinc-400">{t.portalEn}</div>
             </div>
-          </div>
+          </Link>
 
-          {/* بطاقة توضيحية جانبية */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="w-5 h-5 text-yellow-400" />
-                <span className="text-sm font-semibold text-zinc-100">
-                  {lang === "ar"
-                    ? "نموذج من واجهة الخدمات"
-                    : "Preview of services"}
-                </span>
-              </div>
-              <ul className="space-y-2 text-sm text-zinc-300">
-                {t.services.map((service) => (
-                  <li
-                    key={service.title}
-                    className="flex items-start gap-2 rounded-lg bg-zinc-950/60 px-3 py-2"
-                  >
-                    <service.icon className="w-4 h-4 mt-1 text-yellow-400" />
-                    <div>
-                      <div className="font-medium text-zinc-50">
-                        {service.title}
-                      </div>
-                      <div className="text-xs text-zinc-400">
-                        {service.description}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 text-[11px] text-zinc-500">
-                {lang === "ar"
-                  ? "هذه واجهة تجريبية توضح أهم الخدمات المتاحة في النسخة الأولى من المنصة."
-                  : "This is a demo preview showing the core services available in the first beta version."}
-              </div>
-            </div>
-          </div>
-        </section>
+          <nav className="hidden md:flex items-center gap-5 text-sm text-zinc-300">
+            <Link className="hover:text-white transition" href="/library">
+              {lang === "ar" ? "المكتبة" : "Library"}
+            </Link>
+            <Link className="hover:text-white transition" href="/contracts">
+              {lang === "ar" ? "العقود" : "Contracts"}
+            </Link>
+            <Link className="hover:text-white transition" href="/translate">
+              {lang === "ar" ? "الترجمة" : "Translation"}
+            </Link>
+            <Link className="hover:text-white transition" href="/consultations">
+              {lang === "ar" ? "الاستشارات" : "Consultations"}
+            </Link>
+          </nav>
 
-        {/* قسم الخدمات */}
-        <section id="services" className="mt-16 md:mt-20">
-          <div
-            className={
-              "mb-6 " + (lang === "ar" ? "text-right" : "text-left")
-            }
-          >
-            <h2 className="text-2xl md:text-3xl font-semibold mb-2">
-              {t.sections.servicesTitle}
-            </h2>
-            <p className="text-sm md:text-base text-zinc-300">
-              {t.sections.servicesSubtitle}
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {t.services.map((service) => (
-              <Link
-                key={service.title}
-                href={service.href}
-                className="group rounded-2xl border border-white/10 bg-zinc-900/60 p-4 hover:border-yellow-400/70 hover:bg-zinc-900 transition flex flex-col h-full"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="rounded-full bg-yellow-500/15 p-2">
-                    <service.icon className="w-5 h-5 text-yellow-400" />
-                  </div>
-                  <h3 className="text-sm font-semibold">{service.title}</h3>
-                </div>
-                <p className="text-xs text-zinc-300 flex-1">
-                  {service.description}
-                </p>
-                <div
-                  className={
-                    "mt-3 text-xs font-medium text-yellow-300 " +
-                    (lang === "ar" ? "text-left" : "text-right")
-                  }
-                >
-                  {lang === "ar" ? "الدخول للخدمة →" : "Open service →"}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* قسم لماذا المنصة / نبذة عنك */}
-        <section className="mt-16 md:mt-20 grid gap-8 md:grid-cols-2 items-start">
-          <div className={lang === "ar" ? "text-right" : "text-left"}>
-            <h2 className="text-2xl md:text-3xl font-semibold mb-3">
-              {t.sections.aboutTitle}
-            </h2>
-            <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
-              {t.sections.aboutBody}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 text-xs text-zinc-300">
-            <h3 className="font-semibold mb-2 flex items-center gap-2">
-              <Scale className="w-4 h-4 text-yellow-400" />
-              {lang === "ar"
-                ? "ركائز المنصة"
-                : "Core pillars of the platform"}
-            </h3>
-            <ul className="space-y-1.5 list-disc ps-4">
-              <li>
-                {lang === "ar"
-                  ? "دقة قانونية معتمدة على خبرة أكاديمية وعملية."
-                  : "Legal accuracy based on academic and practical expertise."}
-              </li>
-              <li>
-                {lang === "ar"
-                  ? "استخدام الذكاء الاصطناعي لدعم العمل القانوني لا لاستبداله."
-                  : "Using AI to support, not replace, professional legal work."}
-              </li>
-              <li>
-                {lang === "ar"
-                  ? "تصميم واجهة عربية/إنجليزية مريحة للمستخدم."
-                  : "User-friendly Arabic/English interface."}
-              </li>
-              <li>
-                {lang === "ar"
-                  ? "إمكانية التوسع لاحقًا لإضافة القضايا والمحامي الذكي للشركات."
-                  : "Future-ready to add case management and smart corporate lawyer modules."}
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Call to Action */}
-        <section className="mt-16 md:mt-20">
-          <div className="rounded-2xl border border-yellow-500/30 bg-gradient-to-l from-yellow-500/10 via-zinc-900 to-zinc-950 px-5 py-6 md:px-8 md:py-8">
-            <div
-              className={
-                "flex flex-col md:flex-row md:items-center md:justify-between gap-4 " +
-                (lang === "ar" ? "text-right" : "text-left")
-              }
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="hidden sm:inline-flex rounded-xl border border-white/10 bg-zinc-900/50 px-4 py-2 text-sm font-semibold hover:bg-zinc-900 transition"
             >
-              <div>
-                <h2 className="text-xl md:text-2xl font-semibold mb-1">
-                  {t.sections.ctaTitle}
-                </h2>
-                <p className="text-sm md:text-base text-zinc-200">
-                  {t.sections.ctaBody}
-                </p>
+              {t.heroTertiary}
+            </Link>
+            <Link
+              href="/register-smart"
+              className="inline-flex rounded-xl bg-amber-400 text-zinc-900 px-4 py-2 text-sm font-bold hover:bg-amber-300 transition"
+            >
+              {t.heroSecondary}
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* HERO (Official Portal style) */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 opacity-25">
+          <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-6xl px-4 pt-10 pb-8 md:pt-16 md:pb-12">
+          <div className="grid gap-10 md:grid-cols-2 items-center">
+            <div className={lang === "ar" ? "text-right" : "text-left"}>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/40 px-3 py-1 text-xs text-zinc-300">
+                <BadgeCheck className="h-4 w-4 text-amber-300" />
+                <span>{t.topNote}</span>
               </div>
-              <div className="flex flex-wrap gap-3">
+
+              <h1 className="mt-4 text-2xl sm:text-3xl md:text-5xl font-extrabold leading-[1.2]">
+                {t.heroTitle}
+              </h1>
+
+              <p className="mt-4 text-sm sm:text-base md:text-lg text-zinc-300 leading-7">
+                {t.heroSubtitle}
+              </p>
+
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/contracts"
-                  className="inline-flex items-center justify-center rounded-full bg-yellow-400 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-yellow-300 transition"
+                  href="/library"
+                  className="inline-flex items-center justify-center rounded-xl bg-amber-400 text-zinc-900 px-5 py-3 text-sm font-bold hover:bg-amber-300 transition"
                 >
-                  {lang === "ar"
-                    ? "جرّب توليد عقد"
-                    : "Try generating a contract"}
+                  {t.heroPrimary}
+                  <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
+
                 <Link
-                  href="/lawyers"
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-sm text-zinc-50 hover:bg-white/5 transition"
+                  href="/register-smart"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/40 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
                 >
-                  {lang === "ar"
-                    ? "استعرض قائمة المحامين"
-                    : "Browse lawyers"}
+                  {t.heroSecondary}
+                  <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
+
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-transparent px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-white/5 transition"
+                >
+                  {t.heroTertiary}
+                  <ArrowLeft className="ms-2 h-4 w-4" />
+                </Link>
+              </div>
+
+              {/* Official Trust strip */}
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3">
+                <TrustPill text={t.trust[0].title} icon={<ShieldCheck className="h-4 w-4" />} />
+                <TrustPill text={t.trust[1].title} icon={<BadgeCheck className="h-4 w-4" />} />
+                <TrustPill text={t.trust[2].title} icon={<Sparkles className="h-4 w-4" />} />
+              </div>
+            </div>
+
+            {/* Right card: Official quick guide */}
+            <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
+              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/60 px-4 py-3">
+                <div className="text-sm font-bold">{t.quickActionsTitle}</div>
+                <div className="text-xs text-zinc-400">Portal</div>
+              </div>
+
+              <p className="mt-4 text-sm text-zinc-300 leading-7">
+                {t.quickActionsHint}
+              </p>
+
+              <div className="mt-4 grid gap-3">
+                {services.slice(0, 3).map((s) => (
+                  <QuickRow key={s.title} title={s.title} desc={s.desc} Icon={s.icon} href={s.href} />
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/50 p-4">
+                <div className="text-xs text-zinc-400">
+                  {lang === "ar" ? "مثال استخدام:" : "Example:"}
+                </div>
+                <div className="mt-2 text-sm leading-7 text-zinc-200">
+                  {lang === "ar"
+                    ? "تصفح مادة قانونية → اقرأ PDF الأصلي → اطلب شرحًا مبسطًا/عمليًا/مهنيًا عند الحاجة."
+                    : "Browse a legal unit → open the original PDF → request a simplified/practical/pro explanation when needed."}
+                </div>
               </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      {/* Footer بسيط */}
-      <footer className="border-t border-white/10 bg-zinc-950/90">
-        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-zinc-400">
-          <div className="flex items-center gap-1">
-            <Scale className="w-3 h-3 text-yellow-400" />
+      {/* SERVICES DIRECTORY */}
+      <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <div className={lang === "ar" ? "text-right" : "text-left"}>
+          <h2 className="text-xl md:text-2xl font-extrabold">{t.servicesTitle}</h2>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.servicesSubtitle}</p>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {services.map((s) => (
+            <ServiceCard
+              key={s.title}
+              title={s.title}
+              desc={s.desc}
+              href={s.href}
+              Icon={s.icon}
+              lang={lang}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* TRUST / RELIABILITY */}
+      <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <div className={lang === "ar" ? "text-right" : "text-left"}>
+          <h2 className="text-xl md:text-2xl font-extrabold">{t.trustTitle}</h2>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.trustSubtitle}</p>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {t.trust.map((x: any) => (
+            <InfoCard key={x.title} title={x.title} desc={x.desc} />
+          ))}
+        </div>
+      </section>
+
+      {/* AUDIENCES */}
+      <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <div className={lang === "ar" ? "text-right" : "text-left"}>
+          <h2 className="text-xl md:text-2xl font-extrabold">{t.audiencesTitle}</h2>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.audiencesSubtitle}</p>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
+          {t.audience.map((a: any) => (
+            <AudienceCard key={a.title} title={a.title} points={a.points} />
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-white/10 bg-zinc-950/80">
+        <div className="mx-auto max-w-6xl px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-zinc-400">
+          <div className="flex items-center gap-2">
+            <Scale className="h-4 w-4 text-amber-300" />
             <span>
-              {lang === "ar"
-                ? `منصة المستشار القانوني – ${t.footer.rights}`
-                : `Legal Advisor Platform – ${t.footer.rights}`}
+              © {new Date().getFullYear()} {t.brand} — {t.footer.rights}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/about"
-              className="hover:text-zinc-200 transition"
-            >
+
+          <div className="flex flex-wrap gap-3">
+            <Link className="hover:text-zinc-200 transition" href="/about">
               {t.footer.about}
             </Link>
             <span className="opacity-30">•</span>
-            <Link
-              href="/privacy"
-              className="hover:text-zinc-200 transition"
-            >
+            <Link className="hover:text-zinc-200 transition" href="/privacy">
               {t.footer.privacy}
+            </Link>
+            <span className="opacity-30">•</span>
+            <Link className="hover:text-zinc-200 transition" href="/terms">
+              {t.footer.terms}
+            </Link>
+            <span className="opacity-30">•</span>
+            <Link className="hover:text-zinc-200 transition" href="/disclaimer">
+              {t.footer.disclaimer}
             </Link>
           </div>
         </div>
       </footer>
+
+      {/* MOBILE STICKY CTA (Library first) */}
+      <div className="md:hidden fixed bottom-3 left-0 right-0 z-50 px-4">
+        <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-zinc-900/70 backdrop-blur p-2 shadow-lg">
+          <div className="flex gap-2">
+            <Link
+              href="/library"
+              className="flex-1 inline-flex items-center justify-center rounded-xl bg-amber-400 text-zinc-900 py-3 text-sm font-extrabold"
+            >
+              <BookOpen className="me-2 h-5 w-5" />
+              {t.mobileCta}
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-sm font-semibold text-zinc-100"
+            >
+              {lang === "ar" ? "دخول" : "Sign In"}
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* spacing for mobile sticky */}
+      <div className="md:hidden h-20" />
     </main>
   );
 }
 
+/* =======================
+   UI Components
+======================= */
 
+function TrustPill({ text, icon }: { text: string; icon: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-200">
+      <span className="text-amber-300">{icon}</span>
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function QuickRow({
+  title,
+  desc,
+  Icon,
+  href,
+}: {
+  title: string;
+  desc: string;
+  Icon: React.ElementType;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl border border-white/10 bg-zinc-950/50 p-4 hover:bg-zinc-950/70 transition"
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-xl border border-white/10 bg-zinc-900/40 p-2">
+          <Icon className="h-5 w-5 text-amber-300" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-bold text-zinc-100">{title}</div>
+          <div className="mt-1 text-xs leading-6 text-zinc-400">{desc}</div>
+        </div>
+        <ChevronLeft className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 mt-2" />
+      </div>
+    </Link>
+  );
+}
+
+function ServiceCard({
+  title,
+  desc,
+  href,
+  Icon,
+  lang,
+}: {
+  title: string;
+  desc: string;
+  href: string;
+  Icon: React.ElementType;
+  lang: Lang;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-3xl border border-white/10 bg-zinc-900/40 p-5 hover:bg-zinc-900/60 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-white/10 bg-zinc-950/50 p-2">
+          <Icon className="h-5 w-5 text-amber-300" />
+        </div>
+        <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition">
+          {lang === "ar" ? "استكشف" : "Explore"}
+        </span>
+      </div>
+
+      <div className="mt-3 text-base font-extrabold">{title}</div>
+      <div className="mt-2 text-sm leading-7 text-zinc-300">{desc}</div>
+
+      <div className="mt-4 inline-flex items-center text-sm font-bold text-amber-200">
+        {lang === "ar" ? "الدخول للخدمة" : "Open service"}
+        <ChevronLeft className="ms-2 h-4 w-4" />
+      </div>
+    </Link>
+  );
+}
+
+function InfoCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-5 w-5 text-amber-300" />
+        <div className="text-sm font-extrabold">{title}</div>
+      </div>
+      <div className="mt-2 text-sm leading-7 text-zinc-300">{desc}</div>
+    </div>
+  );
+}
+
+function AudienceCard({ title, points }: { title: string; points: string[] }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
+      <div className="text-sm font-extrabold">{title}</div>
+      <ul className="mt-3 space-y-2 text-sm text-zinc-300">
+        {points.map((p) => (
+          <li key={p} className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 text-amber-300" />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

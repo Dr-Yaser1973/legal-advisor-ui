@@ -9,6 +9,7 @@ import {
   MessageCircle,
   FileText,
   BarChart3,
+  ScanText, // ✅ OCR Icon
 } from "lucide-react";
 
 const links = [
@@ -28,7 +29,12 @@ const links = [
   {
     href: "/admin/translation-stats",
     label: "إحصاءات الترجمة",
-    icon: BarChart3, // ✅ أيقونة مضافة
+    icon: BarChart3,
+  },
+  {
+    href: "/admin/ocr",
+    label: "لوحة OCR",
+    icon: ScanText, // 🧠 مسح ضوئي + ذكاء
   },
 ];
 
