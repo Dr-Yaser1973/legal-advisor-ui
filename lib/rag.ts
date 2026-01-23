@@ -1,37 +1,59 @@
  // lib/rag.ts
-import { hybridSearch } from "./search";
+import { hybridSearch, SearchResult } from "./search";
 import { chatCompletion } from "./ai";
 
-export function buildRagPrompt(question: string, context: string) {
+type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+// ===============================
+// بناء رسائل RAG للنموذج
+// ===============================
+export function buildRagMessages(
+  question: string,
+  context: string
+): ChatMessage[] {
   return [
     {
       role: "system",
       content:
-        "أنت مستشار قانوني عراقي خبير. استخدم فقط المعلومات الواردة في السياق للإجابة، مع لغة عربية قانونية واضحة.",
+        "أنت مستشار قانوني عراقي خبير. استخدم فقط المعلومات الواردة في السياق للإجابة، مع لغة عربية قانونية واضحة. إذا لم يكن السياق كافيًا فاذكر ذلك صراحة.",
     },
     {
       role: "user",
-      content: `السؤال: ${question}\n\nالسياق المتاح:\n${context}`,
+      content: `السؤال:\n${question}\n\nالسياق المتاح:\n${context}`,
     },
   ];
 }
 
-export function formatCitations(chunks: any[]) {
+// ===============================
+// تنسيق المراجع
+// ===============================
+export function formatCitations(chunks: SearchResult[]) {
   if (!chunks?.length) return "";
   return (
     "\n\nالمصادر المستخدمة:\n" +
     chunks
-      .map((c: any, idx: number) => `- [${idx + 1}] ${c.title ?? ""}`.trim())
+      .map((c, idx) => `- [${idx + 1}] ${c.title}`.trim())
       .join("\n")
   );
 }
 
-// دالة رئيسية تستخدم في /api/ai أو /api/ai/ask
+// ===============================
+// واجهة عالية المستوى
+// ===============================
 export async function askLegalAdvisor(question: string) {
+  // 1) بحث هجين
   const chunks = await hybridSearch(question, 8);
-  const context = chunks.map((c: any) => c.text).join("\n\n---\n\n");
 
-  const messages = buildRagPrompt(question, context);
+  // 2) بناء السياق النصي من النوع الحقيقي
+  const context = chunks
+    .map((c, i) => `المقطع ${i + 1} (من: ${c.title})\n${c.snippet}`)
+    .join("\n\n---\n\n");
+
+  // 3) بناء الرسائل وإرسالها للنموذج
+  const messages = buildRagMessages(question, context);
   const res = await chatCompletion(messages);
 
   const answer = res.choices[0]?.message?.content ?? "";

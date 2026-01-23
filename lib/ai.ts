@@ -1,14 +1,24 @@
  // lib/ai.ts
 import OpenAI from "openai";
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
-  throw new Error("❌ OPENAI_API_KEY is not set in environment variables.");
+// ===============================
+// Factory آمن — لا يُنفّذ إلا وقت الطلب
+// ===============================
+function getOpenAI() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is missing");
+  }
+
+  return new OpenAI({ apiKey });
 }
 
-export const openai = new OpenAI({ apiKey });
-
+// ===============================
+// Embeddings
+// ===============================
 export async function getEmbedding(text: string): Promise<number[]> {
+  const openai = getOpenAI();
   const model = process.env.EMBEDDING_MODEL ?? "text-embedding-3-small";
 
   const res = await openai.embeddings.create({
@@ -18,15 +28,19 @@ export async function getEmbedding(text: string): Promise<number[]> {
 
   const embedding = res.data[0]?.embedding;
   if (!embedding) throw new Error("Failed to get embedding");
+
   return embedding;
 }
 
-// دالة مساعدة للمحادثة مع النموذج
+// ===============================
+// Chat Completion (Generic)
+// ===============================
 export async function chatCompletion(
   messages: any[],
   opts?: { model?: string; temperature?: number }
 ) {
-  const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-4.1-mini";
+  const openai = getOpenAI();
+  const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-4o-mini";
 
   return openai.chat.completions.create({
     model,
@@ -35,8 +49,13 @@ export async function chatCompletion(
   });
 }
 
-// توليد إجابة قانونية بسيطة من سياق وسؤال
-export async function generateAnswer(question: string, context: string) {
+// ===============================
+// Legal Answer Generator
+// ===============================
+export async function generateAnswer(
+  question: string,
+  context: string
+): Promise<string> {
   const messages = [
     {
       role: "system",
@@ -54,14 +73,19 @@ export async function generateAnswer(question: string, context: string) {
   return answer.trim();
 }
 
+// ===============================
+// Cosine Similarity
+// ===============================
 export function cosineSim(a: number[], b: number[]) {
   let dot = 0,
     na = 0,
     nb = 0;
+
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
     na += a[i] * a[i];
     nb += b[i] * b[i];
   }
+
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
