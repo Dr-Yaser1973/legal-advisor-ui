@@ -1,13 +1,9 @@
-// app/api/cases/[id]/memo-text/route.ts
+ // app/api/cases/[id]/memo-text/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
+import { getOpenAI } from "@/lib/ai/openai";
 
 export const runtime = "nodejs";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -51,6 +47,9 @@ export async function POST(_req: Request, context: RouteContext) {
 اكتب بدون حشو، وبنقاط مرتبة وترويسات واضحة.
     `.trim();
 
+    // ✅ يتم الإنشاء وقت الطلب فقط — آمن للنشر على Vercel
+    const openai = getOpenAI();
+
     const chat = await openai.chat.completions.create({
       model: process.env.CHAT_MODEL ?? "gpt-4o-mini",
       temperature: 0.2,
@@ -61,8 +60,6 @@ export async function POST(_req: Request, context: RouteContext) {
       chat.choices[0]?.message?.content?.trim() ??
       "لم يتمكن النظام من توليد مذكرة مناسبة.";
 
-    // إذا حبيت لاحقًا نخزن المذكرة في قاعدة البيانات، نضيف ذلك هنا.
-    // حاليًا نرجعها فقط للواجهة.
     return NextResponse.json({ memo: memoText });
   } catch (e: any) {
     console.error("Error generating memo text:", e);
@@ -72,4 +69,3 @@ export async function POST(_req: Request, context: RouteContext) {
     );
   }
 }
-
