@@ -1,9 +1,7 @@
- 
  // app/api/ai/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getEmbedding, cosineSim, generateAnswer } from "@/lib/ai";
-import { buildRagPrompt, formatCitations } from "@/lib/rag";
+import { buildRagPrompt } from "@/lib/rag";
 
 export const runtime = "nodejs";
 
@@ -14,44 +12,80 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
     const { question, k = 8 } = await req.json();
+
     if (!question || typeof question !== "string") {
-      return NextResponse.json({ error: "question is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "question is required" },
+        { status: 400 }
+      );
     }
 
-    // 1) Embed للسؤال
+    // ===============================
+    // Lazy import للذكاء (Build-Safe)
+    // ===============================
+    const { getEmbedding, cosineSim, generateAnswer } = await import(
+      "@/lib/ai"
+    );
+
+    // 1) توليد Embedding للسؤال
     const qVec = await getEmbedding(question);
 
-    // 2) استرجاع مقاطع من المكتبة مع التضمين
+    // 2) جلب المقاطع من المكتبة
     const chunks = await prisma.legalDocChunk.findMany({
       include: { embedding: true, document: true },
-      take: 2000, // حد أعلى كبداية (حسّن لاحقًا بتصفية حسب وثيقة/وسوم)
+      take: 2000,
     });
 
     // 3) حساب التشابه وترتيب أفضل K
     const matches = chunks
-      .filter((c) => c.embedding?.vector)
+      .filter((c) => c.embedding?.embedding)
       .map((c) => ({
         docTitle: c.document?.title ?? "",
         idx: c.idx,
         text: c.text,
-        score: cosineSim(qVec, c.embedding!.vector as number[]),
+        score: cosineSim(qVec, c.embedding!.embedding as number[]),
       }))
-      .sort((a, b) => b.score! - a.score!)
+      .sort((a, b) => b.score - a.score)
       .slice(0, k);
 
-    // 4) بناء الـPrompt وتوليد الإجابة
-    const prompt = buildRagPrompt(question, matches);
-    const answer = await generateAnswer(prompt);
+    // 4) بناء سياق نصي للـ RAG
+    const context = matches
+      .map(
+        (m, i) =>
+          `المقطع ${i + 1} (من: ${m.docTitle}) [درجة الصلة: ${m.score.toFixed(
+            3
+          )}]\n${m.text}`
+      )
+      .join("\n\n---\n\n");
 
-    // 5) إرجاع الإجابة + المراجع
+    // 5) بناء البرومبت وتوليد الإجابة
+    const prompt = buildRagPrompt(question, context);
+    const answer = await generateAnswer(question, context);
+
+    // 6) إرجاع النتيجة
     return NextResponse.json({
       ok: true,
       answer,
-      sources: matches.map((m) => ({ title: m.docTitle, idx: m.idx })),
-      debug: { k, used: matches.length }, // احذف debug لاحقًا إن أردت
+      sources: matches.map((m) => ({
+        title: m.docTitle,
+        idx: m.idx,
+        score: m.score,
+      })),
+      debug: { k, used: matches.length },
     });
   } catch (err: any) {
     console.error("AI route error:", err);
-    return NextResponse.json({ error: "failed to generate answer" }, { status: 500 });
+
+    if (err.message?.includes("OPENAI_API_KEY")) {
+      return NextResponse.json(
+        { ok: false, error: "خدمة الذكاء الاصطناعي غير مفعّلة حالياً" },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "failed to generate answer" },
+      { status: 500 }
+    );
   }
 }
