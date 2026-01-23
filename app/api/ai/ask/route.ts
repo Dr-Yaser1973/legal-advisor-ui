@@ -1,28 +1,47 @@
-
-import { NextResponse } from "next/server";
+ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { semanticSearch } from "@/lib/search";
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const CHAT_MODEL = process.env.CHAT_MODEL ?? "gpt-4o-mini";
 
+// ===============================
+// Factory آمن
+// ===============================
+function getOpenAI() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is missing");
+  }
+
+  return new OpenAI({ apiKey });
+}
+
+// ===============================
+// POST
+// ===============================
 export async function POST(req: Request) {
   try {
-    const { question, documentId, topK } = await req.json();
+    const { question, topK } = await req.json();
 
     if (!question || typeof question !== "string") {
-      return NextResponse.json({ error: "الرجاء إدخال سؤال." }, { status: 400 });
+      return NextResponse.json(
+        { error: "الرجاء إدخال سؤال." },
+        { status: 400 }
+      );
     }
 
     // 1) استرجاع المقاطع الأعلى صلة
-    const top = await semanticSearch(question, topK ?? 8, documentId);
+    const top = await semanticSearch(question, topK ?? 8);
 
     const context = top
       .map(
         (t, i) =>
-          `المقطع ${i + 1} (من: ${t.docTitle}) [درجة الصلة: ${t.score.toFixed(3)}]\n${t.text}`
+          `المقطع ${i + 1} (من: ${t.title}) [درجة الصلة: ${t.score.toFixed(
+            3
+          )}]\n${t.snippet}`
       )
       .join("\n\n---\n\n");
 
@@ -39,6 +58,8 @@ export async function POST(req: Request) {
       "- أرفق قائمة موجزة بالمراجع في النهاية إن أمكن.";
 
     // 2) توليد الإجابة
+    const openai = getOpenAI();
+
     const resp = await openai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
@@ -52,6 +73,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, answer, references: top });
   } catch (err: any) {
     console.error("ask error:", err);
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+
+    if (err.message?.includes("OPENAI_API_KEY")) {
+      return NextResponse.json(
+        { ok: false, error: "خدمة الذكاء الاصطناعي غير مفعّلة حالياً" },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "حدث خطأ أثناء معالجة السؤال." },
+      { status: 500 }
+    );
   }
 }
