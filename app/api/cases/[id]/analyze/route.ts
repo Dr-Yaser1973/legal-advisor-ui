@@ -1,14 +1,8 @@
- // app/api/cases/[id]/analyze/route.ts
-import { NextResponse } from "next/server";
+ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
+import { generateAnswer } from "@/lib/ai";
 
-// لا تستخدم edge runtime مع Prisma
-// export const runtime = "nodejs"; // اختياري، الافتراضي node
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const runtime = "nodejs";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -16,22 +10,14 @@ interface RouteContext {
 
 export async function POST(_req: Request, context: RouteContext) {
   try {
-    // ✅ هنا نفكّ الـ Promise
+    // ✅ فكّ الـ Promise الخاص بالمسار
     const { id: idStr } = await context.params;
     const id = Number(idStr);
 
-    if (Number.isNaN(id)) {
+    if (!Number.isFinite(id)) {
       return NextResponse.json(
         { error: "معرّف القضية غير صالح." },
-        { status: 400 },
-      );
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("❌ OPENAI_API_KEY مفقود من ملف .env");
-      return NextResponse.json(
-        { error: "OpenAI API key is not configured on the server." },
-        { status: 500 },
+        { status: 400 }
       );
     }
 
@@ -39,46 +25,34 @@ export async function POST(_req: Request, context: RouteContext) {
     if (!c) {
       return NextResponse.json(
         { error: "القضية غير موجودة." },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    const prompt = `
-أنت مستشار قانوني عراقي. إليك معلومات عن قضية:
-
-العنوان: ${c.title}
-نوع القضية: ${c.type}
-المحكمة: ${c.court}
-حالة القضية الحالية: ${c.status}
+    // بناء السياق القانوني
+    const contextText = `
+العنوان: ${c.title ?? ""}
+نوع القضية: ${c.type ?? ""}
+المحكمة: ${c.court ?? ""}
+حالة القضية: ${c.status ?? ""}
 
 وصف القضية:
-${c.description}
+${c.description ?? ""}
+`.trim();
 
-المطلوب منك:
-- تلخيص موجز للوقائع.
-- تحديد أهم النصوص القانونية المحتملة ذات الصلة (دون ذكر أرقام مواد إن لم تكن متأكدًا).
-- تقديم تقييم قانوني مختصر لموقف المدعي والمدعى عليه.
-- تقديم توصيات عملية للمحامي حول الاستراتيجية الإجرائية القادمة.
+    // 🔥 الذكاء يعمل هنا فقط (Runtime)
+    const analysis = await generateAnswer(
+      "حلّل هذه القضية وقدّم ملخصًا قانونيًا وتوصيات إجرائية عملية.",
+      contextText
+    );
 
-اكتب الإجابة بلغة عربية قانونية رسمية ومنسقة بفقرات ونقاط.
-    `.trim();
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const analysis =
-      completion.choices[0]?.message?.content?.trim() ??
-      "لم يتمكن النظام من توليد تحليل مناسب.";
-
-    // نخزنها كنص عادي في حقل Json
+    // تخزين التحليل
     await prisma.case.update({
       where: { id },
       data: { aiAnalysis: analysis },
     });
 
-    return NextResponse.json({ analysis });
+    return NextResponse.json({ ok: true, analysis });
   } catch (err: any) {
     console.error("❌ Error analyzing case:", err);
     return NextResponse.json(
@@ -86,7 +60,7 @@ ${c.description}
         error: "Failed to analyze case.",
         details: err?.message ?? String(err),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
