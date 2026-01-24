@@ -100,17 +100,23 @@ export default function LoginForm() {
     <div className="h-px flex-1 bg-zinc-700" />
   </div>
 
-  <button
-    type="button"
-    onClick={() => signIn("google", { callbackUrl: "/" })}
-    className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
-  >
-    <FcGoogle className="h-5 w-5" />
-    <span>تسجيل الدخول عبر Google</span>
-    <span className="text-xs text-zinc-400 hidden sm:inline">
-      Sign in with Google
-    </span>
-  </button>
+   <button
+  type="button"
+  onClick={() => {
+    const PROD = "https://legal-advisor-ui.vercel.app";
+    signIn("google", {
+      callbackUrl: `${PROD}/`,
+    });
+  }}
+  className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
+>
+  <FcGoogle className="h-5 w-5" />
+  <span>تسجيل الدخول عبر Google</span>
+  <span className="text-xs text-zinc-400 hidden sm:inline">
+    Sign in with Google
+  </span>
+</button>
+
 </div>
       </form>
     </div>
