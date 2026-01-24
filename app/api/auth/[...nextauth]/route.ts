@@ -5,6 +5,23 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, UserRole, UserStatus } from "@prisma/client";
 
+const PROD_DOMAIN = "legal-advisor-ui.vercel.app";
+
+function assertGoogleAllowed(req: Request) {
+  const host = req.headers.get("host") || "";
+
+  // إذا كان Preview من Vercel → نمنع Google OAuth
+  const isPreview =
+    host.endsWith("vercel.app") && host !== PROD_DOMAIN;
+
+  if (isPreview) {
+    throw new Error(
+      "Google OAuth is disabled on preview domains. Please use the production site."
+    );
+  }
+}
+
+
 export const runtime = "nodejs";
 
 export const authOptions: NextAuthOptions = {
@@ -168,6 +185,36 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-const handler = NextAuth(authOptions);
+ export async function GET(req: Request) {
+  try {
+    // اسمح دائمًا لـ Credentials
+    if (new URL(req.url).searchParams.get("provider") === "google") {
+      assertGoogleAllowed(req);
+    }
+    return NextAuth(authOptions)(req);
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({
+        error: e?.message || "Google login not allowed on this domain",
+      }),
+      { status: 403, headers: { "content-type": "application/json" } }
+    );
+  }
+}
 
-export { handler as GET, handler as POST };
+export async function POST(req: Request) {
+  try {
+    // اسمح دائمًا لـ Credentials
+    if (new URL(req.url).searchParams.get("provider") === "google") {
+      assertGoogleAllowed(req);
+    }
+    return NextAuth(authOptions)(req);
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({
+        error: e?.message || "Google login not allowed on this domain",
+      }),
+      { status: 403, headers: { "content-type": "application/json" } }
+    );
+  }
+}
