@@ -4,26 +4,34 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, UserRole, UserStatus } from "@prisma/client";
+import { NextRequest } from "next/server";
 
+export const runtime = "nodejs";
+
+// =======================
+// PRODUCTION DOMAIN
+// =======================
 const PROD_DOMAIN = "legal-advisor-ui.vercel.app";
 
-function assertGoogleAllowed(req: Request) {
+// =======================
+// GOOGLE PREVIEW BLOCK
+// =======================
+function assertGoogleAllowed(req: NextRequest) {
   const host = req.headers.get("host") || "";
 
-  // إذا كان Preview من Vercel → نمنع Google OAuth
   const isPreview =
     host.endsWith("vercel.app") && host !== PROD_DOMAIN;
 
   if (isPreview) {
     throw new Error(
-      "Google OAuth is disabled on preview domains. Please use the production site."
+      "Google OAuth is disabled on preview domains. Use production site."
     );
   }
 }
 
-
-export const runtime = "nodejs";
-
+// =======================
+// AUTH OPTIONS
+// =======================
 export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
@@ -73,7 +81,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("الحساب غير مفعّل، يرجى مراجعة إدارة المنصة.");
         }
 
-        // ⚠️ فقط الهوية — لا تضف حقول أخرى هنا
         return {
           id: user.id.toString(),
           name: user.name,
@@ -145,7 +152,7 @@ export const authOptions: NextAuthOptions = {
     },
 
     // =========================
-    // JWT — LOAD DB USER DATA
+    // JWT
     // =========================
     async jwt({ token, user }) {
       if (user?.email) {
@@ -159,24 +166,26 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        token.role = dbUser?.role;
-        token.status = dbUser?.status;
-        token.isApproved = dbUser?.isApproved;
-        token.authProvider = dbUser?.authProvider;
+        if (dbUser) {
+          (token as any).role = dbUser.role;
+          (token as any).status = dbUser.status;
+          (token as any).isApproved = dbUser.isApproved;
+          (token as any).authProvider = dbUser.authProvider;
+        }
       }
 
       return token;
     },
 
     // =========================
-    // SESSION — EXPOSE TO UI
+    // SESSION
     // =========================
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).status = token.status;
-        (session.user as any).isApproved = token.isApproved;
-        (session.user as any).authProvider = token.authProvider;
+        (session.user as any).role = (token as any).role;
+        (session.user as any).status = (token as any).status;
+        (session.user as any).isApproved = (token as any).isApproved;
+        (session.user as any).authProvider = (token as any).authProvider;
       }
       return session;
     },
@@ -185,35 +194,43 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
- export async function GET(req: Request) {
+// =======================
+// HANDLER
+// =======================
+const handler = NextAuth(authOptions);
+
+// =======================
+// ROUTES
+// =======================
+export async function GET(req: NextRequest) {
   try {
-    // اسمح دائمًا لـ Credentials
-    if (new URL(req.url).searchParams.get("provider") === "google") {
+    const provider = req.nextUrl.searchParams.get("provider");
+
+    if (provider === "google") {
       assertGoogleAllowed(req);
     }
-    return NextAuth(authOptions)(req);
+
+    return handler(req);
   } catch (e: any) {
     return new Response(
-      JSON.stringify({
-        error: e?.message || "Google login not allowed on this domain",
-      }),
+      JSON.stringify({ error: e?.message || "Auth blocked" }),
       { status: 403, headers: { "content-type": "application/json" } }
     );
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // اسمح دائمًا لـ Credentials
-    if (new URL(req.url).searchParams.get("provider") === "google") {
+    const provider = req.nextUrl.searchParams.get("provider");
+
+    if (provider === "google") {
       assertGoogleAllowed(req);
     }
-    return NextAuth(authOptions)(req);
+
+    return handler(req);
   } catch (e: any) {
     return new Response(
-      JSON.stringify({
-        error: e?.message || "Google login not allowed on this domain",
-      }),
+      JSON.stringify({ error: e?.message || "Auth blocked" }),
       { status: 403, headers: { "content-type": "application/json" } }
     );
   }
