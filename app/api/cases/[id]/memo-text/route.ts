@@ -1,9 +1,9 @@
  // app/api/cases/[id]/memo-text/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOpenAI } from "@/lib/ai/openai";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // يمنع أي محاولة static eval
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -39,16 +39,18 @@ export async function POST(_req: Request, context: RouteContext) {
 - ملخص الوقائع: ${c.description}
 
 أعد لي مسوّدة مذكرة دفاع/رأي قانوني تشمل:
-1) الوقائع (صياغة دقيقة مختصرة)
-2) الأساس القانوني (مواد ذات صلة مع أرقامها إن أمكن)
-3) التحليل القانوني (منطقي وواضح)
-4) الطلبات (محددة ومباشرة)
-
-اكتب بدون حشو، وبنقاط مرتبة وترويسات واضحة.
+1) الوقائع
+2) الأساس القانوني
+3) التحليل القانوني
+4) الطلبات
     `.trim();
 
-    // ✅ يتم الإنشاء وقت الطلب فقط — آمن للنشر على Vercel
-    const openai = getOpenAI();
+    // ✅ التحميل الحقيقي يحدث هنا فقط — مستحيل أثناء build
+    const { default: OpenAI } = await import("openai");
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+    });
 
     const chat = await openai.chat.completions.create({
       model: process.env.CHAT_MODEL ?? "gpt-4o-mini",
