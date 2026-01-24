@@ -1,14 +1,10 @@
- // app/api/auth/[...nextauth]/route.ts
 
-import NextAuth from "next-auth";
-import type { NextAuthOptions } from "next-auth";
+import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, UserRole, UserStatus } from "@prisma/client";
-
-export const runtime = "nodejs";
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -145,7 +141,3 @@ export const authOptions: NextAuthOptions = {
 
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };

@@ -1,14 +1,10 @@
- // app/api/auth/[...nextauth]/route.ts
 
-import NextAuth from "next-auth";
-import type { NextAuthOptions } from "next-auth";
+import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, UserRole, UserStatus } from "@prisma/client";
-
-export const runtime = "nodejs";
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -39,22 +35,18 @@ export const authOptions: NextAuthOptions = {
           where: { email },
         });
 
-        if (!user) {
-          throw new Error("البريد غير مسجل.");
-        }
+        if (!user) throw new Error("البريد غير مسجل.");
+        if (!user.password)
+          throw new Error("هذا الحساب مسجل عبر Google.");
 
-        if (!user.password) {
-          throw new Error("هذا الحساب مسجل عبر Google. استخدم زر Google للدخول.");
-        }
+        const isValid = await bcrypt.compare(
+          plainPassword,
+          user.password
+        );
 
-        const isValid = await bcrypt.compare(plainPassword, user.password);
-        if (!isValid) {
-          throw new Error("كلمة المرور غير صحيحة.");
-        }
-
-        if (user.status !== UserStatus.ACTIVE) {
-          throw new Error("الحساب غير مفعّل، يرجى مراجعة إدارة المنصة.");
-        }
+        if (!isValid) throw new Error("كلمة المرور غير صحيحة.");
+        if (user.status !== UserStatus.ACTIVE)
+          throw new Error("الحساب غير مفعّل.");
 
         return {
           id: user.id.toString(),
@@ -107,7 +99,6 @@ export const authOptions: NextAuthOptions = {
           });
         }
       }
-
       return true;
     },
 
@@ -128,7 +119,6 @@ export const authOptions: NextAuthOptions = {
         token.isApproved = dbUser?.isApproved;
         token.authProvider = dbUser?.authProvider;
       }
-
       return token;
     },
 
@@ -137,7 +127,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
         (session.user as any).status = token.status;
         (session.user as any).isApproved = token.isApproved;
-        (session.user as any).authProvider = token.authProvider;
+        (session.user as any).authProvider =
+          token.authProvider;
       }
       return session;
     },
@@ -145,7 +136,3 @@ export const authOptions: NextAuthOptions = {
 
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
