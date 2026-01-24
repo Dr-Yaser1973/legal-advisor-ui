@@ -4,7 +4,6 @@ import { buildRagMessages } from "@/lib/rag";
 import { chatCompletion, getEmbedding, cosineSim } from "@/lib/ai";
 
 export const runtime = "nodejs";
-
 export async function POST(req: Request) {
   try {
     const { question, k = 8 } = await req.json();
