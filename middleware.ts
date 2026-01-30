@@ -1,8 +1,10 @@
- // middleware.ts
-import { NextResponse } from "next/server";
+ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+// =========================
+// المسارات العامة
+// =========================
 const PUBLIC_PATHS = [
   "/",
   "/library",
@@ -20,7 +22,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/register",
   "/unauthorized",
-  "/consultations",  
+  "/consultations",
 ];
 
 function isPublicPath(pathname: string) {
@@ -29,12 +31,15 @@ function isPublicPath(pathname: string) {
   );
 }
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/api/debug/prisma")) {
-    return NextResponse.next();
-  }
-  // استثناء ملفات النظام والستايل
+// =========================
+// Middleware الرئيسي
+// =========================
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // =========================
+  // استثناءات النظام
+  // =========================
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
@@ -43,29 +48,35 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // استثناء مسارات الأوث نفسها
-  if (pathname.startsWith("/api/auth")) {
+  // =========================
+  // استثناءات API
+  // =========================
+  if (
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/debug/prisma") ||
+    pathname.startsWith("/api/library") ||
+    pathname.startsWith("/api/ocr")
+  ) {
     return NextResponse.next();
   }
-  // ✅ السماح لـ API المكتبة العامة
-if (pathname.startsWith("/api/library")) {
-  return NextResponse.next();
-}
 
-
-  // مسارات عامة لا تحتاج تسجيل دخول
+  // =========================
+  // صفحات عامة
+  // =========================
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
-  // باقي المسارات → نقرأ الـ JWT
+  // =========================
+  // تحقق الجلسة
+  // =========================
   const token = await getToken({
-    req,
+    req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
   if (!token) {
-    const url = req.nextUrl.clone();
+    const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
@@ -80,80 +91,93 @@ if (pathname.startsWith("/api/library")) {
 
   const status = (token as any).status as "ACTIVE" | "BLOCKED" | undefined;
 
-  // حظر الحسابات BLOCKED
+  // =========================
+  // حساب محظور
+  // =========================
   if (status === "BLOCKED") {
-    const url = req.nextUrl.clone();
+    const url = request.nextUrl.clone();
     url.pathname = "/account-blocked";
     return NextResponse.redirect(url);
   }
 
-  // ================ قواعد الصلاحيات ================ //
-
-  // القضايا → ADMIN + LAWYER + COMPANY
+  // =========================
+  // صلاحيات القضايا
+  // =========================
   if (pathname.startsWith("/cases")) {
     if (!["ADMIN", "LAWYER", "COMPANY"].includes(role || "")) {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // لوحات المحامي الخاصة (/lawyers/my-consults, /lawyers/my-cases, /lawyer/...)
+  // =========================
+  // لوحات المحامي
+  // =========================
   if (
     pathname.startsWith("/lawyers/my") ||
     pathname.startsWith("/lawyer")
   ) {
     if (!["LAWYER", "ADMIN"].includes(role || "")) {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // لوحات مكتب الترجمة
+  // =========================
+  // مكتب الترجمة
+  // =========================
   if (pathname.startsWith("/translation-office")) {
     if (!["TRANSLATION_OFFICE", "ADMIN"].includes(role || "")) {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // لوحات المستخدم العادي (إن وُجدت مثال /client/...)
+  // =========================
+  // المستخدم
+  // =========================
   if (pathname.startsWith("/client")) {
     if (!["CLIENT", "ADMIN"].includes(role || "")) {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // لوحات الشركة
+  // =========================
+  // الشركة
+  // =========================
   if (pathname.startsWith("/company")) {
     if (!["COMPANY", "ADMIN"].includes(role || "")) {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // لوحة الأدمن
+  // =========================
+  // الأدمن
+  // =========================
   if (pathname.startsWith("/admin")) {
     if (role !== "ADMIN") {
-      const url = req.nextUrl.clone();
+      const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
   }
 
-  // ما عدا ذلك → يكفي أن يكون مسجّل دخول
   return NextResponse.next();
 }
 
- export const config = {
+// =========================
+// matcher
+// =========================
+ 
+export const config = {
   matcher: [
-    "/((?!login|register|api/register|api/auth|_next/static|_next/image|favicon.ico|library).*)",
+    "/((?!_next|favicon.ico|public|api/auth|api/ocr/worker/callback).*)",
   ],
 };
-
-
