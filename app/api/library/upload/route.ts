@@ -130,18 +130,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // ===============================
-    // 3) إنشاء LegalDocument
-    // ===============================
-    const legalDoc = await prisma.legalDocument.create({
-      data: {
-        title,
-        filename: storagePath, // ✅ مثال: laws/abc123.pdf
-        mimetype: "application/pdf",
-        size: buffer.length,
-      },
-      select: { id: true },
-    });
+  
+// 3) إنشاء LegalDocument
+// ===============================
+const legalDoc = await prisma.legalDocument.create({
+  data: {
+    title,
+    filePath : storagePath, // مثال: laws/abc123.pdf
+    mimetype: "application/pdf",
+    size: buffer.length,
+  },
+  select: { id: true },
+});
+
+// 🔁 إدخال تلقائي إلى OCR
+await prisma.legalDocument.update({
+  where: { id: legalDoc.id },
+  data: {
+    ocrStatus: "PENDING",
+    ocrLanguage: "ar+en",
+  },
+});
+
 
     // ===============================
     // 4) إنشاء LawUnit

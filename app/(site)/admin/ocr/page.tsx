@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -14,10 +14,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+// ================= Types =================
 type OCRStatus = "NONE" | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 type DocumentKind = "PDF" | "IMAGE";
 
-type Item = {
+export type Item = {
   id: number;
   title: string;
   filename: string | null;
@@ -35,7 +36,7 @@ type Item = {
   createdBy: { id: number; name: string | null; email: string | null } | null;
 };
 
-type ApiResponse = {
+export type ApiResponse = {
   ok: boolean;
   page: number;
   pageSize: number;
@@ -46,6 +47,7 @@ type ApiResponse = {
   error?: string;
 };
 
+// ================= Constants =================
 const STATUS_OPTIONS: { value: "" | OCRStatus; label: string }[] = [
   { value: "", label: "كل الحالات" },
   { value: "NONE", label: "بدون OCR" },
@@ -61,6 +63,7 @@ const KIND_OPTIONS: { value: "" | DocumentKind; label: string }[] = [
   { value: "IMAGE", label: "صور" },
 ];
 
+// ================= Helpers =================
 function fmtSize(bytes: number) {
   if (!bytes && bytes !== 0) return "-";
   const kb = bytes / 1024;
@@ -85,6 +88,7 @@ function badge(status: OCRStatus) {
   return base + " border-zinc-700 bg-zinc-950/40 text-zinc-300";
 }
 
+// ================= Main Page =================
 export default function OcrAdminPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -98,6 +102,7 @@ export default function OcrAdminPage() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const pages = data?.pages || 1;
 
+  // ========== Query String ==========
   const queryString = useMemo(() => {
     const sp = new URLSearchParams();
     if (q.trim()) sp.set("q", q.trim());
@@ -108,10 +113,13 @@ export default function OcrAdminPage() {
     return sp.toString();
   }, [q, status, kind, page, pageSize]);
 
+  // ========== Load ==========
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/ocr/documents?${queryString}`, { cache: "no-store" });
+      const res = await fetch(`/api/ocr/documents?${queryString}`, {
+        cache: "no-store",
+      });
       const json = (await res.json()) as ApiResponse;
       setData(json);
     } finally {
@@ -124,6 +132,7 @@ export default function OcrAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryString]);
 
+  // ========== Enqueue ==========
   async function enqueue(id: number, force = false) {
     setBusyId(id);
     try {
@@ -139,11 +148,39 @@ export default function OcrAdminPage() {
     }
   }
 
+  // ========== Run Worker (Global) ==========
+   async function runWorker(limit = 5) {
+  if (!confirm("تشغيل OCR على المستندات الموجودة في الطابور؟")) return;
+
+  try {
+    const res = await fetch("/api/ocr/enqueue", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ limit }),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok || !json.ok) {
+      alert(json.error || "فشل تشغيل الطابور");
+      return;
+    }
+
+    alert(`تم إرسال ${json.queued} مستند إلى الوركر`);
+    await load();
+  } catch (e) {
+    alert("خطأ في الاتصال بخدمة OCR");
+  }
+}
+
+
   const counts = data?.counts || {};
 
   return (
     <main dir="rtl" className="min-h-screen bg-[#0b1220] text-zinc-100">
-      {/* Top bar */}
+      {/* ================= Top bar ================= */}
       <div className="sticky top-0 z-40 border-b border-zinc-800 bg-[#0b1220]/80 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -153,12 +190,21 @@ export default function OcrAdminPage() {
             <div className="leading-tight">
               <div className="text-sm font-extrabold">لوحة OCR</div>
               <div className="text-[11px] text-zinc-400">
-                إدارة المستندات المصوّرة والممسوحة — Queue/Retry/Stats
+                إدارة المستندات المصوّرة والممسوحة — Queue / Retry / Stats
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => runWorker(5)}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition"
+              title="تشغيل OCR Worker على المستندات في الطابور"
+            >
+              <PlayCircle className="h-4 w-4" />
+              تشغيل OCR
+            </button>
+
             <button
               onClick={load}
               className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-2 text-sm font-semibold hover:bg-zinc-900/40 transition"
@@ -166,6 +212,7 @@ export default function OcrAdminPage() {
               <RefreshCcw className="h-4 w-4" />
               تحديث
             </button>
+
             <Link
               href="/admin"
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition"
@@ -177,7 +224,7 @@ export default function OcrAdminPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Stats */}
+        {/* ================= Stats ================= */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard title="بدون OCR" value={counts["NONE"] ?? 0} tone="zinc" />
           <StatCard title="بالطابور" value={counts["PENDING"] ?? 0} tone="yellow" />
@@ -186,7 +233,7 @@ export default function OcrAdminPage() {
           <StatCard title="فشل" value={counts["FAILED"] ?? 0} tone="rose" />
         </div>
 
-        {/* Filters */}
+        {/* ================= Filters ================= */}
         <div className="mt-5 rounded-3xl border border-zinc-800 bg-zinc-950/40 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-sm font-bold">
@@ -255,7 +302,7 @@ export default function OcrAdminPage() {
             </div>
           </div>
 
-          {/* Table */}
+          {/* ================= Table ================= */}
           <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-800">
             <div className="hidden md:grid grid-cols-12 gap-2 bg-zinc-950 px-4 py-3 text-[12px] font-semibold text-zinc-300">
               <div className="col-span-4">المستند</div>
@@ -286,14 +333,14 @@ export default function OcrAdminPage() {
                   />
                 ))
               ) : (
-                <div className="px-4 py10 py-10 text-center text-sm text-zinc-300">
+                <div className="px-4 py-10 text-center text-sm text-zinc-300">
                   لا توجد نتائج.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Pagination */}
+          {/* ================= Pagination ================= */}
           <div className="mt-4 flex items-center justify-between text-sm text-zinc-300">
             <div>
               المجموع: <span className="font-semibold text-zinc-100">{data?.total ?? 0}</span>
@@ -321,15 +368,17 @@ export default function OcrAdminPage() {
           </div>
         </div>
 
-        {/* Hint */}
+        {/* ================= Hint ================= */}
         <div className="mt-4 text-[12px] text-zinc-400 leading-6">
-          ملاحظة: زر <span className="text-zinc-100 font-semibold">إدخال للطابور</span> يضبط حالة OCR إلى PENDING.
-          لاحقًا سنربطه بالـ Worker لبدء الاستخراج الفعلي (Tesseract/OCR API) وتحديث الحالة إلى PROCESSING ثم COMPLETED.
+          ملاحظة: زر <span className="text-zinc-100 font-semibold">إدخال للطابور</span> يضبط حالة OCR إلى
+          PENDING. زر <span className="text-zinc-100 font-semibold">تشغيل OCR</span> يقوم بتشغيل العامل
+          لاستخراج النص وتحديث الحالة إلى PROCESSING ثم COMPLETED.
         </div>
       </div>
     </main>
   );
 
+  // ================= Row Component =================
   function Row({
     it,
     busy,
@@ -381,7 +430,11 @@ export default function OcrAdminPage() {
               disabled={busy}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="h-4 w-4" />
+              )}
               إدخال للطابور
             </button>
             <button
@@ -389,7 +442,11 @@ export default function OcrAdminPage() {
               disabled={busy}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm font-semibold disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
               Retry
             </button>
           </div>
@@ -431,7 +488,11 @@ export default function OcrAdminPage() {
               disabled={busy}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="h-4 w-4" />
+              )}
               Enqueue
             </button>
             <button
@@ -439,7 +500,11 @@ export default function OcrAdminPage() {
               disabled={busy}
               className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm font-semibold hover:bg-zinc-900/40 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
               Retry
             </button>
           </div>
@@ -449,6 +514,7 @@ export default function OcrAdminPage() {
   }
 }
 
+// ================= Stat Card =================
 function StatCard({
   title,
   value,
@@ -476,4 +542,3 @@ function StatCard({
     </div>
   );
 }
-

@@ -244,7 +244,8 @@ model LegalReference {
   // =========================
   ocrStatus   OCRStatus @default(NONE)
   ocrLanguage String? // ar | en | ar+en
-
+  ocrText     String?   @db.Text
+  ocrProvider String?
   // =========================
   // بيانات تقنية
   // =========================
