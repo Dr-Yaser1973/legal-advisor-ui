@@ -35,7 +35,7 @@ const CONTENT = {
     portal: "البوابة الرقمية للخدمات القانونية",
     portalEn: "Digital Legal Services Portal",
     topNote: "واجهة رسمية • ثنائية اللغة • محسّنة للموبايل",
-    heroTitle: "بوابة رسمية موثوقة للخدمات القانونية الرقمية",
+    heroTitle: "بوابة للخدمات القانونية الرقمية",
     heroSubtitle:
       "وصول سريع إلى المكتبة القانونية، توليد العقود، الترجمة القانونية، والاستشارات — بتجربة مؤسسية جاذبة تعمل بسلاسة على الموبايل.",
     heroPrimary: "الدخول إلى المكتبة القانونية",
@@ -110,7 +110,7 @@ const CONTENT = {
     portal: "Digital Legal Services Portal",
     portalEn: "البوابة الرقمية للخدمات القانونية",
     topNote: "Official • Bilingual • Mobile-Optimized",
-    heroTitle: "A Trusted Official Gateway for Digital Legal Services",
+    heroTitle: " Gateway for Digital Legal Services",
     heroSubtitle:
       "Fast access to the legal library, contract generation, legal translation, and consultations — with an institutional, mobile-first experience.",
     heroPrimary: "Open Legal Library",

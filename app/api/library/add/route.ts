@@ -1,6 +1,9 @@
- import { prisma } from "@/lib/prisma";
+ import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { LAW_CATEGORIES, LawCategoryKey } from "@/lib/lawCategories";
 import { parseLawText } from "@/lib/lawParser";
+import { requireRole } from "@/lib/auth/guards";
+import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -15,33 +18,29 @@ type Body = {
 function normalizeCategory(input?: string | null): LawCategoryKey | null {
   if (!input) return null;
   const upper = input.trim().toUpperCase();
-  if (LAW_CATEGORIES.some((c) => c.key === upper)) {
-    return upper as LawCategoryKey;
-  }
+  if (LAW_CATEGORIES.some((c) => c.key === upper)) return upper as LawCategoryKey;
   return null;
 }
 
 export async function POST(req: Request) {
+  const auth = await requireRole([UserRole.ADMIN]);
+  if (!auth.ok) return auth.res;
+
   try {
-    const body = (await req.json()) as Body;
+    const body = (await req.json().catch(() => ({}))) as Body;
     const { title, jurisdiction, text, year } = body;
 
     if (!title || !jurisdiction || !body.category || !text) {
-      return new Response(
-        JSON.stringify({
-          error: "العنوان والاختصاص والتصنيف والنص مطلوبة.",
-        }),
+      return NextResponse.json(
+        { error: "العنوان والاختصاص والتصنيف والنص مطلوبة." },
         { status: 400 },
       );
     }
 
     const category = normalizeCategory(body.category);
     if (!category) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "التصنيف غير معروف. استخدم LAW أو FIQH أو ACADEMIC_STUDY.",
-        }),
+      return NextResponse.json(
+        { error: "التصنيف غير معروف. استخدم LAW أو FIQH أو ACADEMIC_STUDY." },
         { status: 400 },
       );
     }
@@ -50,7 +49,7 @@ export async function POST(req: Request) {
       data: {
         title,
         jurisdiction,
-        category, // يخزن المفتاح فقط
+        category,
         year: year ?? null,
         text,
         visibility: "PUBLIC",
@@ -70,19 +69,9 @@ export async function POST(req: Request) {
       });
     }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        id: doc.id,
-        articlesCount: articles.length,
-      }),
-      { status: 201 },
-    );
+    return NextResponse.json({ ok: true, id: doc.id, articlesCount: articles.length }, { status: 201 });
   } catch (e: any) {
     console.error("library/add error:", e);
-    return new Response(
-      JSON.stringify({ error: e?.message ?? "فشل إضافة المصدر" }),
-      { status: 500 },
-    );
+    return NextResponse.json({ error: e?.message ?? "فشل إضافة المصدر" }, { status: 500 });
   }
 }

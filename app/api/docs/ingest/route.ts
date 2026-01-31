@@ -1,6 +1,8 @@
  import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
+import { requireRole } from "@/lib/auth/guards";
+import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -21,11 +23,13 @@ async function backoff<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireRole([UserRole.ADMIN]);
+  if (!auth.ok) return auth.res;
+
   try {
     const body = (await req.json().catch(() => ({}))) as { documentId?: number };
     const documentId = body?.documentId;
 
-    // 1) المقاطع التي لا تحتوي على تضمين (embedding = null)
     const chunks = await prisma.legalDocChunk.findMany({
       where: { ...(documentId ? { documentId } : {}), embedding: null },
       select: { id: true, text: true },
@@ -38,18 +42,12 @@ export async function POST(req: Request) {
 
     let created = 0;
 
-    // 2) التضمين على دفعات
     for (let i = 0; i < chunks.length; i += BATCH) {
       const batch = chunks.slice(i, i + BATCH);
-      const inputs = batch.map((c) =>
-        c.text && c.text.trim().length > 0 ? c.text : " ",
-      );
+      const inputs = batch.map((c) => (c.text && c.text.trim().length > 0 ? c.text : " "));
 
-      const resp = await backoff(() =>
-        openai.embeddings.create({ model: MODEL, input: inputs }),
-      );
+      const resp = await backoff(() => openai.embeddings.create({ model: MODEL, input: inputs }));
 
-      // 3) حفظ التضمين لكل chunk
       await prisma.$transaction(
         batch.map((c, idx) =>
           prisma.chunkEmbedding.create({
@@ -67,9 +65,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, created });
   } catch (err: any) {
     console.error("ingest error:", err);
-    return NextResponse.json(
-      { ok: false, error: err?.message ?? "فشل بناء التضمينات" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: err?.message || "ingest failed" }, { status: 500 });
   }
 }

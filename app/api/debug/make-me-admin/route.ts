@@ -1,53 +1,45 @@
-// app/api/debug/make-me-admin/route.ts
+ // app/api/debug/make-me-admin/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { blockIfProduction, requireUser } from "@/lib/auth/guards";
+import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 
-// نستخدم GET حتى تستطيع فتح الرابط مباشرة من المتصفح
 export async function GET() {
+  // ممنوع في الإنتاج
+  const env = blockIfProduction();
+  if (!env.ok) return env.res;
+
+  // يتطلب تسجيل دخول
+  const auth = await requireUser();
+  if (!auth.ok) return auth.res;
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message: "يجب تسجيل الدخول أولاً قبل استعمال هذا المسار.",
-        },
-        { status: 401 },
-      );
-    }
-
-    const email = session.user.email.toLowerCase().trim();
-
     const user = await prisma.user.update({
-      where: { email },
+      where: { id: auth.user.id },
       data: {
-        role: "ADMIN",
+        role: UserRole.ADMIN,
         isApproved: true,
-        status: "ACTIVE", // غيّرها إذا كان Enum عندك باسم آخر للحالة المفعّلة
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isApproved: true,
       },
     });
 
     return NextResponse.json({
       ok: true,
-      message: "تم ترقيتك إلى أدمن وتفعيل حسابك بنجاح.",
-      userId: user.id,
-      role: user.role,
-      status: user.status,
+      message: "تم ترقيتك إلى ADMIN (وضع التطوير فقط).",
+      user,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("make-me-admin error:", err);
     return NextResponse.json(
-      {
-        ok: false,
-        message: "حدث خطأ أثناء ترقية الحساب إلى أدمن.",
-      },
+      { ok: false, message: "فشل ترقية المستخدم." },
       { status: 500 },
     );
   }
 }
-

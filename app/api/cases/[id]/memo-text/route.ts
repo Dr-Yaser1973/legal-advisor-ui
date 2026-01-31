@@ -1,73 +1,56 @@
- // app/api/cases/[id]/memo-text/route.ts
-import { NextResponse } from "next/server";
+ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import OpenAI from "openai";
+import { requireCaseAccess } from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic"; // يمنع أي محاولة static eval
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
-export async function POST(_req: Request, context: RouteContext) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id: idStr } = await context.params;
-    const id = Number(idStr);
+    const id = Number(params.id);
 
     if (Number.isNaN(id)) {
-      return NextResponse.json(
-        { error: "معرّف القضية غير صالح." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "معرّف القضية غير صالح." }, { status: 400 });
     }
+
+    const auth = await requireCaseAccess(id);
+    if (!auth.ok) return auth.res;
 
     const c = await prisma.case.findUnique({ where: { id } });
     if (!c) {
-      return NextResponse.json(
-        { error: "القضية غير موجودة." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "القضية غير موجودة" }, { status: 404 });
     }
 
-    const prompt = `
-أنت محامٍ تجيد الصياغة القانونية بالعربية الفصحى.
-أمامك بيانات قضية:
-- العنوان: ${c.title}
-- المحكمة: ${c.court}
-- النوع: ${c.type}
-- الحالة: ${c.status}
-- ملخص الوقائع: ${c.description}
+    const body = (await req.json().catch(() => ({}))) as { tone?: string };
+    const tone = (body.tone || "professional").toString();
 
-أعد لي مسوّدة مذكرة دفاع/رأي قانوني تشمل:
-1) الوقائع
-2) الأساس القانوني
-3) التحليل القانوني
-4) الطلبات
-    `.trim();
+    const prompt = `اكتب مذكرة قانونية نصية (بدون PDF) للقضية التالية مع توصيات عملية.\n\nالعنوان: ${
+      c.title ?? ""
+    }\nالوصف: ${c.description ?? ""}\nا 👥 الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}
+\n\nنبرة الكتابة: ${tone}`;
 
-    // ✅ التحميل الحقيقي يحدث هنا فقط — مستحيل أثناء build
-    const { default: OpenAI } = await import("openai");
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
-
-    const chat = await openai.chat.completions.create({
-      model: process.env.CHAT_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
     });
 
-    const memoText =
-      chat.choices[0]?.message?.content?.trim() ??
-      "لم يتمكن النظام من توليد مذكرة مناسبة.";
+    const memoText = completion.choices?.[0]?.message?.content?.trim() || "";
+    if (!memoText) {
+      return NextResponse.json({ error: "تعذر توليد النص." }, { status: 500 });
+    }
 
-    return NextResponse.json({ memo: memoText });
+    await prisma.caseEvent.create({
+      data: { caseId: id, title: "مذكرة AI (نص)", note: memoText, date: new Date() },
+    });
+
+    return NextResponse.json({ ok: true, memoText });
   } catch (e: any) {
-    console.error("Error generating memo text:", e);
-    return NextResponse.json(
-      { error: e?.message ?? "فشل في توليد المذكرة." },
-      { status: 500 }
-    );
+    console.error("memo-text error:", e);
+    return NextResponse.json({ error: e?.message || "فشل توليد النص." }, { status: 500 });
   }
 }

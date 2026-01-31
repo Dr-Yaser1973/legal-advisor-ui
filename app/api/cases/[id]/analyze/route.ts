@@ -1,66 +1,53 @@
  import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateAnswer } from "@/lib/ai";
+import { requireCaseAccess } from "@/lib/auth/guards";
+
+
 
 export const runtime = "nodejs";
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
-export async function POST(_req: Request, context: RouteContext) {
+export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
-    // ✅ فكّ الـ Promise الخاص بالمسار
-    const { id: idStr } = await context.params;
-    const id = Number(idStr);
+    const id = Number(params.id);
 
     if (!Number.isFinite(id)) {
-      return NextResponse.json(
-        { error: "معرّف القضية غير صالح." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "معرّف القضية غير صالح." }, { status: 400 });
     }
+
+    const auth = await requireCaseAccess(id);
+    if (!auth.ok) return auth.res;
 
     const c = await prisma.case.findUnique({ where: { id } });
     if (!c) {
-      return NextResponse.json(
-        { error: "القضية غير موجودة." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "القضية غير موجودة." }, { status: 404 });
     }
 
-    // بناء السياق القانوني
-    const contextText = `
-العنوان: ${c.title ?? ""}
-نوع القضية: ${c.type ?? ""}
-المحكمة: ${c.court ?? ""}
-حالة القضية: ${c.status ?? ""}
+    const contextText = [
+      `عنوان القضية: ${c.title ?? ""}`,
+       `الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}`,
 
-وصف القضية:
-${c.description ?? ""}
-`.trim();
+      `الوصف: ${c.description ?? ""}`,
+    ].join("\n");
+ 
+      const answer = await generateAnswer(
+  "حلّل هذه القضية قانونيًا وقدّم توصيات عملية مختصرة.",
+  contextText
+);
 
-    // 🔥 الذكاء يعمل هنا فقط (Runtime)
-    const analysis = await generateAnswer(
-      "حلّل هذه القضية وقدّم ملخصًا قانونيًا وتوصيات إجرائية عملية.",
-      contextText
-    );
 
-    // تخزين التحليل
-    await prisma.case.update({
-      where: { id },
-      data: { aiAnalysis: analysis },
+    await prisma.caseEvent.create({
+      data: {
+        caseId: id,
+        title: "تحليل AI",
+        note: answer,
+        date: new Date(),
+      },
     });
 
-    return NextResponse.json({ ok: true, analysis });
-  } catch (err: any) {
-    console.error("❌ Error analyzing case:", err);
-    return NextResponse.json(
-      {
-        error: "Failed to analyze case.",
-        details: err?.message ?? String(err),
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true, answer });
+  } catch (e: any) {
+    console.error("case analyze error:", e);
+    return NextResponse.json({ error: e?.message || "فشل تحليل القضية." }, { status: 500 });
   }
 }

@@ -1,8 +1,8 @@
- import { createClient, SupabaseClient } from "@supabase/supabase-js";
+ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let adminClient: SupabaseClient | null = null;
 
-export function getSupabaseAdmin() {
+export function getSupabaseAdmin(): SupabaseClient | null {
   // أثناء build في Vercel → لا تهيئة
   if (process.env.VERCEL && !process.env.SUPABASE_URL) {
     return null;

@@ -80,13 +80,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const mime = file.type || "application/pdf";
-    if (mime !== "application/pdf") {
-      return NextResponse.json(
-        { ok: false, error: "الملف يجب أن يكون PDF" },
-        { status: 400 }
-      );
-    }
+     const mime = file.type;
+
+const isImage = ["image/jpeg", "image/png", "image/tiff"].includes(mime);
+const isPdf = mime === "application/pdf";
+
+if (!isPdf && !isImage) {
+  return NextResponse.json({ error: "صيغة غير مدعومة" }, { status: 400 });
+}
+
 
     const title = (titleRaw || file.name.replace(/\.pdf$/i, "")).trim();
     if (!title) {

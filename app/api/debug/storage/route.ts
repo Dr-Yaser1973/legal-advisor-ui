@@ -1,73 +1,46 @@
-// app/api/debug/supabase/route.ts
+ // app/api/debug/storage/route.ts
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { blockIfProduction, requireRole } from "@/lib/auth/guards";
+import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const env = blockIfProduction();
+  if (!env.ok) return env.res;
+
+  const auth = await requireRole([UserRole.ADMIN]);
+  if (!auth.ok) return auth.res;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Supabase Admin client غير مهيأ (ENV مفقود أثناء البناء أو التشغيل).",
+      },
+      { status: 500 },
+    );
+  }
+
   try {
-    // 1) فحص المتغيرات (بدون إظهار المفاتيح)
     const hasUrl = !!process.env.SUPABASE_URL;
     const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    const supabase = getSupabaseAdmin();
-    if (!supabase) {
-      return NextResponse.json(
-        {
-          ok: false,
-          step: "init",
-          env: { hasUrl, hasServiceKey },
-          error: "Supabase admin غير متاح (غالبًا أثناء build)",
-        },
-        { status: 500 }
-      );
-    }
-
-    // 2) قراءة قائمة الـ buckets (أقوى اختبار)
     const { data: buckets, error } = await supabase.storage.listBuckets();
-
-    if (error) {
-      return NextResponse.json(
-        {
-          ok: false,
-          step: "listBuckets",
-          env: { hasUrl, hasServiceKey },
-          error: {
-            message: error.message,
-            name: (error as any).name,
-            status: (error as any).status,
-          },
-        },
-        { status: 500 }
-      );
-    }
-
-    // 3) أسماء الـ buckets
-    const names = (buckets || []).map((b: any) => b.name);
-
-    // 4) اختبار bucket معيّن
-    const target = "library-documents";
-    const exists = names.includes(target);
 
     return NextResponse.json({
       ok: true,
       env: { hasUrl, hasServiceKey },
-      buckets: names,
-      check: { target, exists },
-      hint: exists
-        ? "الاتصال ممتاز — bucket موجود ويُرى من السيرفر."
-        : "bucket غير ظاهر — تأكد أن المشروع والمفاتيح صحيحة.",
+      buckets: buckets?.map((b) => ({ id: b.id, name: b.name })) ?? [],
+      bucketError: error?.message ?? null,
     });
   } catch (e: any) {
     return NextResponse.json(
-      {
-        ok: false,
-        step: "catch",
-        error: e?.message || "Unknown error",
-      },
-      { status: 500 }
+      { ok: false, error: e?.message || "storage debug failed" },
+      { status: 500 },
     );
   }
 }
- 
