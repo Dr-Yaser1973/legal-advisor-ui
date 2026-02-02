@@ -1,9 +1,17 @@
-"use client";
+ "use client";
 
 import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 
-export default function OcrButton() {
+type Props = {
+  documentId: number;
+  onDone?: () => void;
+};
+
+export default function OcrRunButton({
+  documentId,
+  onDone,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -14,45 +22,49 @@ export default function OcrButton() {
     try {
       const res = await fetch("/api/ocr/enqueue", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 3 }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentId, // 🔴 هذا مهم — API لا يقبل limit
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "فشل تشغيل OCR");
+        throw new Error(data?.error || "فشل إرسال المهمة إلى محرك OCR");
       }
 
-      setMsg(`تم إرسال ${data.queued} مستند إلى محرك OCR`);
+      setMsg("تم إرسال المستند إلى الطابور بنجاح");
+      if (onDone) onDone();
     } catch (e: any) {
-      setMsg(e.message);
+      setMsg(e.message || "خطأ غير متوقع");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <button
         onClick={runOCR}
         disabled={loading}
-        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
       >
         {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <Play className="h-4 w-4" />
+          <Play className="h-3 w-3" />
         )}
         تشغيل OCR
       </button>
 
       {msg && (
-        <div className="text-sm text-zinc-300 bg-zinc-900 px-3 py-2 rounded-lg">
+        <span className="text-xs text-zinc-400">
           {msg}
-        </div>
+        </span>
       )}
     </div>
   );
 }
-

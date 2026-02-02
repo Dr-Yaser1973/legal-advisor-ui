@@ -3,20 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { LawCategory } from "@prisma/client";
+import { LawCategory, OCRStatus } from "@prisma/client";
 import crypto from "crypto";
 import pdfParse from "pdf-parse";
 
 export const runtime = "nodejs";
 
-
-
 // ===============================
-// Supabase (Service Role) - SERVER ONLY
+// Supabase (Service Role)
 // ===============================
 const supabase = createClient(
-  process.env.SUPABASE_URL!,                 // server env
-  process.env.SUPABASE_SERVICE_ROLE_KEY!    // server env
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // ===============================
@@ -52,13 +50,15 @@ async function extractPdfText(buffer: Buffer) {
 // ===============================
 export async function POST(req: Request) {
   try {
-    // 🔐 ADMIN فقط
+    // ===============================
+    // Auth (ADMIN فقط)
+    // ===============================
     const session: any = await getServerSession(authOptions as any);
     const role = session?.user?.role?.toUpperCase?.() || "CLIENT";
 
     if (!session || role !== "ADMIN") {
       return NextResponse.json(
-        { ok: false, error: "غير مخول. يتطلب صلاحية ADMIN." },
+        { ok: false, error: "غير مخول. يتطلب ADMIN." },
         { status: 403 }
       );
     }
@@ -66,12 +66,11 @@ export async function POST(req: Request) {
     const form = await req.formData();
 
     // ===============================
-    // 1) قراءة الملف والحقول
+    // Inputs
     // ===============================
     const file = form.get("file") as File | null;
     const titleRaw = (form.get("title") as string | null) || "";
     const rawCategory = (form.get("category") as string | null) || "LAW";
-    const createdByIdRaw = form.get("createdById");
 
     if (!file) {
       return NextResponse.json(
@@ -80,15 +79,16 @@ export async function POST(req: Request) {
       );
     }
 
-     const mime = file.type;
+    const mime = file.type;
+    const isImage = ["image/jpeg", "image/png", "image/tiff"].includes(mime);
+    const isPdf = mime === "application/pdf";
 
-const isImage = ["image/jpeg", "image/png", "image/tiff"].includes(mime);
-const isPdf = mime === "application/pdf";
-
-if (!isPdf && !isImage) {
-  return NextResponse.json({ error: "صيغة غير مدعومة" }, { status: 400 });
-}
-
+    if (!isPdf && !isImage) {
+      return NextResponse.json(
+        { ok: false, error: "صيغة غير مدعومة" },
+        { status: 400 }
+      );
+    }
 
     const title = (titleRaw || file.name.replace(/\.pdf$/i, "")).trim();
     if (!title) {
@@ -99,12 +99,9 @@ if (!isPdf && !isImage) {
     }
 
     const category = safeCategory(rawCategory);
-    const createdById = createdByIdRaw
-      ? Number(createdByIdRaw)
-      : null;
 
     // ===============================
-    // 2) رفع إلى Supabase Storage
+    // File → Buffer
     // ===============================
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -113,10 +110,13 @@ if (!isPdf && !isImage) {
     const folder = pickFolder(category);
     const filename = `${id}.pdf`;
 
-    // نخزن المسار النسبي داخل الـ bucket فقط
+    // هذا هو المسار الذي سيُحفظ في DB
     // مثال: laws/abc123.pdf
     const storagePath = `${folder}/${filename}`;
 
+    // ===============================
+    // Upload → Supabase
+    // ===============================
     const { error: uploadError } = await supabase.storage
       .from("library")
       .upload(storagePath, buffer, {
@@ -132,31 +132,24 @@ if (!isPdf && !isImage) {
       );
     }
 
-  
-// 3) إنشاء LegalDocument
-// ===============================
-const legalDoc = await prisma.legalDocument.create({
-  data: {
-    title,
-    filePath : storagePath, // مثال: laws/abc123.pdf
-    mimetype: "application/pdf",
-    size: buffer.length,
-  },
-  select: { id: true },
-});
-
-// 🔁 إدخال تلقائي إلى OCR
-await prisma.legalDocument.update({
-  where: { id: legalDoc.id },
-  data: {
-    ocrStatus: "PENDING",
-    ocrLanguage: "ar+en",
-  },
-});
-
+    // ===============================
+    // LegalDocument (Schema-safe)
+    // ===============================
+    const legalDoc = await prisma.legalDocument.create({
+      data: {
+        title,
+        filename,                 // اسم الملف
+        source: storagePath,     // 🔥 المسار الحقيقي في Supabase
+        mimetype: "application/pdf",
+        size: buffer.length,
+        isScanned: true,
+        ocrStatus: OCRStatus.PENDING,
+      },
+      select: { id: true },
+    });
 
     // ===============================
-    // 4) إنشاء LawUnit
+    // LawUnit
     // ===============================
     const lawUnit = await prisma.lawUnit.create({
       data: {
@@ -164,13 +157,12 @@ await prisma.legalDocument.update({
         category,
         status: "PUBLISHED",
         content: "",
-        
       },
       select: { id: true },
     });
 
     // ===============================
-    // 5) الربط LawUnitDocument
+    // LawUnitDocument Link
     // ===============================
     await prisma.lawUnitDocument.create({
       data: {
@@ -180,7 +172,7 @@ await prisma.legalDocument.update({
     });
 
     // ===============================
-    // 6) استخراج النص من PDF
+    // Extract PDF Text (Pre-OCR)
     // ===============================
     const extractedText = await extractPdfText(buffer);
 
@@ -194,11 +186,11 @@ await prisma.legalDocument.update({
     }
 
     // ===============================
-    // 7) Audit Log
+    // Audit
     // ===============================
     await prisma.auditLog.create({
       data: {
-        userId: createdById || null,
+        userId: session.user.id,
         action: "UPLOAD_LAW_UNIT",
         meta: {
           lawUnitId: lawUnit.id,
@@ -210,14 +202,14 @@ await prisma.legalDocument.update({
     });
 
     // ===============================
-    // 8) الرد
+    // Response
     // ===============================
     return NextResponse.json(
       {
         ok: true,
         lawUnitId: lawUnit.id,
         documentId: legalDoc.id,
-        extracted: extractedText.length > 0,
+        ocrQueued: true,
       },
       { status: 201 }
     );

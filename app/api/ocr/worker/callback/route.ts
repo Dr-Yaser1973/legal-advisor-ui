@@ -1,46 +1,81 @@
- import { NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+function json(res: any, status = 200) {
+  return NextResponse.json(res, { status });
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const secret = req.headers.get("x-callback-secret");
-
+    // 1. التحقق من الهوية (Security)
+    const secret = req.headers.get("x-worker-secret");
     if (!secret || secret !== process.env.OCR_CALLBACK_SECRET) {
-      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+      console.error("⚠️ Unauthorized callback attempt");
+      return json({ ok: false, error: "Unauthorized" }, 401);
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body) return json({ ok: false, error: "Invalid JSON body" }, 400);
 
-    const { documentId, ok, text, pages, isScanned, engine, error } = body as {
-      documentId: number;
-      ok: boolean;
-      text?: string | null;
-      pages?: number | null;
-      isScanned?: boolean | null;
-      engine?: string | null;
-      error?: string | null;
-    };
+    const documentId = Number(body.documentId);
+    if (!Number.isFinite(documentId)) return json({ ok: false, error: "Invalid documentId" }, 400);
 
-    if (!documentId || !Number.isFinite(Number(documentId))) {
-      return NextResponse.json({ ok: false, error: "documentId is required" }, { status: 400 });
-    }
+    const ok = Boolean(body.ok);
+    // تنظيف النص من أي رموز صفرية (Null bytes) قد يرسلها الـ OCR
+    const text = typeof body.text === "string" ? body.text.replace(/\0/g, '').trim() : "";
+    const errorMsg = typeof body.error === "string" ? body.error : null;
+
+    // 2. تحديث حالة المستند القانوني
     await prisma.legalDocument.update({
-  where: { id: Number(documentId) },
-   data: {
-  ...(typeof isScanned === "boolean" ? { isScanned } : {}),
-  ...(typeof text === "string" ? { text } : {}),
-  ...(typeof pages === "number" ? { pages } : {}),
-  ocrStatus: ok ? "COMPLETED" : "FAILED",
-},
+      where: { id: documentId },
+      data: {
+        ocrStatus: ok ? "COMPLETED" : "FAILED",
+        // يمكنك إضافة حقل لتخزين الخطأ إذا فشل الـ OCR للمراجعة لاحقاً
+        // notes: ok ? null : `OCR Error: ${errorMsg}`
+      },
+    });
 
-});
+    if (!ok || !text) {
+      console.error("❌ OCR WORKER REPORTED FAILURE", { documentId, error: errorMsg });
+      return json({ ok: true, status: "FAILED" });
+    }
 
+    // 3. البحث عن الوحدة القانونية المرتبطة (LawUnit)
+    const link = await prisma.lawUnitDocument.findFirst({
+      where: { documentId },
+      include: { lawUnit: true },
+    });
 
-    return NextResponse.json({ ok: true });
+    if (!link?.lawUnit) {
+      console.warn("⚠️ OCR Success but no LawUnit link found", { documentId });
+      return json({ ok: true, status: "COMPLETED_NO_LAWUNIT" });
+    }
+
+    // 4. تخزين النص المستخرج في LawUnit
+    await prisma.lawUnit.update({
+      where: { id: link.lawUnit.id },
+      data: {
+        content: text,
+        // updatedAt: new Date(), // مفيد للتعقب
+      },
+    });
+
+    logSuccess(documentId, link.lawUnit.id, text.length);
+
+    return json({
+      ok: true,
+      status: "COMPLETED",
+      lawUnitId: link.lawUnit.id,
+    });
+
   } catch (e: any) {
-    console.error("OCR CALLBACK ERROR:", e);
-    return NextResponse.json({ ok: false, error: e?.message || "Callback failed" }, { status: 500 });
+    console.error("❌ CALLBACK INTERNAL ERROR", e?.message || e);
+    return json({ ok: false, error: "Internal server error" }, 500);
   }
+}
+
+function logSuccess(docId: number, unitId: string | number, length: number) {
+  console.log(`✅ [OCR SUCCESS] Document:${docId} -> LawUnit:${unitId} (${length} chars)`);
 }
