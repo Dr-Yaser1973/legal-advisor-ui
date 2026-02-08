@@ -1,4 +1,4 @@
- // app/api/lawyer/report/route.ts
+ // app/api/smart-lawyer/report/route.ts
 import { NextResponse } from "next/server";
 import { generateLegalOpinion } from "@/lib/pdf/pdfOpinion";
 

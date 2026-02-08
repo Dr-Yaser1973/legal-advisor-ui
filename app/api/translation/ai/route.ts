@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -7,12 +7,34 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// ===============================
+// Supported Languages
+// ===============================
+type Lang = "AR" | "EN" | "FR" | "TR" | "FA";
+
+const LANG_LABEL: Record<Lang, string> = {
+  AR: "العربية",
+  EN: "الإنجليزية",
+  FR: "الفرنسية",
+  TR: "التركية",
+  FA: "الفارسية",
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
     const text: string = body.text;
-    const fromLang: "AR" | "EN" = body.fromLang === "EN" ? "EN" : "AR";
-    const toLang: "AR" | "EN" = body.toLang === "EN" ? "EN" : "AR";
+    const fromLang: Lang =
+      ["EN", "FR", "TR", "FA"].includes(body.fromLang)
+        ? body.fromLang
+        : "AR";
+
+    const toLang: Lang =
+      ["EN", "FR", "TR", "FA"].includes(body.toLang)
+        ? body.toLang
+        : "AR";
+
     const mode: string = body.mode || "formal";
 
     if (!text || !text.trim()) {
@@ -22,6 +44,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ===============================
+    // Translation Style
+    // ===============================
     const style =
       mode === "simple"
         ? "بأسلوب مبسط وواضح لغير المختصين"
@@ -31,15 +56,21 @@ export async function POST(req: NextRequest) {
         ? "بدقة عالية جدًا مع تدقيق قانوني شديد دون فقدان أي معنى"
         : "بدقة عالية بأسلوب قانوني رسمي دون شرح أو تعليقات إضافية";
 
+    // ===============================
+    // System Prompt
+    // ===============================
     const systemPrompt =
       fromLang === "AR"
-        ? `أنت مترجم قانوني محترف. ترجم النص التالي من العربية إلى ${
-            toLang === "EN" ? "الإنجليزية" : "العربية"
-          } ${style}.`
-        : `You are a professional legal translator. Translate the following text from English to ${
-            toLang === "AR" ? "Arabic" : "English"
-          } ${style}.`;
+        ? `أنت مترجم قانوني محترف. ترجم النص التالي من ${
+            LANG_LABEL[fromLang]
+          } إلى ${LANG_LABEL[toLang]} ${style}.`
+        : `You are a professional legal translator. Translate the following text from ${
+            LANG_LABEL[fromLang]
+          } to ${LANG_LABEL[toLang]} ${style}.`;
 
+    // ===============================
+    // OpenAI Call
+    // ===============================
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -60,4 +91,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

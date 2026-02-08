@@ -3,7 +3,9 @@
 
 import { useEffect, useState } from "react";
 
-type TargetLang = "AR" | "EN";
+ type TargetLang = string;
+
+
 
 interface TranslationOffice {
   id: number;

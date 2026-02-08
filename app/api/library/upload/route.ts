@@ -3,9 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { LawCategory, OCRStatus } from "@prisma/client";
+import { LawCategory } from "@prisma/client";
 import crypto from "crypto";
-import pdfParse from "pdf-parse";
 
 export const runtime = "nodejs";
 
@@ -33,16 +32,6 @@ function safeCategory(raw: string): LawCategory {
     return v as LawCategory;
   }
   return "LAW";
-}
-
-async function extractPdfText(buffer: Buffer) {
-  try {
-    const data = await pdfParse(buffer);
-    return (data.text || "").trim();
-  } catch (err) {
-    console.error("PDF PARSE ERROR:", err);
-    return "";
-  }
 }
 
 // ===============================
@@ -79,13 +68,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const mime = file.type;
-    const isImage = ["image/jpeg", "image/png", "image/tiff"].includes(mime);
-    const isPdf = mime === "application/pdf";
-
-    if (!isPdf && !isImage) {
+    // المكتبة: PDF فقط
+    if (file.type !== "application/pdf") {
       return NextResponse.json(
-        { ok: false, error: "صيغة غير مدعومة" },
+        { ok: false, error: "المكتبة تدعم ملفات PDF فقط" },
         { status: 400 }
       );
     }
@@ -106,16 +92,18 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // ===============================
+    // Path
+    // ===============================
     const id = crypto.randomBytes(10).toString("hex");
     const folder = pickFolder(category);
     const filename = `${id}.pdf`;
 
-    // هذا هو المسار الذي سيُحفظ في DB
     // مثال: laws/abc123.pdf
     const storagePath = `${folder}/${filename}`;
 
     // ===============================
-    // Upload → Supabase
+    // Upload → Supabase (library bucket)
     // ===============================
     const { error: uploadError } = await supabase.storage
       .from("library")
@@ -133,36 +121,36 @@ export async function POST(req: Request) {
     }
 
     // ===============================
-    // LegalDocument (Schema-safe)
+    // LegalDocument (بدون OCR)
     // ===============================
     const legalDoc = await prisma.legalDocument.create({
       data: {
         title,
-        filename,                 // اسم الملف
-        source: storagePath,     // 🔥 المسار الحقيقي في Supabase
+        filename,
+        source: storagePath,          // المسار الحقيقي في Supabase
         mimetype: "application/pdf",
         size: buffer.length,
-        isScanned: true,
-        ocrStatus: OCRStatus.PENDING,
+        isScanned: false,             // 🔒 ثابت
+        ocrStatus: "NONE",            // 🔒 لا OCR للمكتبة
       },
       select: { id: true },
     });
 
     // ===============================
-    // LawUnit
+    // LawUnit (بدون محتوى نصي)
     // ===============================
     const lawUnit = await prisma.lawUnit.create({
       data: {
         title,
         category,
         status: "PUBLISHED",
-        content: "",
+        content: "",                  // 🔒 لا نص مستخرج
       },
       select: { id: true },
     });
 
     // ===============================
-    // LawUnitDocument Link
+    // Link: LawUnit ↔ LegalDocument
     // ===============================
     await prisma.lawUnitDocument.create({
       data: {
@@ -170,20 +158,6 @@ export async function POST(req: Request) {
         documentId: legalDoc.id,
       },
     });
-
-    // ===============================
-    // Extract PDF Text (Pre-OCR)
-    // ===============================
-    const extractedText = await extractPdfText(buffer);
-
-    if (extractedText) {
-      await prisma.lawUnit.update({
-        where: { id: lawUnit.id },
-        data: {
-          content: extractedText.slice(0, 500_000),
-        },
-      });
-    }
 
     // ===============================
     // Audit
@@ -196,7 +170,6 @@ export async function POST(req: Request) {
           lawUnitId: lawUnit.id,
           legalDocumentId: legalDoc.id,
           storagePath,
-          extractedLength: extractedText.length,
         },
       },
     });
@@ -209,7 +182,7 @@ export async function POST(req: Request) {
         ok: true,
         lawUnitId: lawUnit.id,
         documentId: legalDoc.id,
-        ocrQueued: true,
+        stored: true,
       },
       { status: 201 }
     );

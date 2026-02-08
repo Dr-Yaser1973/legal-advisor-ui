@@ -12,6 +12,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// ===============================
+// GET /api/library/[id]/pdf
+// ===============================
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ id: string }> }
@@ -25,7 +28,7 @@ export async function GET(
     }
 
     // ===============================
-    // نجيب مسار الملف من LawUnitDocument
+    // جلب مسار الملف الحقيقي من DB
     // ===============================
     const unit = await prisma.lawUnit.findUnique({
       where: { id: lawUnitId },
@@ -34,7 +37,7 @@ export async function GET(
           include: {
             document: {
               select: {
-                filename: true, // مثال: laws/402e020ca4a2410d.pdf
+                source: true, // مثال: laws/abc123.pdf
               },
             },
           },
@@ -46,41 +49,33 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const filename = unit.documents[0]?.document?.filename;
+    const sourcePath = unit.documents[0]?.document?.source;
 
-    if (!filename) {
+    if (!sourcePath) {
       return NextResponse.json({ error: "PDF not found" }, { status: 404 });
     }
 
     // ===============================
-    // تحميل من Supabase
+    // Signed URL (10 دقائق)
     // ===============================
     const { data, error } = await supabase.storage
       .from("library")
-      .download(filename); // ⚠️ بدون إضافة laws/ مرة ثانية
+      .createSignedUrl(sourcePath, 60 * 10);
 
-    if (error || !data) {
-      console.error("SUPABASE DOWNLOAD ERROR:", error);
+    if (error || !data?.signedUrl) {
+      console.error("SIGNED URL ERROR:", error);
       return NextResponse.json(
-        { error: "Failed to load PDF" },
+        { error: "Failed to access PDF" },
         { status: 500 }
       );
     }
 
-    const buffer = Buffer.from(await data.arrayBuffer());
-
     // ===============================
-    // عرض فقط داخل المتصفح
+    // Redirect مباشر للمتصفح
     // ===============================
-    return new Response(buffer, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": "inline; filename=law.pdf",
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
+    return NextResponse.redirect(data.signedUrl);
   } catch (err) {
-    console.error("PDF PROXY ERROR:", err);
+    console.error("PDF ROUTE ERROR:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

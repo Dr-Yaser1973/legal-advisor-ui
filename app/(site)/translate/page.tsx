@@ -6,7 +6,8 @@ import RequestOfficialTranslationButton from "./RequestOfficialTranslationButton
 import Link from "next/link";
 
 
-type TargetLang = "AR" | "EN";
+type TargetLang = "AR" | "EN" | "FR" | "TR" | "FA";
+
 
 export default function LegalTranslationPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -91,8 +92,9 @@ export default function LegalTranslationPage() {
     }
   }
 
-  const canRequestOfficial =
-    !!documentId && !!sourceText.trim() && (toLang === "EN" || toLang === "AR");
+   const canRequestOfficial =
+  !!documentId;
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 text-right text-zinc-100">
@@ -100,7 +102,8 @@ export default function LegalTranslationPage() {
         🌐 الترجمة القانونية للمستندات
       </h1>
       <p className="text-sm text-zinc-400 mb-6">
-        يمكنك استخدام الترجمة الذكية الفورية لفهم المستندات، أو طلب ترجمة
+        يمكنك استخدام الترجمة الذكية الفوري
+        ة لفهم المستندات، أو طلب ترجمة
         رسمية معتمدة من مكاتب الترجمة الشريكة مع المنصّة.
       </p>
 
@@ -156,8 +159,12 @@ export default function LegalTranslationPage() {
                   value={fromLang}
                   onChange={(e) => setFromLang(e.target.value as TargetLang)}
                 >
-                  <option value="AR">العربية</option>
-                  <option value="EN">الإنجليزية</option>
+                   <option value="AR">العربية</option>
+<option value="EN">الإنجليزية</option>
+<option value="FR">الفرنسية</option>
+<option value="TR">التركية</option>
+<option value="FA">الفارسية</option>
+
                 </select>
               </div>
 
@@ -169,7 +176,11 @@ export default function LegalTranslationPage() {
                   onChange={(e) => setToLang(e.target.value as TargetLang)}
                 >
                   <option value="AR">العربية</option>
-                  <option value="EN">الإنجليزية</option>
+<option value="EN">الإنجليزية</option>
+<option value="FR">الفرنسية</option>
+<option value="TR">التركية</option>
+<option value="FA">الفارسية</option>
+
                 </select>
               </div>
             </div>
