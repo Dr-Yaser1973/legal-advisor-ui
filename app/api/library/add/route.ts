@@ -56,6 +56,16 @@ export async function POST(req: Request) {
       },
     });
 
+    const lawUnit = await prisma.lawUnit.create({
+  data: {
+    title: doc.title,
+    content: text, // ← الحل الصحيح
+    category: doc.category,
+    status: "PUBLISHED", // أو DRAFT
+  },
+});
+
+
     const articles = parseLawText(text);
 
     if (articles.length > 0) {
