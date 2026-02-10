@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://legal-advisor.ui-vercel.app"; // غيّر إلى دومينك الحقيقي
+const SITE_URL = "https://legal-advisor.ui-vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -28,12 +28,21 @@ export const metadata: Metadata = {
     "Legal Consultations",
   ],
 
+  applicationName: "المستشار القانوني الذكي",
+  category: "legal services",
+
   alternates: {
     canonical: "/",
     languages: {
       ar: "/?lang=ar",
       en: "/?lang=en",
     },
+  },
+
+  manifest: "/manifest.json",
+
+  icons: {
+    icon: "/favicon-32.png",
   },
 
   openGraph: {
@@ -45,7 +54,7 @@ export const metadata: Metadata = {
     siteName: "المستشار القانوني الذكي",
     images: [
       {
-        url: "/brand/og-cover.png",
+        url: "/icons/og-cover.png",
         width: 1200,
         height: 630,
         alt: "Smart Legal Advisor Platform — Digital Legal Services Portal",
@@ -72,14 +81,6 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/brand/icon.png",
-  },
-
-  applicationName: "المستشار القانوني الذكي",
-  category: "legal services",
 };
 
 export default function RootLayout({
@@ -99,7 +100,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#0b1220" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="المستشار القانوني الذكي" />
+        <meta
+          name="apple-mobile-web-app-title"
+          content="المستشار القانوني الذكي"
+        />
 
         {/* Structured Data */}
         <script
