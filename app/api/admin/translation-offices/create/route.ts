@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+ import { mailer } from "@/lib/mailer";
+
 
 export const runtime = "nodejs";
 
@@ -67,17 +68,9 @@ export async function POST(req: NextRequest) {
     const link = `${process.env.NEXTAUTH_URL}/set-password?token=${token}`;
 
     /* 6️⃣ إرسال الإيميل */
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+   
 
-    await transporter.sendMail({
+    await mailer.sendMail({
       from: `"منصة المستشار القانوني" <${process.env.SMTP_FROM}>`,
       to: email,
       subject: "تفعيل حساب مكتب الترجمة",
