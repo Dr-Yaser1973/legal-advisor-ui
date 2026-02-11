@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import crypto from "crypto";
+import mailer from "@/lib/mailer";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions as any) as any;
+    /* 1️⃣ تحقق من الجلسة (أدمن فقط) */
+    const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
-    // 🔒 حماية: أدمن فقط
     if (!user || user.role !== "ADMIN") {
       return NextResponse.json(
         { ok: false, error: "غير مصرح" },
@@ -18,10 +20,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /* 2️⃣ قراءة البيانات */
     const body = await req.json();
     const { name, email, phone, location } = body;
 
-    // 🧪 تحقق بسيط
     if (!name || !email) {
       return NextResponse.json(
         { ok: false, error: "اسم المكتب والبريد الإلكتروني مطلوبان" },
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🚫 منع التكرار
+    /* 3️⃣ منع التكرار */
     const exists = await prisma.user.findUnique({
       where: { email },
     });
@@ -41,24 +43,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ إنشاء مكتب الترجمة
-    const office = await prisma.user.create({
+    /* 4️⃣ إنشاء مكتب الترجمة */
+    await prisma.user.create({
       data: {
         name,
         email,
         phone,
         location,
         role: "TRANSLATION_OFFICE",
-        isApproved: true, // أو false لو تحب موافقة لاحقة
-        status: "ACTIVE", // إذا عندك enum UserStatus
-      },
-      select: {
-        id: true,
-        name: true,
+        isApproved: true, // جاهز للاستخدام مباشرة
+        password: null,   // سيتم تعيينها عبر set-password
       },
     });
 
-    return NextResponse.json({ ok: true, office });
+    /* 5️⃣ إنشاء token لتعيين كلمة المرور */
+    const token = crypto.randomUUID();
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 ساعة
+      },
+    });
+
+    const link = `${process.env.NEXTAUTH_URL}/set-password?token=${token}`;
+
+    /* 6️⃣ إرسال إيميل التفعيل */
+    await mailer.sendMail({
+      from: `"منصة المستشار القانوني" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: "تفعيل حساب مكتب الترجمة",
+      html: `
+        <div style="direction:rtl;font-family:tahoma">
+          <h3>مرحبًا ${name}</h3>
+          <p>
+            تم إنشاء حسابكم كمكتب ترجمة معتمد في
+            <strong>منصة المستشار القانوني</strong>.
+          </p>
+          <p>يرجى تعيين كلمة المرور عبر الرابط التالي:</p>
+          <p>
+            <a href="${link}">${link}</a>
+          </p>
+          <p>⏱️ الرابط صالح لمدة 24 ساعة.</p>
+          <hr/>
+          <p style="font-size:12px;color:#888">
+            في حال عدم طلبكم لهذا الحساب، يرجى تجاهل الرسالة.
+          </p>
+        </div>
+      `,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      message: "تم إنشاء مكتب الترجمة وإرسال رابط التفعيل",
+    });
   } catch (err) {
     console.error("Create translation office error:", err);
     return NextResponse.json(
@@ -67,4 +106,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
