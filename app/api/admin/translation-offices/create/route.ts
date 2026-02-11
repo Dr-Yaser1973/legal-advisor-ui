@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import crypto from "crypto";
- import { mailer } from "@/lib/mailer";
+ import mailer from "@/lib/mailer";
+
 
 
 export const runtime = "nodejs";
