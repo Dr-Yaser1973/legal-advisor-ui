@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import ResendInviteButton from "./_components/ResendInviteButton";
+
 
 
 export const dynamic = "force-dynamic";
@@ -30,27 +32,33 @@ export default async function TranslationOfficesListPage() {
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-6xl mx-auto px-4 py-10 text-right space-y-6">
         
-        {/* العنوان + زر الإضافة */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">مكاتب الترجمة المعتمدة</h1>
-            <p className="text-sm text-zinc-300 mt-1">
-              استعرض مكاتب الترجمة المعتمدة واختر المكتب المناسب لك.
-            </p>
-          </div>
+      {/* العنوان + الأزرار */}
+<div className="flex items-start justify-between gap-4">
+  <div>
+    <h1 className="text-2xl font-bold">مكاتب الترجمة المعتمدة</h1>
+    <p className="text-sm text-zinc-300 mt-1">
+      استعرض مكاتب الترجمة المعتمدة واختر المكتب المناسب لك.
+    </p>
+  </div>
 
-          {/* 🔑 زر إضافة مكتب ترجمة – أدمن فقط */}
-          {user?.role === "ADMIN" && (
-            <Link
-              href="/admin/translation-offices/new"
-              className="shrink-0 inline-flex items-center px-4 py-2
-                         rounded-lg bg-indigo-600 hover:bg-indigo-500
-                         text-sm font-medium"
-            >
-              + إضافة مكتب ترجمة
-            </Link>
-          )}
-        </div>
+  {/* 🔑 أزرار الأدمن */}
+  {user?.role === "ADMIN" && (
+    <div className="shrink-0 inline-flex items-center gap-2">
+      <Link
+        href="/admin/translation-offices/new"
+        className="inline-flex items-center px-4 py-2
+                   rounded-lg bg-indigo-600 hover:bg-indigo-500
+                   text-sm font-medium"
+      >
+        + إضافة مكتب ترجمة
+      </Link>
+
+      <ResendInviteButton />
+    </div>
+  )}
+</div>
+
+
 
         {/* قائمة المكاتب */}
         {offices.length === 0 ? (
