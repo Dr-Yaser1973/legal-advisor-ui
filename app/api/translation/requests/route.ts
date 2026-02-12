@@ -19,13 +19,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const clientId = Number(user.id);
-    if (!Number.isFinite(clientId) || clientId <= 0) {
-      return NextResponse.json(
-        { ok: false, error: "معرّف المستخدم غير صالح." },
-        { status: 400 }
-      );
-    }
+      const clientId = user.id;
+if (!clientId) {
+  return NextResponse.json(
+    { ok: false, error: "معرّف المستخدم غير صالح." },
+    { status: 400 }
+  );
+}
+
 
     const body = await req.json();
 
