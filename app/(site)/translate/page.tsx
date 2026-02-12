@@ -27,7 +27,7 @@ export default function LegalTranslationPage() {
     }
     setLoadingExtract(true);
     setSourceText("");
-    setDocumentId(null);
+    
 
     const form = new FormData();
     form.append("file", file);
@@ -46,9 +46,10 @@ export default function LegalTranslationPage() {
       }
 
       setSourceText(data.text || "");
-      if (data.documentId) {
-        setDocumentId(data.documentId);
-      }
+       if (!documentId && data.documentId) {
+  setDocumentId(data.documentId);
+}
+
     } catch (err) {
       console.error(err);
       alert("حدث خطأ أثناء استخراج النص");
@@ -91,6 +92,35 @@ export default function LegalTranslationPage() {
       setLoadingTranslate(false);
     }
   }
+   
+    async function uploadDocumentOnly() {
+    if (!file) {
+      alert("يرجى اختيار ملف أولًا");
+      return;
+    }
+
+    const form = new FormData();
+    form.append("file", file);
+
+    try {
+      const res = await fetch("/api/translation/official/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.error || "فشل رفع المستند");
+        return;
+      }
+
+      setDocumentId(data.documentId); // ⭐ المفتاح
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء رفع المستند");
+    }
+  }
 
    const canRequestOfficial =
   !!documentId;
@@ -112,13 +142,37 @@ export default function LegalTranslationPage() {
         <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4">
           <h2 className="text-xl font-semibold mb-3">١) رفع المستند</h2>
 
-          <input
-            type="file"
-            accept=".pdf,.txt"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="border border-white/10 rounded bg-zinc-900/70 text-sm text-zinc-100 p-2 w-full mb-3"
-          />
+           <input
+  type="file"
+  accept=".pdf,.txt"
+  onChange={async (e) => {
+    const f = e.target.files?.[0] || null;
+    setFile(f);
 
+    if (!f) return;
+
+    // ⬅️ رفع الملف فقط (بدون استخراج نص)
+    const form = new FormData();
+    form.append("file", f);
+
+    try {
+      const res = await fetch("/api/translation/official/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.ok && data.documentId) {
+        setDocumentId(data.documentId); // ⭐ المفتاح
+      }
+    } catch (err) {
+      console.error("upload error:", err);
+    }
+  }}
+  className="border border-white/10 rounded bg-zinc-900/70 text-sm text-zinc-100 p-2 w-full mb-3"
+/>
+
+             
           <button
             onClick={extractText}
             disabled={loadingExtract || !file}

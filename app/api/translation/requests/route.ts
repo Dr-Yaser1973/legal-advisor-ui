@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    // ===============================
+    // 1️⃣ التحقق من الجلسة
+    // ===============================
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
@@ -19,21 +22,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-      const clientId = user.id;
-if (!clientId) {
-  return NextResponse.json(
-    { ok: false, error: "معرّف المستخدم غير صالح." },
-    { status: 400 }
-  );
-}
+    // ===============================
+    // 2️⃣ جلب clientId الصحيح من قاعدة البيانات عبر email
+    // (حل نهائي لمشكلة user.id string)
+    // ===============================
+    const email = (user.email || "").trim().toLowerCase();
 
+    if (!email) {
+      return NextResponse.json(
+        { ok: false, error: "تعذر تحديد بريد المستخدم من الجلسة." },
+        { status: 400 }
+      );
+    }
 
+    const dbUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { ok: false, error: "المستخدم غير موجود في قاعدة البيانات." },
+        { status: 400 }
+      );
+    }
+
+    const clientId = dbUser.id; // ✅ رقم صحيح متوافق مع Prisma
+
+    // ===============================
+    // 3️⃣ قراءة البيانات المرسلة
+    // ===============================
     const body = await req.json();
 
     const officeId = Number(body.officeId);
     const sourceDocId = Number(body.documentId);
-    // نستخدم enum Language الموجود في السكيمة: AR / EN
-    const targetLang = body.targetLang === "AR" ? "AR" : "EN";
+
+    // 🔒 حصر اللغة في AR / EN فقط (بدون تعديل السكيمة)
+    const targetLang: "AR" | "EN" =
+      body.targetLang === "AR" ? "AR" : "EN";
 
     if (!Number.isFinite(officeId) || officeId <= 0) {
       return NextResponse.json(
@@ -49,7 +75,9 @@ if (!clientId) {
       );
     }
 
-    // تأكيد أن المكتب موجود وبالدور الصحيح
+    // ===============================
+    // 4️⃣ التحقق من مكتب الترجمة
+    // ===============================
     const office = await prisma.user.findUnique({
       where: { id: officeId },
       select: { id: true, role: true, isApproved: true },
@@ -73,40 +101,43 @@ if (!clientId) {
       );
     }
 
-    // تأكيد أن المستند موجود في LegalDocument
+    // ===============================
+    // 5️⃣ التحقق من المستند
+    // ===============================
     const doc = await prisma.legalDocument.findUnique({
-  where: { id: sourceDocId },
-  select: {
-    id: true,
-    filePath: true, // ⭐ مهم
-  },
-});
+      where: { id: sourceDocId },
+      select: {
+        id: true,
+        filePath: true,
+      },
+    });
 
-if (!doc || !doc.filePath) {
-  return NextResponse.json(
-    {
-      ok: false,
-      error:
-        "المستند المطلوب ترجمته لا يحتوي على ملف مرفوع.",
-    },
-    { status: 400 }
-  );
-}
+    if (!doc || !doc.filePath) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "المستند المطلوب ترجمته غير موجود أو لا يحتوي على ملف.",
+        },
+        { status: 400 }
+      );
+    }
 
-
-    // إنشاء TranslationRequest مطابق للسكيمة:
-    // clientId, officeId, sourceDocId, targetLang: Language, status: TranslationStatus
+    // ===============================
+    // 6️⃣ إنشاء طلب الترجمة الرسمية
+    // ===============================
     const request = await prisma.translationRequest.create({
       data: {
         clientId,
         officeId,
         sourceDocId,
-        targetLang, // Language enum
-        status: "PENDING", // TranslationStatus.PENDING
+        targetLang, // AR | EN فقط
+        status: "PENDING",
       },
     });
 
-    // إشعار للمكتب (اختياري)
+    // ===============================
+    // 7️⃣ إشعار مكتب الترجمة (اختياري)
+    // ===============================
     try {
       await prisma.notification.create({
         data: {
@@ -119,6 +150,9 @@ if (!doc || !doc.filePath) {
       console.error("notification error (ignored):", notifyErr);
     }
 
+    // ===============================
+    // 8️⃣ الاستجابة النهائية
+    // ===============================
     return NextResponse.json(
       {
         ok: true,

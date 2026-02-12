@@ -51,14 +51,19 @@ export async function middleware(request: NextRequest) {
   // =========================
   // استثناءات API
   // =========================
-  if (
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/debug/prisma") ||
-    pathname.startsWith("/api/library") ||
-    pathname.startsWith("/api/ocr")
-  ) {
-    return NextResponse.next();
-  }
+   // =========================
+// استثناءات API
+// =========================
+if (
+  pathname.startsWith("/api/auth") ||
+  pathname.startsWith("/api/debug/prisma") ||
+  pathname.startsWith("/api/library") ||
+  pathname.startsWith("/api/ocr") ||
+  pathname.startsWith("/api/translation")
+) {
+  return NextResponse.next();
+}
+
 
   // =========================
   // صفحات عامة

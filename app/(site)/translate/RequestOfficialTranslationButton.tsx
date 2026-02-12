@@ -96,7 +96,13 @@ export default function RequestOfficialTranslationButton({
   }
 
   // نجعل التعطيل فقط عند الإرسال أو تحميل المكاتب أو disabled الخارجي
-  const isDisabled = disabled || sending || loadingOffices;
+   const isDisabled =
+  disabled ||
+  sending ||
+  loadingOffices ||
+  !savedDocumentId ||
+  !selectedOfficeId;
+
 
   return (
     <div className="space-y-3">
