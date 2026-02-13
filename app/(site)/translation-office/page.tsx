@@ -27,17 +27,33 @@ function statusLabel(status: string) {
 }
 
 export default async function TranslationOfficeDashboardPage() {
+  // ===============================
+  // 1️⃣ الجلسة
+  // ===============================
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
 
-  if (!user) redirect("/login");
+  if (!user || !user.email) redirect("/login");
+
   if (user.role !== "TRANSLATION_OFFICE" || !user.isApproved) {
     redirect("/dashboard");
   }
 
-  const officeId = Number(user.id);
+  // ===============================
+  // 2️⃣ officeId الحقيقي من DB (🔥 هذا هو الإصلاح)
+  // ===============================
+  const dbOffice = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { id: true },
+  });
 
-  // كل الطلبات المقبولة + الجارية لهذا المكتب
+  if (!dbOffice) redirect("/login");
+
+  const officeId = dbOffice.id;
+
+  // ===============================
+  // 3️⃣ الطلبات المقبولة + الجارية
+  // ===============================
   const active = await prisma.translationRequest.findMany({
     where: {
       officeId,
@@ -50,7 +66,9 @@ export default async function TranslationOfficeDashboardPage() {
     },
   });
 
-  // الطلبات المكتملة
+  // ===============================
+  // 4️⃣ الطلبات المكتملة
+  // ===============================
   const completed = await prisma.translationRequest.findMany({
     where: {
       officeId,
@@ -63,10 +81,11 @@ export default async function TranslationOfficeDashboardPage() {
     },
   });
 
-  // طلبات (ACCEPTED) فقط – تم تسعيرها وموافقة العميل لكن لم تُعلن مكتملة بعد
+  // ===============================
+  // 5️⃣ تقسيم الحالات
+  // ===============================
   const acceptedOnly = active.filter((r) => r.status === "ACCEPTED");
 
-  // طلبات (IN_PROGRESS) – هنا نستخدم OfficeInProgressCard الذي فيه زر إنهاء الترجمة
   const inProgressItems: OfficeInProgressItem[] = active
     .filter((r) => r.status === "IN_PROGRESS")
     .map((r) => ({
@@ -87,31 +106,35 @@ export default async function TranslationOfficeDashboardPage() {
       note: r.note ?? undefined,
     }));
 
+  // ===============================
+  // 6️⃣ العرض
+  // ===============================
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="max-w-5xl mx-auto px-4 py-10 text-right space-y-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">لوحة مكتب الترجمة</h1>
           <p className="text-sm text-zinc-300 mb-3">
-            يمكنك من هنا متابعة طلبات الترجمة الرسمية التي قبلتها، ومعرفة حالة كل طلب.
+            متابعة طلبات الترجمة الرسمية المقبولة والجارية.
           </p>
 
           <a
             href="/translation-office/requests"
             className="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm"
           >
-            عرض الطلبات الجديدة المتاحة للقبول
+            عرض الطلبات الجديدة
           </a>
         </div>
 
-        {/* الطلبات المقبولة – بانتظار البدء */}
+        {/* المقبولة */}
         <section>
           <h2 className="text-xl font-semibold mb-3">
             الطلبات المقبولة – بانتظار البدء
           </h2>
+
           {acceptedOnly.length === 0 ? (
             <p className="text-sm text-zinc-400">
-              لا توجد طلبات مقبولة بانتظار البدء حاليًا.
+              لا توجد طلبات مقبولة حاليًا.
             </p>
           ) : (
             <div className="space-y-3">
@@ -121,24 +144,14 @@ export default async function TranslationOfficeDashboardPage() {
                   className="border border-white/10 rounded-xl bg-zinc-900/40 p-4 space-y-2"
                 >
                   <div className="text-sm">
-                    <span className="font-semibold">المستند:</span>{" "}
-                    {r.sourceDoc?.title ||
-                      r.sourceDoc?.filename ||
-                      `#${r.sourceDocId}`}
+                    <b>المستند:</b>{" "}
+                    {r.sourceDoc?.title || r.sourceDoc?.filename}
                   </div>
                   <div className="text-xs text-zinc-400">
-                    <span className="font-semibold">العميل:</span>{" "}
-                    {r.client?.name ||
-                      r.client?.email ||
-                      `مستخدم رقم ${r.clientId}`}
+                    <b>العميل:</b> {r.client?.name || r.client?.email}
                   </div>
                   <div className="text-xs text-zinc-400">
-                    <span className="font-semibold">الحالة:</span>{" "}
-                    {statusLabel(r.status)}
-                  </div>
-                  <div className="text-xs text-zinc-400">
-                    <span className="font-semibold">اللغة المستهدفة:</span>{" "}
-                    {r.targetLang === "EN" ? "الإنجليزية" : "العربية"}
+                    <b>الحالة:</b> {statusLabel(r.status)}
                   </div>
                 </div>
               ))}
@@ -146,9 +159,10 @@ export default async function TranslationOfficeDashboardPage() {
           )}
         </section>
 
-        {/* الطلبات الجارية – IN_PROGRESS – يظهر فيها زر إنهاء الترجمة */}
+        {/* الجارية */}
         <section>
           <h2 className="text-xl font-semibold mb-3">الطلبات الجارية</h2>
+
           {inProgressItems.length === 0 ? (
             <p className="text-sm text-zinc-400">
               لا توجد طلبات قيد الترجمة حاليًا.
@@ -162,9 +176,10 @@ export default async function TranslationOfficeDashboardPage() {
           )}
         </section>
 
-        {/* الطلبات المكتملة */}
+        {/* المكتملة */}
         <section>
           <h2 className="text-xl font-semibold mb-3">الطلبات المكتملة</h2>
+
           {completed.length === 0 ? (
             <p className="text-sm text-zinc-400">
               لا توجد طلبات مكتملة بعد.
@@ -177,20 +192,14 @@ export default async function TranslationOfficeDashboardPage() {
                   className="border border-white/10 rounded-xl bg-zinc-900/40 p-4 space-y-2"
                 >
                   <div className="text-sm">
-                    <span className="font-semibold">المستند:</span>{" "}
-                    {r.sourceDoc?.title ||
-                      r.sourceDoc?.filename ||
-                      `#${r.sourceDocId}`}
+                    <b>المستند:</b>{" "}
+                    {r.sourceDoc?.title || r.sourceDoc?.filename}
                   </div>
                   <div className="text-xs text-zinc-400">
-                    <span className="font-semibold">العميل:</span>{" "}
-                    {r.client?.name ||
-                      r.client?.email ||
-                      `مستخدم رقم ${r.clientId}`}
+                    <b>العميل:</b> {r.client?.name || r.client?.email}
                   </div>
                   <div className="text-xs text-zinc-400">
-                    <span className="font-semibold">الحالة:</span>{" "}
-                    {statusLabel(r.status)}
+                    <b>الحالة:</b> {statusLabel(r.status)}
                   </div>
                 </div>
               ))}

@@ -28,7 +28,21 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
     }
 
-    const officeId = Number(user.id);
+    if (!user.email) {
+  return NextResponse.json({ error: "جلسة غير صالحة" }, { status: 401 });
+}
+
+const dbOffice = await prisma.user.findUnique({
+  where: { email: user.email },
+  select: { id: true },
+});
+
+if (!dbOffice) {
+  return NextResponse.json({ error: "مكتب الترجمة غير موجود" }, { status: 403 });
+}
+
+const officeId = dbOffice.id; // ✅ هذا هو المفتاح الصحيح
+
 
     const request = await prisma.translationRequest.findFirst({
       where: { id: requestId, officeId },

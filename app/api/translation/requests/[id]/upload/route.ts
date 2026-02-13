@@ -6,14 +6,16 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-const RESULT_BUCKET = "translations"; // ✅ للملف المترجم فقط
+const RESULT_BUCKET = "translations";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 1️⃣ فك الـ params
+    // ===============================
+    // 1️⃣ requestId
+    // ===============================
     const { id } = await params;
     const requestId = Number(id);
 
@@ -24,24 +26,47 @@ export async function POST(
       );
     }
 
-    // 2️⃣ التحقق من الجلسة
+    // ===============================
+    // 2️⃣ الجلسة
+    // ===============================
     const session = (await getServerSession(authOptions as any)) as any;
     const user = session?.user as any;
 
-    if (!user || user.role !== "TRANSLATION_OFFICE") {
+    if (!user || !user.email || user.role !== "TRANSLATION_OFFICE") {
       return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
     }
 
-    // 3️⃣ إنشاء Supabase Admin (Runtime فقط)
+    // ===============================
+    // 3️⃣ officeId الحقيقي من DB  🔥 الإصلاح
+    // ===============================
+    const dbOffice = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { id: true },
+    });
+
+    if (!dbOffice) {
+      return NextResponse.json(
+        { error: "مكتب الترجمة غير موجود" },
+        { status: 403 }
+      );
+    }
+
+    const officeId = dbOffice.id;
+
+    // ===============================
+    // 4️⃣ Supabase
+    // ===============================
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase غير متاح حاليًا" },
+        { error: "Supabase غير متاح" },
         { status: 500 }
       );
     }
 
-    // 4️⃣ قراءة البيانات
+    // ===============================
+    // 5️⃣ formData
+    // ===============================
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const note = formData.get("note") as string | null;
@@ -52,19 +77,19 @@ export async function POST(
 
     if (file.type !== "application/pdf") {
       return NextResponse.json(
-        { error: "يسمح برفع ملفات PDF فقط" },
+        { error: "يسمح فقط بملفات PDF" },
         { status: 400 }
       );
     }
 
-    // 5️⃣ التأكد أن الطلب يخص مكتب الترجمة
-    const officeId = Number(user.id);
-
+    // ===============================
+    // 6️⃣ التحقق من الطلب
+    // ===============================
     const request = await prisma.translationRequest.findFirst({
       where: {
         id: requestId,
         officeId,
-        status: { in: ["IN_PROGRESS", "ACCEPTED"] },
+        status: "IN_PROGRESS",
       },
     });
 
@@ -75,7 +100,9 @@ export async function POST(
       );
     }
 
-    // 6️⃣ رفع الملف المترجم إلى bucket translations
+    // ===============================
+    // 7️⃣ رفع الملف
+    // ===============================
     const filePath = `translation-${requestId}-${Date.now()}.pdf`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -87,21 +114,20 @@ export async function POST(
       });
 
     if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
-      throw uploadError;
+      console.error(uploadError);
+      return NextResponse.json(
+        { error: "فشل رفع الملف" },
+        { status: 500 }
+      );
     }
 
-    // 7️⃣ إنشاء رابط موقّت (Signed URL)
-    const { data: signed } = await supabase.storage
-      .from(RESULT_BUCKET)
-      .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 أيام
-
-    // 8️⃣ تحديث حالة الطلب
+    // ===============================
+    // 8️⃣ تحديث الطلب
+    // ===============================
     await prisma.translationRequest.update({
       where: { id: requestId },
       data: {
         translatedFilePath: filePath,
-        translatedFileUrl: signed?.signedUrl ?? null,
         deliveredAt: new Date(),
         completedAt: new Date(),
         note: note ?? undefined,
@@ -113,7 +139,7 @@ export async function POST(
   } catch (err) {
     console.error("Upload translation error:", err);
     return NextResponse.json(
-      { error: "فشل رفع ملف الترجمة" },
+      { error: "خطأ داخلي أثناء رفع الترجمة" },
       { status: 500 }
     );
   }

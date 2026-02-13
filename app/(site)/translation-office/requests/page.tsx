@@ -13,23 +13,40 @@ export default async function TranslationOfficeRequestsPage() {
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
 
-  if (!user) redirect("/login");
+  if (!user || !user.email) redirect("/login");
 
   if (user.role !== "TRANSLATION_OFFICE" && user.role !== "ADMIN") {
     redirect("/dashboard");
   }
 
-  const officeId = Number(user.id);
+  // ✅ جلب officeId الحقيقي من DB
+  const dbOffice = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { id: true },
+  });
+
+  if (!dbOffice) {
+    redirect("/login");
+  }
+
+  const officeId = dbOffice.id; // ✅ هذا هو المفتاح
 
   const requests = await prisma.translationRequest.findMany({
     where: {
       officeId,
-      status: "PENDING", // الذي بانتظار تسعير هذا المكتب
+      status: "PENDING", // بانتظار تسعير هذا المكتب
     },
     orderBy: { createdAt: "desc" },
     include: {
       client: { select: { id: true, name: true, email: true } },
-      sourceDoc: { select: { id: true, title: true, filename: true, filePath: true } },
+      sourceDoc: {
+        select: {
+          id: true,
+          title: true,
+          filename: true,
+          filePath: true,
+        },
+      },
     },
   });
 
