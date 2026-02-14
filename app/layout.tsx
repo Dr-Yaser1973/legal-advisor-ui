@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     },
   },
 
-  manifest: "/manifest.json",
+ 
 
   icons: {
     icon: "/favicon-32.png",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "المستشار القانوني الذكي",
     description:
       "بوابة رقمية للخدمات القانونية: مكتبة ذكية، عقود PDF، ترجمة قانونية، واستشارات مهنية.",
-    images: ["/brand/og-cover.png"],
+    images: ["/icons/og-cover.png"],
   },
 
   robots: {

@@ -2,6 +2,8 @@
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+
+
 // =========================
 // المسارات العامة
 // =========================
@@ -40,10 +42,11 @@ export async function middleware(request: NextRequest) {
   // =========================
   // استثناءات النظام
   // =========================
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/public")
+    if (
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/manifest.json" ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
