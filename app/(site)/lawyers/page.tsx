@@ -118,7 +118,7 @@ export default function LawyersPage() {
       prompt("الاختصاص (مدني/جزائي/تجاري/...)") || "مدني";
     const locationVal = prompt("الموقع (المدينة):") || "بغداد";
     if (!fullName || !email) return;
-    const res = await fetch("/api/lawyers", {
+    const res = await fetch("/api/admin/lawyers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -134,6 +134,32 @@ export default function LawyersPage() {
       alert("فشل إنشاء محامٍ");
     }
   }
+
+  async function resendInvite(email: string) {
+  const ok = confirm("هل تريد إعادة إرسال رابط تفعيل الحساب؟");
+  if (!ok) return;
+
+  try {
+    const res = await fetch("/api/admin/lawyers/resend-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      alert(json?.error || "فشل إعادة إرسال الدعوة");
+      return;
+    }
+
+    alert("تمت إعادة إرسال رابط التفعيل بنجاح");
+  } catch (err) {
+    console.error(err);
+    alert("حدث خطأ غير متوقع");
+  }
+}
+
   function AdminUploadAvatar({
   lawyerId,
   onUploaded,
@@ -386,6 +412,17 @@ export default function LawyersPage() {
       lawyerId={l.id}
       onUploaded={() => fetchLawyers(data.page)}
     />
+     <button
+  onClick={(e) => {
+    e.preventDefault();
+    resendInvite(l.email);
+  }}
+  className="text-xs px-3 py-1 rounded-lg border border-amber-500/40
+             text-amber-300 hover:bg-amber-500/10 transition"
+>
+  🔁 إعادة إرسال الدعوة
+</button>
+
   </div>
 )}
 

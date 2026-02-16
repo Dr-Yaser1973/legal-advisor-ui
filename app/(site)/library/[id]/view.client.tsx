@@ -156,9 +156,14 @@ export default function LawUnitViewClient({
         {tab === "explain" && <ExplainPanel lawUnitId={doc.id} />}
 
         {/* الاستخدام العملي */}
-        {tab === "use" && (
-          <UsePanel lawUnitId={doc.id} title={doc.title} />
-        )}
+         {tab === "use" && (
+  <UsePanel
+    lawUnitId={doc.id}
+    title={doc.title}
+    userRole={userRole}
+  />
+)}
+
 
         {/* العلاقات القانونية */}
         {tab === "relations" && (

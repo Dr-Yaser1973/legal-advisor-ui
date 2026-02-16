@@ -1,19 +1,23 @@
  import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // تشغيل Turbopack بشكل صريح
+  // تشغيل Turbopack
   turbopack: {},
 
-  // تجاهل أخطاء TypeScript لإكمال الـ build
+  // تجاهل أخطاء TypeScript أثناء build
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // ✅ مهم جداً لـ Prisma على Vercel مع Next 16
-  // هذا يضمن تضمين ملفات محرك Prisma (.so.node) في الباندل
+  // Prisma on Vercel (صحيح عندك)
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
+  },
+
+  // ✅ هذا هو المفتاح الحاسم
+  experimental: {
+    middlewareClientMaxBodySize: "200mb",
   },
 };
 
