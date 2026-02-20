@@ -1,6 +1,6 @@
-
-// app/admin/layout.tsx
+ // app/admin/layout.tsx
 import type { ReactNode } from "react";
+import AdminServiceBar from "@/components/admin/AdminServiceBar";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +8,14 @@ export const dynamic = "force-dynamic";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50">
-      <main className="container mx-auto py-8">{children}</main>
+
+      {/* ✅ شريط الخدمات (Admin ↔ Site) */}
+      <AdminServiceBar />
+
+      <main className="container mx-auto py-8">
+        {children}
+      </main>
     </div>
   );
 }
+

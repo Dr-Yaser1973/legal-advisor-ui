@@ -1,8 +1,10 @@
  // app/admin/page.tsx
 import Link from "next/link";
-import { BookOpen, Users, MessageCircle } from "lucide-react";
+
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import LibraryStatsPanel from "@/components/admin/LibraryStatsPanel";
+import { BookOpen, Users, MessageCircle, Database } from "lucide-react";
+
 
 
 export const runtime = "nodejs";
@@ -49,6 +51,31 @@ export default async function AdminHomePage() {
             </p>
  
           </Link>
+          {/* المصادر الخارجية */}
+<Link
+  href="/admin/external-sources"
+  className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 hover:border-indigo-500/60 hover:bg-zinc-900 transition flex flex-col justify-between"
+>
+  <div className="flex items-center justify-between gap-3 mb-3">
+    <div>
+      <h3 className="text-base font-semibold">
+        المصادر القانونية الخارجية
+      </h3>
+      <p className="text-xs text-zinc-400 mt-1">
+        استيراد دراسات وأبحاث قانونية من مصادر عالمية موثوقة
+        (OpenAlex – مصادر أخرى لاحقًا).
+      </p>
+    </div>
+
+    <Database className="h-6 w-6 text-indigo-400" />
+  </div>
+
+  <p className="text-[11px] text-zinc-500 mt-2">
+    استخدم هذه الأداة لإثراء المكتبة القانونية بمراجع أكاديمية
+    مرتبطة بالقوانين والمواد القانونية.
+  </p>
+</Link>
+
 
           {/* إدارة المستخدمين والأدوار */}
           <Link

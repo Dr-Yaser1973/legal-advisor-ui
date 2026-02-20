@@ -47,3 +47,4 @@ next-env.d.ts
 # generated PDFs and uploads
 /public/contracts/
 /public/uploads/
+uploads/

@@ -20,6 +20,9 @@ export const authOptions: NextAuthOptions = {
   },
 
   providers: [
+    /* ===============================
+       Credentials Provider
+    =============================== */
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -56,14 +59,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error("الحساب غير مفعّل، يرجى مراجعة إدارة المنصة.");
         }
 
+        // ⛔️ لا نغيّر أي شيء هنا
         return {
-          id: user.id.toString(),
+          id: user.id.toString(), // ✅ مهم
           name: user.name,
           email: user.email,
         };
       },
     }),
 
+    /* ===============================
+       Google Provider
+    =============================== */
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -71,6 +78,9 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
+    /* ===============================
+       Google signIn (بدون تغيير)
+    =============================== */
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         const providerId = account.providerAccountId;
@@ -111,11 +121,21 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
+    /* ===============================
+       JWT Callback (التصحيح الحقيقي هنا)
+    =============================== */
     async jwt({ token, user }) {
-      if (user?.email) {
+      // 🔑 أول تسجيل دخول (Credentials أو Google)
+      if (user?.id) {
+        token.id = user.id;
+      }
+
+      // 🔁 في كل Request
+      if (token.email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
+          where: { email: token.email },
           select: {
+            id: true,
             role: true,
             status: true,
             isApproved: true,
@@ -123,22 +143,30 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        token.role = dbUser?.role;
-        token.status = dbUser?.status;
-        token.isApproved = dbUser?.isApproved;
-        token.authProvider = dbUser?.authProvider;
+        if (dbUser) {
+          token.id = dbUser.id.toString(); // ✅ الأساس
+          token.role = dbUser.role;
+          token.status = dbUser.status;
+          token.isApproved = dbUser.isApproved;
+          token.authProvider = dbUser.authProvider;
+        }
       }
 
       return token;
     },
 
+    /* ===============================
+       Session Callback
+    =============================== */
     async session({ session, token }) {
       if (session.user) {
+        (session.user as any).id = token.id; // ✅ الحل النهائي
         (session.user as any).role = token.role;
         (session.user as any).status = token.status;
         (session.user as any).isApproved = token.isApproved;
         (session.user as any).authProvider = token.authProvider;
       }
+
       return session;
     },
   },

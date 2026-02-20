@@ -9,29 +9,48 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
-  try {
-    const id = Number(params.id);
+/* ===============================
+   Route Context (Next.js صحيح)
+=============================== */
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
 
-    if (Number.isNaN(id)) {
-      return NextResponse.json({ error: "معرّف القضية غير صالح." }, { status: 400 });
+export async function POST(req: Request, context: RouteContext) {
+  try {
+    // ✅ فكّ params بشكل صحيح
+    const { id: idStr } = await context.params;
+    const id = Number(idStr);
+
+    if (!Number.isInteger(id)) {
+      return NextResponse.json(
+        { error: "معرّف القضية غير صالح." },
+        { status: 400 }
+      );
     }
 
+    // 🔐 التحقق من الصلاحية
     const auth = await requireCaseAccess(id);
     if (!auth.ok) return auth.res;
 
     const c = await prisma.case.findUnique({ where: { id } });
     if (!c) {
-      return NextResponse.json({ error: "القضية غير موجودة" }, { status: 404 });
+      return NextResponse.json(
+        { error: "القضية غير موجودة" },
+        { status: 404 }
+      );
     }
 
     const body = (await req.json().catch(() => ({}))) as { tone?: string };
     const tone = (body.tone || "professional").toString();
 
-    const prompt = `اكتب مذكرة قانونية نصية (بدون PDF) للقضية التالية مع توصيات عملية.\n\nالعنوان: ${
-      c.title ?? ""
-    }\nالوصف: ${c.description ?? ""}\nا 👥 الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}
-\n\nنبرة الكتابة: ${tone}`;
+    const prompt = `اكتب مذكرة قانونية نصية (بدون PDF) للقضية التالية مع توصيات عملية.
+
+العنوان: ${c.title ?? ""}
+الوصف: ${c.description ?? ""}
+👥 الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}
+
+نبرة الكتابة: ${tone}`;
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -39,18 +58,31 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       temperature: 0.3,
     });
 
-    const memoText = completion.choices?.[0]?.message?.content?.trim() || "";
+    const memoText =
+      completion.choices?.[0]?.message?.content?.trim() || "";
+
     if (!memoText) {
-      return NextResponse.json({ error: "تعذر توليد النص." }, { status: 500 });
+      return NextResponse.json(
+        { error: "تعذر توليد النص." },
+        { status: 500 }
+      );
     }
 
     await prisma.caseEvent.create({
-      data: { caseId: id, title: "مذكرة AI (نص)", note: memoText, date: new Date() },
+      data: {
+        caseId: id,
+        title: "مذكرة AI (نص)",
+        note: memoText,
+        date: new Date(),
+      },
     });
 
     return NextResponse.json({ ok: true, memoText });
   } catch (e: any) {
     console.error("memo-text error:", e);
-    return NextResponse.json({ error: e?.message || "فشل توليد النص." }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message || "فشل توليد النص." },
+      { status: 500 }
+    );
   }
 }
