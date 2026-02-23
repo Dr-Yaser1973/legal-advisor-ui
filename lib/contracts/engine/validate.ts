@@ -32,14 +32,25 @@ export function validateData(meta: TemplateMeta, data: Record<string, any>) {
   }
 
   // قواعد خاصة بالـ Incoterms
+     // قواعد خاصة بالـ Incoterms
   if (meta.group === "INCOTERMS") {
-    const term = String(data.incoterm ?? "").toUpperCase().trim();
+    // نحن نعتمد على incotermsEdition لأنه حقل موجود في الـ UI
+    // والمتوقع أن يُكتب فيه مثل: "FOB 2020"
+    const raw = String(data.incotermsEdition ?? "")
+      .toUpperCase()
+      .trim();
+
+    // استخرج المصطلح من النص (أول كلمة غالباً: FOB)
+    // يدعم: "FOB 2020" أو "FOB - 2020" أو "FOB Incoterms 2020"
+    const term = raw.split(/[^A-Z]+/).find(Boolean) || "";
+
     if (!INCOTERMS_11.has(term)) {
       const msg =
         meta.lang === "ar"
-          ? `مصطلح Incoterms غير صحيح: ${term}`
-          : `Invalid Incoterms term: ${term}`;
-      return { ok: false as const, error: msg, missing: ["incoterm"] };
+          ? `مصطلح Incoterms غير صحيح. اكتب مثل: FOB 2020`
+          : `Invalid Incoterms term. Use e.g.: FOB 2020`;
+      // نربط الخطأ بحقل موجود فعلاً حتى لا "ينهدم" UI
+      return { ok: false as const, error: msg, missing: ["incotermsEdition"] };
     }
   }
 
