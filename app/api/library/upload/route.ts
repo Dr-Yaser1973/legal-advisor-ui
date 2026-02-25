@@ -162,17 +162,20 @@ export async function POST(req: Request) {
     // ===============================
     // Audit
     // ===============================
-    await prisma.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: "UPLOAD_LAW_UNIT",
-        meta: {
-          lawUnitId: lawUnit.id,
-          legalDocumentId: legalDoc.id,
-          storagePath,
-        },
-      },
-    });
+    const userId =
+  session?.user?.id != null ? Number(session.user.id) : null;
+
+await prisma.auditLog.create({
+  data: {
+    userId,
+    action: "UPLOAD_LAW_UNIT",
+    meta: {
+      lawUnitId: lawUnit.id,
+      legalDocumentId: legalDoc.id,
+      storagePath,
+    },
+  },
+});
 
     // ===============================
     // Response

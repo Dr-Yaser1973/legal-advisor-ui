@@ -5,6 +5,11 @@ import { SALE_AR, SALE_EN } from "./pro/sale";
 import { SERVICES_AR, SERVICES_EN } from "./pro/services";
  import { NDA_AR, NDA_EN } from "./pro/nda";
  import { DISTRIBUTION_AR, DISTRIBUTION_EN } from "./pro/distribution";
+ import { LEASE_AR, LEASE_EN } from "./pro/lease";
+ import { CONSTRUCTION_AR,CONSTRUCTION_EN } from "./pro/construction";
+import {PARTNERSHIP_AR, PARTNERSHIP_EN } from "./pro/partnership";
+ import { SUPPLY_AR, SUPPLY_EN } from "./pro/supply";
+import { EMPLOYMENT_AR, EMPLOYMENT_EN } from "./pro/employment";
 // INCOTERMS
 import { EXW_AR, EXW_EN } from "./incoterms/exw";
 import { FCA_AR, FCA_EN } from "./incoterms/fca";
@@ -28,6 +33,16 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
    NDA_EN,
    DISTRIBUTION_AR,
    DISTRIBUTION_EN,
+   LEASE_AR,
+  LEASE_EN,
+     CONSTRUCTION_AR,
+  CONSTRUCTION_EN,
+  PARTNERSHIP_AR,
+  PARTNERSHIP_EN,
+   SUPPLY_AR,
+  SUPPLY_EN,
+  EMPLOYMENT_AR,
+  EMPLOYMENT_EN,
    
   // INCOTERMS
     EXW_AR, EXW_EN,
