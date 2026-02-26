@@ -24,6 +24,8 @@ model User {
   phone                      String?
   status                     UserStatus            @default(PENDING)
   subscriptionEndsAt         DateTime?
+  authProvider               AuthProvider          @default(CREDENTIALS)
+  providerId                 String?               @unique
   accounts                   Account[]
   AnalysisJob                AnalysisJob[]
   auditLogs                  AuditLog[]
@@ -32,8 +34,6 @@ model User {
   LawyerChatRooms            ChatRoom[]            @relation("LawyerChatRooms")
   clientProfile              ClientProfile?
   consultations              Consultation[]
-  authProvider               AuthProvider          @default(CREDENTIALS)
-  providerId                 String?               @unique
   LawyerConsultationRequests ConsultationRequest[] @relation("LawyerConsultationRequests")
   ClientConsultationRequests ConsultationRequest[] @relation("ClientConsultationRequests")
   ContractTemplate           ContractTemplate[]
@@ -43,10 +43,10 @@ model User {
   LawyerHumanConsults        HumanConsultRequest[] @relation("LawyerHumanConsults")
   LawDocs                    LawDoc[]
   lawyerProfile              LawyerProfile?
+  LegalDocuments             LegalDocument[]
   LegalQuestion              LegalQuestion[]       @relation("UserQuestions")
   messages                   Message[]
   notifications              Notification[]
-  LegalDocuments             LegalDocument[]
   sessions                   Session[]
   TranslationOffers          TranslationOffer[]
   ClientTranslationRequests  TranslationRequest[]  @relation("ClientTranslationRequests")
@@ -215,72 +215,40 @@ model LegalReference {
   question     LegalQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
- model LegalDocument {
-  id Int @id @default(autoincrement())
-
-  // =========================
-  // معلومات أساسية
-  // =========================
-  title    String
-  filename String?
-  mimetype String
-  size     Int
-
-  // =========================
-  // نوع الملف وحالته
-  // =========================
-  kind      DocumentKind @default(PDF)
-  isScanned Boolean      @default(false)
-
-  // =========================
-  // مسارات التخزين
-  // =========================
-  filePath      String?      // الملف الأصلي (Supabase / S3 / FS)
-  textPath      String?      // نص OCR محفوظ كملف (اختياري)
-  extractedText String?     @db.Text // النص المستخرج داخل قاعدة البيانات
-
-  // =========================
-  // حالة OCR
-  // =========================
-  ocrStatus   OCRStatus @default(NONE)
-  ocrLanguage String? // ar | en | ar+en
-  ocrText     String?   @db.Text
-  ocrProvider String?
-  // =========================
-  // بيانات تقنية
-  // =========================
-  pageCount Int?
-  checksum  String? // SHA-256 لمنع التكرار
-  source    String? // mobile / web / api
-
-  // =========================
-  // علاقات موجودة (محفوظة)
-  // =========================
-  AnalysisJobs         AnalysisJob[]
+model LegalDocument {
+  id                  Int                  @id @default(autoincrement())
+  title               String
+  filename            String?
+  mimetype            String
+  size                Int
+  createdAt           DateTime             @default(now())
+  filePath            String?
+  checksum            String?
+  createdById         Int?
+  extractedText       String?
+  isScanned           Boolean              @default(false)
+  kind                DocumentKind         @default(PDF)
+  ocrLanguage         String?
+  ocrStatus           OCRStatus            @default(NONE)
+  pageCount           Int?
+  source              String?
+  textPath            String?
+  updatedAt           DateTime             @updatedAt
+  ocrProvider         String?
+  ocrText             String?
+  AnalysisJobs        AnalysisJob[]
   CaseDocument        CaseDocument[]
   generatedContracts  GeneratedContract[]
-  chunks              LegalDocChunk[]
-  TranslationRequests TranslationRequest[]
   lawUnits            LawUnitDocument[]
+  chunks              LegalDocChunk[]
+  createdBy           User?                @relation(fields: [createdById], references: [id])
+  TranslationRequests TranslationRequest[]
 
-  // =========================
-  // من رفع المستند
-  // =========================
-  createdById Int?
-  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // =========================
-  // فهارس
-  // =========================
   @@index([kind])
   @@index([ocrStatus])
   @@index([createdById])
   @@index([checksum])
 }
-
 
 model LegalDocChunk {
   id         Int             @id @default(autoincrement())
@@ -411,6 +379,7 @@ model AnalysisOutput {
   job       AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model LawDoc {
   id           Int          @id @default(autoincrement())
   title        String
@@ -428,8 +397,8 @@ model LawDoc {
   category     LawCategory
   articles     LawArticle[]
   createdBy    User?        @relation(fields: [createdById], references: [id])
-  tags         TagOnDoc[]
   faqs         LawDocFaq[]
+  tags         TagOnDoc[]
 
   @@index([category])
   @@index([jurisdiction])
@@ -569,6 +538,96 @@ model TranslationOffer {
   @@index([officeId])
 }
 
+model LawUnitDocument {
+  id         Int           @id @default(autoincrement())
+  lawUnitId  Int
+  documentId Int
+  createdAt  DateTime      @default(now())
+  document   LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  lawUnit    LawUnit       @relation(fields: [lawUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([lawUnitId, documentId])
+  @@index([lawUnitId])
+  @@index([documentId])
+}
+
+model LawUnit {
+  id            Int               @id @default(autoincrement())
+  title         String
+  content       String
+  simplified    String?
+  practicalUse  String?
+  category      LawCategory
+  status        DocStatus
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  externalSources ExternalSourceItem[]
+
+  relationsFrom LawRelation[]     @relation("FromLawUnit")
+  relationsTo   LawRelation[]     @relation("ToLawUnit")
+  documents     LawUnitDocument[]
+
+  @@index([category])
+  @@index([status])
+}
+
+model LawRelation {
+  id        Int             @id @default(autoincrement())
+  fromId    Int
+  toId      Int
+  type      LawRelationType
+  note      String?
+  createdAt DateTime        @default(now())
+  from      LawUnit         @relation("FromLawUnit", fields: [fromId], references: [id], onDelete: Cascade)
+  to        LawUnit         @relation("ToLawUnit", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, type])
+  @@index([fromId])
+  @@index([toId])
+}
+
+model LawDocFaq {
+  id        Int      @id @default(autoincrement())
+  docId     Int
+  question  String
+  answer    String
+  createdAt DateTime @default(now())
+  doc       LawDoc   @relation(fields: [docId], references: [id], onDelete: Cascade)
+
+  @@index([docId])
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
+}
+
+model ExternalSourceItem {
+  id           Int                @id @default(autoincrement())
+  source       ExternalSourceKind
+  externalId   String
+  title        String
+  url          String
+
+  jurisdiction String?
+  publishedAt  DateTime?
+  docType      String?
+  language     String?
+  summary      String?
+  raw          Json?
+
+  // ربط اختياري بالمكتبة
+  lawUnitId    Int?
+  lawUnit      LawUnit?           @relation(fields: [lawUnitId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([source, externalId])
+  @@index([lawUnitId])
+}
+
 enum DocStatus {
   DRAFT
   PUBLISHED
@@ -625,12 +684,12 @@ enum UserStatus {
 }
 
 enum LawRelationType {
-  AMENDS // يعدّل
-  REPEALS // يلغي
-  INTERPRETS // يفسّر
-  REFERENCES // إحالة
-  RELATED // صلة عامة
-  APPLIES_TO // ينطبق على
+  AMENDS
+  REPEALS
+  INTERPRETS
+  REFERENCES
+  RELATED
+  APPLIES_TO
 }
 
 enum AuthProvider {
@@ -638,7 +697,7 @@ enum AuthProvider {
   GOOGLE
 }
 
- enum OCRStatus {
+enum OCRStatus {
   NONE
   PENDING
   PROCESSING
@@ -646,76 +705,14 @@ enum AuthProvider {
   FAILED
 }
 
-
 enum DocumentKind {
   PDF
   IMAGE
 }
 
-
-model LawUnitDocument {
-  id         Int @id @default(autoincrement())
-  lawUnitId  Int
-  documentId Int
-
-  lawUnit  LawUnit       @relation(fields: [lawUnitId], references: [id], onDelete: Cascade)
-  document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([lawUnitId, documentId])
-  @@index([lawUnitId])
-  @@index([documentId])
-}
-
-model LawUnit {
-  id           Int     @id @default(autoincrement())
-  title        String
-  content      String
-  simplified   String?
-  practicalUse String?
-
-  category LawCategory
-  status   DocStatus
-
-  relationsFrom LawRelation[] @relation("FromLawUnit")
-  relationsTo   LawRelation[] @relation("ToLawUnit")
-
-  documents LawUnitDocument[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([category])
-  @@index([status])
-}
-
-model LawRelation {
-  id     Int             @id @default(autoincrement())
-  fromId Int
-  toId   Int
-  type   LawRelationType
-  note   String?
-
-  from LawUnit @relation("FromLawUnit", fields: [fromId], references: [id], onDelete: Cascade)
-  to   LawUnit @relation("ToLawUnit", fields: [toId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([fromId, toId, type])
-  @@index([fromId])
-  @@index([toId])
-}
-
-model LawDocFaq {
-  id       Int    @id @default(autoincrement())
-  docId    Int
-  question String
-  answer   String
-
-  doc LawDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([docId])
+enum ExternalSourceKind {
+  OPENALEX
+  COURTLISTENER
+  EURLEX
+  WORLDLII
 }
