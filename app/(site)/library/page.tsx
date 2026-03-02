@@ -7,8 +7,8 @@ export default async function LibraryPage() {
 
   // جلب احصائيات الأقسام
    const [law, fiqh, academic] = await Promise.all([
-    prisma.lawDoc.count({ where: { category: "LAW" } }),
-    prisma.lawDoc.count({ where: { category: "FIQH" } }),
+    prisma.lawUnit.count({ where: { category: "LAW" } }),
+    prisma.lawUnit.count({ where: { category: "FIQH" } }),
     prisma.lawDoc.count({ where: { category: "ACADEMIC_STUDY" } }),
   ]);
 
