@@ -9,7 +9,7 @@ export default async function LibraryPage() {
    const [law, fiqh, academic] = await Promise.all([
     prisma.lawUnit.count({ where: { category: "LAW" } }),
     prisma.lawUnit.count({ where: { category: "FIQH" } }),
-    prisma.lawDoc.count({ where: { category: "ACADEMIC_STUDY" } }),
+    prisma.lawUnit.count({ where: { category: "ACADEMIC_STUDY" } }),
   ]);
 
   return (
