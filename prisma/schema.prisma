@@ -51,6 +51,10 @@ model User {
   TranslationOffers          TranslationOffer[]
   ClientTranslationRequests  TranslationRequest[]  @relation("ClientTranslationRequests")
   OfficeTranslationRequests  TranslationRequest[]  @relation("OfficeTranslationRequests")
+  libraryItems               LibraryItem[]
+  libraryRatings             LibraryRating[]
+  libraryFavorites           LibraryFavorite[]
+  libraryNotes               LibraryNote[]
 }
 
 model Account {
@@ -187,10 +191,11 @@ model QuestionEmbedding {
 }
 
 model Tag {
-  id   Int                @id @default(autoincrement())
-  name String             @unique
-  qs   LegalQuestionTag[]
-  docs TagOnDoc[]
+  id              Int                @id @default(autoincrement())
+  name            String             @unique
+  qs              LegalQuestionTag[]
+  docs            TagOnDoc[]
+  libraryItemTags LibraryItemTag[]
 
   @@index([name])
 }
@@ -216,33 +221,34 @@ model LegalReference {
 }
 
 model LegalDocument {
-  id                  Int                  @id @default(autoincrement())
-  title               String
-  filename            String?
-  mimetype            String
-  size                Int
-  createdAt           DateTime             @default(now())
-  filePath            String?
-  checksum            String?
-  createdById         Int?
-  extractedText       String?
-  isScanned           Boolean              @default(false)
-  kind                DocumentKind         @default(PDF)
-  ocrLanguage         String?
-  ocrStatus           OCRStatus            @default(NONE)
-  pageCount           Int?
-  source              String?
-  textPath            String?
-  updatedAt           DateTime             @updatedAt
-  ocrProvider         String?
-  ocrText             String?
-  AnalysisJobs        AnalysisJob[]
-  CaseDocument        CaseDocument[]
-  generatedContracts  GeneratedContract[]
-  lawUnits            LawUnitDocument[]
-  chunks              LegalDocChunk[]
-  createdBy           User?                @relation(fields: [createdById], references: [id])
-  TranslationRequests TranslationRequest[]
+  id                   Int                   @id @default(autoincrement())
+  title                String
+  filename             String?
+  mimetype             String
+  size                 Int
+  createdAt            DateTime              @default(now())
+  filePath             String?
+  checksum             String?
+  createdById          Int?
+  extractedText        String?
+  isScanned            Boolean               @default(false)
+  kind                 DocumentKind          @default(PDF)
+  ocrLanguage          String?
+  ocrStatus            OCRStatus             @default(NONE)
+  pageCount            Int?
+  source               String?
+  textPath             String?
+  updatedAt            DateTime              @updatedAt
+  ocrProvider          String?
+  ocrText              String?
+  AnalysisJobs         AnalysisJob[]
+  CaseDocument         CaseDocument[]
+  generatedContracts   GeneratedContract[]
+  lawUnits             LawUnitDocument[]
+  chunks               LegalDocChunk[]
+  createdBy            User?                 @relation(fields: [createdById], references: [id])
+  TranslationRequests  TranslationRequest[]
+  libraryItemDocuments LibraryItemDocument[]
 
   @@index([kind])
   @@index([ocrStatus])
@@ -552,15 +558,15 @@ model LawUnitDocument {
 }
 
 model LawUnit {
-  id            Int               @id @default(autoincrement())
-  title         String
-  content       String
-  simplified    String?
-  practicalUse  String?
-  category      LawCategory
-  status        DocStatus
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id              Int                  @id @default(autoincrement())
+  title           String
+  content         String
+  simplified      String?
+  practicalUse    String?
+  category        LawCategory
+  status          DocStatus
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   externalSources ExternalSourceItem[]
 
   relationsFrom LawRelation[]     @relation("FromLawUnit")
@@ -604,11 +610,11 @@ model playing_with_neon {
 }
 
 model ExternalSourceItem {
-  id           Int                @id @default(autoincrement())
-  source       ExternalSourceKind
-  externalId   String
-  title        String
-  url          String
+  id         Int                @id @default(autoincrement())
+  source     ExternalSourceKind
+  externalId String
+  title      String
+  url        String
 
   jurisdiction String?
   publishedAt  DateTime?
@@ -618,11 +624,11 @@ model ExternalSourceItem {
   raw          Json?
 
   // ربط اختياري بالمكتبة
-  lawUnitId    Int?
-  lawUnit      LawUnit?           @relation(fields: [lawUnitId], references: [id], onDelete: SetNull)
+  lawUnitId Int?
+  lawUnit   LawUnit? @relation(fields: [lawUnitId], references: [id], onDelete: SetNull)
 
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([source, externalId])
   @@index([lawUnitId])
@@ -715,4 +721,150 @@ enum ExternalSourceKind {
   COURTLISTENER
   EURLEX
   WORLDLII
+}
+
+// تعريف جميع نماذج المكتبة هنا
+
+enum LibraryMainCategory {
+  LAW
+  FIQH
+  ACADEMIC
+  CONTRACT
+}
+
+enum LibraryItemType {
+  CONSTITUTION
+  STATUTE
+  REGULATION
+  PHD_THESIS
+  MASTER_THESIS
+  RESEARCH_PAPER
+  LOCAL_CONTRACT
+  INTERNATIONAL_CONTRACT
+  COURT_RULING
+}
+
+enum LibraryRelationType {
+  AMENDS
+  REPEALS
+  INTERPRETS
+  REFERENCES
+  RELATED
+}
+
+model LibraryItem {
+  id String @id @default(cuid())
+
+  titleAr String
+  titleEn String?
+
+  abstractAr String? @db.Text
+  abstractEn String? @db.Text
+
+  basicExplanation        String? @db.Text
+  professionalExplanation String? @db.Text
+  commercialExplanation   String? @db.Text
+
+  mainCategory LibraryMainCategory
+  subCategory  String?
+  itemType     LibraryItemType
+
+  hasPDF  Boolean @default(false)
+  pdfUrl  String?
+  hasWord Boolean @default(false)
+  wordUrl String?
+
+  jurisdiction String?
+  year         Int?
+  author       String?
+  university   String?
+
+  keywords String[]
+
+  views     Int   @default(0)
+  downloads Int   @default(0)
+  saves     Int   @default(0)
+  rating    Float @default(0)
+
+  isPublished Boolean   @default(true)
+  publishedAt DateTime?
+
+  createdById   Int?
+  createdBy     User?                 @relation(fields: [createdById], references: [id])
+  fromRelations LibraryRelation[]     @relation("FromLibraryItem")
+  toRelations   LibraryRelation[]     @relation("ToLibraryItem")
+  itemTags      LibraryItemTag[]
+  ratings       LibraryRating[]
+  favorites     LibraryFavorite[]
+  notes         LibraryNote[]
+  itemDocuments LibraryItemDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([mainCategory])
+  @@index([jurisdiction, year])
+  @@index([views])
+}
+
+model LibraryRelation {
+  id           String              @id @default(cuid())
+  fromItemId   String
+  toItemId     String
+  relationType LibraryRelationType
+  fromItem     LibraryItem         @relation("FromLibraryItem", fields: [fromItemId], references: [id], onDelete: Cascade)
+  toItem       LibraryItem         @relation("ToLibraryItem", fields: [toItemId], references: [id], onDelete: Cascade)
+
+  @@unique([fromItemId, toItemId, relationType])
+}
+
+model LibraryItemTag {
+  itemId String
+  tagId  Int
+  item   LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag    Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+}
+
+model LibraryRating {
+  id     String      @id @default(cuid())
+  itemId String
+  userId Int
+  rating Int
+  review String?     @db.Text
+  item   LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, userId])
+}
+
+model LibraryFavorite {
+  id     String      @id @default(cuid())
+  itemId String
+  userId Int
+  item   LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, userId])
+}
+
+model LibraryNote {
+  id      String      @id @default(cuid())
+  itemId  String
+  userId  Int
+  content String      @db.Text
+  page    Int?
+  item    LibraryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LibraryItemDocument {
+  id            Int           @id @default(autoincrement())
+  libraryItemId String
+  documentId    Int
+  libraryItem   LibraryItem   @relation(fields: [libraryItemId], references: [id], onDelete: Cascade)
+  document      LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([libraryItemId, documentId])
 }

@@ -1,4 +1,5 @@
- import { NextResponse } from "next/server";
+//api/liprary/search/route.ts
+import { NextResponse } from "next/server";
 import { searchLibrary } from "@/lib/library/search";
 
 export const runtime = "nodejs";
@@ -13,6 +14,6 @@ export async function GET(req: Request) {
 
   if (!q) return NextResponse.json({ ok: true, hits: [] });
 
-  const data = await searchLibrary({ q, section, mode, take: Number.isFinite(take) ? take : 20 });
+  const data = await searchLibrary({ q, section, take: Number.isFinite(take) ? take : 20 });
   return NextResponse.json({ ok: true, ...data });
 }

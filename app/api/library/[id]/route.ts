@@ -1,176 +1,299 @@
- import { NextRequest, NextResponse } from "next/server";
+ // app/api/library/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDocRelations } from "@/lib/library/relations";
-import { cookies, headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import crypto from "crypto";
 
 export const runtime = "nodejs";
 
-/* ===============================
-   Helper: بناء رابط PDF من Supabase
-================================ */
-function buildPdfUrl(filename: string | null) {
-  const base =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_URL;
-
-  if (!base || !filename) return null;
-
-  // إزالة أي / في نهاية الرابط الأساسي
-  const cleanBase = base.replace(/\/$/, "");
-
-  // filename يجب أن يكون مثل: laws/abc123.pdf
-  return `${cleanBase}/storage/v1/object/public/library/${filename}`;
+function buildFileUrl(filename: string | null) {
+  if (!filename) return null;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  return `${base?.replace(/\/$/, "")}/storage/v1/object/public/library/${filename}`;
 }
 
 export async function GET(
   _req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
+  ctx: { params: { id: string } }
 ) {
+  const { id } = ctx.params;
+  if (!id) return NextResponse.json({ ok: false, error: "Missing ID" }, { status: 400 });
+
   try {
-    // ===============================
-    // 0) الجلسة (قد تكون null لأن المكتبة عامة)
-    // ===============================
-    const session = (await getServerSession(
-      authOptions as any
-    )) as any;
-
-    // ===============================
-    // فك الـ params (Next 16 يعيد Promise)
-    // ===============================
-    const { id: idParam } = await ctx.params;
-    const id = Number(idParam);
-
-    // ===============================
-    // تحقق صارم
-    // ===============================
-    if (!Number.isInteger(id)) {
-      return NextResponse.json(
-        { ok: false, error: "Bad id" },
-        { status: 400 }
-      );
-    }
-
-    // ===============================
-    // 1) جلب LawUnit + الوثائق المرتبطة
-    // ===============================
-    const unit = await prisma.lawUnit.findUnique({
+    // زيادة عدد المشاهدات (غير متزامن)
+    prisma.libraryItem.update({
       where: { id },
+      data: { views: { increment: 1 } }
+    }).catch(console.error);
+
+    // جلب المادة مع جميع العلاقات
+    const item = await prisma.libraryItem.findUnique({
+      where: { id, isPublished: true },
       include: {
-        documents: {
+        createdBy: {
+          select: { id: true, name: true, email: true }
+        },
+        itemDocuments: {
           include: {
             document: {
               select: {
                 id: true,
-                filename: true, // مثال: laws/abc123.pdf
-              },
-            },
-          },
+                title: true,
+                filename: true,
+                mimetype: true,
+                size: true,
+                createdAt: true
+              }
+            }
+          }
         },
-      },
-    });
-
-    if (!unit) {
-      return NextResponse.json(
-        { ok: false, error: "Not found" },
-        { status: 404 }
-      );
-    }
-
-    // ===============================
-    // 2) بناء رابط PDF من Supabase
-    // ===============================
-    const firstDoc = unit.documents[0]?.document || null;
-    const pdfUrl = buildPdfUrl(firstDoc?.filename || null);
-
-    // ===============================
-    // 3) العلاقات القانونية
-    // ===============================
-    const relations = await getDocRelations(unit.id);
-
-    // ===============================
-    // 4) الأسئلة الشائعة
-    // ===============================
-    const faqs = await prisma.lawDocFaq.findMany({
-      where: { docId: unit.id },
-      orderBy: { id: "desc" },
-      select: {
-        id: true,
-        question: true,
-        answer: true,
-        createdAt: true,
-      },
-    });
-
-    // ===============================
-    // 5) تسجيل استخدام المكتبة
-    // (مستخدم مسجّل أو زائر مجهول)
-    // ===============================
-    try {
-      const cookieStore = await cookies();
-      const headerStore = await headers();
-
-      let anonId = cookieStore.get("anon_id")?.value;
-
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        cookieStore.set("anon_id", anonId, {
-          path: "/",
-          maxAge: 60 * 60 * 24 * 365, // سنة
-        });
+        itemTags: {
+          include: {
+            tag: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        // العلاقات الصادرة
+        fromRelations: {
+          include: {
+            toItem: {
+              select: {
+                id: true,
+                titleAr: true,
+                titleEn: true,
+                mainCategory: true,
+                itemType: true
+              }
+            }
+          }
+        },
+        // العلاقات الواردة
+        toRelations: {
+          include: {
+            fromItem: {
+              select: {
+                id: true,
+                titleAr: true,
+                titleEn: true,
+                mainCategory: true,
+                itemType: true
+              }
+            }
+          }
+        },
+        ratings: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: {
+              select: { id: true, name: true, image: true }
+            }
+          }
+        }
       }
+    });
 
-      const ip =
-        headerStore.get("x-forwarded-for")?.split(",")[0] ||
-        headerStore.get("x-real-ip") ||
-        null;
-
-      const ua = headerStore.get("user-agent") || null;
-
-      await prisma.auditLog.create({
-        data: {
-          userId: session?.user?.id
-            ? Number(session.user.id)
-            : null,
-          action: "LIBRARY_VIEW",
-          meta: {
-            lawUnitId: unit.id,
-            anonId,
-            ip,
-            ua,
-          },
-        },
-      });
-    } catch (e) {
-      console.warn("LIBRARY VIEW LOG WARNING:", e);
+    if (!item) {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
     }
 
-    // ===============================
-    // 6) الرد النهائي
-    // ===============================
+    // تجهيز روابط جميع الملفات
+    const documents = item.itemDocuments.map(doc => ({
+      id: doc.document.id,
+      title: doc.document.title,
+      filename: doc.document.filename,
+      mimetype: doc.document.mimetype,
+      size: doc.document.size,
+      url: buildFileUrl(doc.document.filename),
+      createdAt: doc.document.createdAt
+    }));
+
+    // تجهيز التصنيفات
+    const tags = item.itemTags.map(t => t.tag.name);
+
+    // تجهيز المواد المرتبطة (دمج العلاقات)
+    const relatedItems = [
+      ...item.fromRelations.map(rel => ({
+        id: rel.toItem.id,
+        titleAr: rel.toItem.titleAr,
+        titleEn: rel.toItem.titleEn,
+        mainCategory: rel.toItem.mainCategory,
+        itemType: rel.toItem.itemType,
+        relationType: rel.relationType
+      })),
+      ...item.toRelations.map(rel => ({
+        id: rel.fromItem.id,
+        titleAr: rel.fromItem.titleAr,
+        titleEn: rel.fromItem.titleEn,
+        mainCategory: rel.fromItem.mainCategory,
+        itemType: rel.fromItem.itemType,
+        relationType: rel.relationType
+      }))
+    ];
+
+    // إذا كانت العلاقات قليلة، نضيف مواد من نفس التصنيف
+    if (relatedItems.length < 4) {
+      const sameCategory = await prisma.libraryItem.findMany({
+        where: {
+          mainCategory: item.mainCategory,
+          id: { not: id },
+          isPublished: true,
+          NOT: {
+            id: { in: relatedItems.map(r => r.id) }
+          }
+        },
+        take: 6 - relatedItems.length,
+        select: {
+          id: true,
+          titleAr: true,
+          titleEn: true,
+          mainCategory: true,
+          itemType: true
+        }
+      });
+      
+      relatedItems.push(...sameCategory.map(item => ({
+        ...item,
+        relationType: 'SAME_CATEGORY'
+      })));
+    }
+
+    // جلب إحصائيات التقييمات
+    const ratingStats = await prisma.libraryRating.aggregate({
+      where: { itemId: id },
+      _avg: { rating: true },
+      _count: true
+    });
+
     return NextResponse.json({
       ok: true,
       doc: {
-        id: unit.id,
-        title: unit.title,
-        category: unit.category,
-        content: unit.content,
-        simplified: unit.simplified,
-        practicalUse: unit.practicalUse,
-        createdAt: unit.createdAt,
-        updatedAt: unit.updatedAt,
-        pdfUrl, // 🔗 رابط PDF المبني من Supabase
+        ...item,
+        documents,
+        tags,
+        pdfUrl: documents.find(d => d.mimetype.includes('pdf'))?.url || null,
+        wordUrl: documents.find(d => d.mimetype.includes('word') || d.mimetype.includes('document'))?.url || null,
+        rating: ratingStats._avg.rating || 0,
+        totalRatings: ratingStats._count
       },
-      relations,
-      faqs,
+      related: relatedItems.slice(0, 8),
+      stats: {
+        views: item.views,
+        downloads: item.downloads,
+        saves: item.saves
+      }
     });
-  } catch (err) {
-    console.error("LIBRARY VIEW ERROR:", err);
 
+  } catch (error) {
+    console.error("Error fetching library item:", error);
     return NextResponse.json(
-      { ok: false, error: "Failed to load law unit" },
+      { ok: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST للإجراءات التفاعلية
+export async function POST(
+  req: NextRequest,
+  ctx: { params: { id: string } }
+) {
+  const { id } = ctx.params;
+  const session = await getServerSession(authOptions as any);
+  
+  if (!session?.user) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const body = await req.json();
+  const { action } = body;
+
+  try {
+    switch (action) {
+      case 'favorite':
+        const favorite = await prisma.libraryFavorite.findUnique({
+          where: {
+            itemId_userId: {
+              itemId: id,
+              userId: session.user.id
+            }
+          }
+        });
+
+        if (favorite) {
+          await prisma.libraryFavorite.delete({
+            where: { id: favorite.id }
+          });
+        } else {
+          await prisma.libraryFavorite.create({
+            data: {
+              itemId: id,
+              userId: session.user.id
+            }
+          });
+          
+          // زيادة عدد الحفظ
+          await prisma.libraryItem.update({
+            where: { id },
+            data: { saves: { increment: 1 } }
+          });
+        }
+        break;
+
+      case 'rating':
+        const { rating, review } = body;
+        await prisma.libraryRating.upsert({
+          where: {
+            itemId_userId: {
+              itemId: id,
+              userId: session.user.id
+            }
+          },
+          update: { rating, review },
+          create: {
+            itemId: id,
+            userId: session.user.id,
+            rating,
+            review
+          }
+        });
+        break;
+
+      case 'download':
+        await prisma.libraryItem.update({
+          where: { id },
+          data: { downloads: { increment: 1 } }
+        });
+        break;
+
+      case 'note':
+        const { content, page } = body;
+        await prisma.libraryNote.create({
+          data: {
+            itemId: id,
+            userId: session.user.id,
+            content,
+            page
+          }
+        });
+        break;
+
+      default:
+        return NextResponse.json(
+          { ok: false, error: "Invalid action" },
+          { status: 400 }
+        );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Error in POST:", error);
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
       { status: 500 }
     );
   }

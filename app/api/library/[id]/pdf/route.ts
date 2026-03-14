@@ -1,43 +1,35 @@
- import { NextResponse } from "next/server";
+ // app/api/library/[id]/pdf/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// ===============================
-// Supabase (SERVER ONLY)
-// ===============================
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ===============================
-// GET /api/library/[id]/pdf
-// ===============================
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await ctx.params;
-    const lawUnitId = Number(id);
-
-    if (!Number.isInteger(lawUnitId)) {
-      return NextResponse.json({ error: "Bad id" }, { status: 400 });
-    }
 
     // ===============================
-    // جلب مسار الملف الحقيقي من DB
+    // جلب مسار الملف من DB
     // ===============================
-    const unit = await prisma.lawUnit.findUnique({
-      where: { id: lawUnitId },
+     const item = await prisma.libraryItem.findUnique({
+  where: { id },
+
+  include: {
+    itemDocuments: {
       include: {
-        documents: {
-          include: {
-            document: {
-              select: {
-                source: true, // مثال: laws/abc123.pdf
+        document: {
+          select: {
+            source: true
+    // مثال: laws/abc123.pdf
               },
             },
           },
@@ -45,15 +37,23 @@ export async function GET(
       },
     });
 
-    if (!unit) {
+    if (!item) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const sourcePath = unit.documents[0]?.document?.source;
+     const sourcePath = item.itemDocuments[0]?.document?.source;
 
     if (!sourcePath) {
       return NextResponse.json({ error: "PDF not found" }, { status: 404 });
     }
+
+    // ===============================
+    // زيادة عدد التحميلات
+    // ===============================
+    await prisma.libraryItem.update({
+      where: { id },
+      data: { downloads: { increment: 1 } }
+    });
 
     // ===============================
     // Signed URL (10 دقائق)

@@ -1,73 +1,94 @@
- "use client";
+ // components/library/PDFViewer.tsx
+"use client";
 
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useEffect, useState } from "react";
+import * as pdfjsLib from "pdfjs-dist";
 
-if (typeof window !== "undefined" && (pdfjsLib as any).GlobalWorkerOptions) {
-  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = "/pdf.worker.mjs";
+if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
-type Props = {
-  src: string;   // Signed URL أو public URL
-  page?: number;
-};
+interface Props {
+  url: string;
+  title?: string;
+}
 
-export default function PdfViewer({ src, page = 1 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function PDFViewer({ url, title }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [numPages, setNumPages] = useState(0);
+  const [scale, setScale] = useState(1.5);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function render() {
+    const loadPDF = async () => {
+      if (!url) return;
+      setLoading(true);
       try {
-        setError(null);
-
-        const task = (pdfjsLib as any).getDocument({
-          url: src,
-          withCredentials: false,
-        });
-
-        const pdf = await task.promise;
-        if (cancelled) return;
-
-        const pg = await pdf.getPage(page);
-        if (cancelled) return;
-
-        const viewport = pg.getViewport({ scale: 1.5 });
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await pg.render({ canvasContext: ctx, viewport }).promise;
-      } catch (e) {
-        console.error("PDF render error:", e);
-        if (!cancelled) setError("تعذر تحميل ملف PDF");
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        setPdfDoc(pdf);
+        setNumPages(pdf.numPages);
+        renderPage(pdf, 1);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    }
-
-    render();
-    return () => {
-      cancelled = true;
     };
-  }, [src, page]);
+    loadPDF();
+  }, [url]);
 
-  if (error) {
-    return (
-      <div className="w-full p-4 text-center text-red-400 border rounded">
-        {error}
-      </div>
-    );
-  }
+  const renderPage = async (pdf: any, pageNum: number) => {
+    if (!canvasRef.current) return;
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale });
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d")!;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+  };
+
+  const nextPage = () => {
+    if (pdfDoc && currentPage < numPages) {
+      setCurrentPage((p) => {
+        const np = p + 1;
+        renderPage(pdfDoc, np);
+        return np;
+      });
+    }
+  };
+
+  const prevPage = () => {
+    if (pdfDoc && currentPage > 1) {
+      setCurrentPage((p) => {
+        const np = p - 1;
+        renderPage(pdfDoc, np);
+        return np;
+      });
+    }
+  };
 
   return (
-    <div className="w-full overflow-auto border rounded">
-      <canvas ref={canvasRef} />
+    <div className="border rounded-lg overflow-hidden bg-gray-50">
+      <div className="p-2 bg-gray-100 flex justify-between items-center">
+        <button onClick={prevPage} disabled={currentPage === 1}>
+          ←
+        </button>
+        <span>
+          صفحة {currentPage} من {numPages}
+        </span>
+        <button onClick={nextPage} disabled={currentPage === numPages}>
+          →
+        </button>
+      </div>
+      {loading ? (
+        <div className="p-10 text-center text-gray-500">جاري تحميل PDF...</div>
+      ) : (
+        <canvas ref={canvasRef} className="mx-auto" style={{ maxWidth: "100%" }} />
+      )}
     </div>
   );
 }
