@@ -4,20 +4,20 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { Metadata } from "next";
 import LibraryItemViewClient from "./view.client";
 import { Suspense } from "react";
+ import { getBaseUrl } from "@/lib/getBaseUrl";
 
 export const dynamic = "force-dynamic";
 
- async function fetchLibraryItem(id: string) {
-  // ✅ في Server Components، المسار المطلق من جذر التطبيق
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/library/items/${id}`, { 
+ 
+
+async function fetchLibraryItem(id: string) {
+  const res = await fetch(`${getBaseUrl()}/api/library/items/${id}`, {
     cache: "no-store",
   });
-  
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data;
-}
 
+  if (!res.ok) return null;
+  return res.json();
+}
 export async function generateMetadata({
   params,
 }: {
