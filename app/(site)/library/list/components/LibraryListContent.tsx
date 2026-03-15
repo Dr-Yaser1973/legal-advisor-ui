@@ -67,7 +67,13 @@ export default function LibraryListContent() {
         params.append("page", currentPage.toString());
         params.append("limit", "12");
         
-        const res = await fetch(`/api/library/items?${params.toString()}`);
+          // ✅ استخدم المسار المطلق من المتصفح
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+        const url = baseUrl 
+          ? `${baseUrl}/api/library/items?${params.toString()}`
+          : `/api/library/items?${params.toString()}`;
+        
+        const res = await fetch(url);
         const json = await res.json();
         
         if (json.success) {
