@@ -7,9 +7,9 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-async function fetchLibraryItem(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/library/items/${id}`, { 
+ async function fetchLibraryItem(id: string) {
+  // ✅ في Server Components، المسار المطلق من جذر التطبيق
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/library/items/${id}`, { 
     cache: "no-store",
   });
   
