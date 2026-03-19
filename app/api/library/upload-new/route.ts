@@ -14,19 +14,19 @@ const supabase = createClient(
 );
 
 type MainCategory = "LAW" | "FIQH" | "ACADEMIC" | "CONTRACT";
-type ItemType = 
-  | "CONSTITUTION" 
-  | "STATUTE" 
+type ItemType =
+  | "CONSTITUTION"
+  | "STATUTE"
   | "REGULATION"
-  | "PHD_THESIS" 
-  | "MASTER_THESIS" 
+  | "PHD_THESIS"
+  | "MASTER_THESIS"
   | "RESEARCH_PAPER"
-  | "LOCAL_CONTRACT" 
+  | "LOCAL_CONTRACT"
   | "INTERNATIONAL_CONTRACT"
   | "COURT_RULING";
 
 function pickFolder(mainCategory: MainCategory): string {
-  switch(mainCategory) {
+  switch (mainCategory) {
     case "LAW": return "laws";
     case "FIQH": return "fiqh";
     case "ACADEMIC": return "studies";
@@ -57,21 +57,24 @@ export async function POST(req: Request) {
     const year = form.get("year") ? parseInt(form.get("year") as string) : null;
     const author = (form.get("author") as string) || "";
     const jurisdiction = (form.get("jurisdiction") as string) || "";
-    
+
     const basicExplanation = (form.get("basicExplanation") as string) || "";
     const professionalExplanation = (form.get("professionalExplanation") as string) || "";
     const commercialExplanation = (form.get("commercialExplanation") as string) || "";
 
     if (!file) {
-      return NextResponse.json(
-        { ok: false, error: "الملف مفقود" },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "الملف مفقود" }, { status: 400 });
     }
 
-    if (file.type !== "application/pdf") {
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { ok: false, error: "يدعم ملفات PDF فقط" },
+        { ok: false, error: "يدعم PDF و Word فقط" },
         { status: 400 }
       );
     }
@@ -88,20 +91,27 @@ export async function POST(req: Request) {
 
     const id = crypto.randomBytes(10).toString("hex");
     const folder = pickFolder(mainCategory);
-    const filename = `${id}.pdf`;
+
+    // ✅ تحديد نوع الملف الحقيقي (الجراحة هنا)
+    const isWord =
+      file.type === "application/msword" ||
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+    const extension = isWord ? ".docx" : ".pdf";
+    const filename = `${id}${extension}`;
     const storagePath = `${folder}/${filename}`;
 
     const { error: uploadError } = await supabase.storage
       .from("library")
       .upload(storagePath, buffer, {
-        contentType: "application/pdf",
+        contentType: file.type,
         upsert: false,
       });
 
     if (uploadError) {
-      console.error("SUPABASE UPLOAD ERROR:", uploadError);
+      console.error(uploadError);
       return NextResponse.json(
-        { ok: false, error: uploadError.message || "فشل رفع الملف" },
+        { ok: false, error: uploadError.message },
         { status: 500 }
       );
     }
@@ -110,62 +120,56 @@ export async function POST(req: Request) {
       .from("library")
       .getPublicUrl(storagePath);
 
-    // إنشاء LegalDocument (للملف)
+    // LegalDocument (يبقى كما هو)
     const legalDoc = await prisma.legalDocument.create({
       data: {
         title: titleAr,
         filename,
         source: storagePath,
-        mimetype: "application/pdf",
-        size: buffer.length,  // ✅ هذا موجود في LegalDocument
+        mimetype: file.type,
+        size: buffer.length,
         isScanned: false,
         ocrStatus: "NONE",
       },
     });
 
-    // ✅ إنشاء LibraryItem بدون pdfSize
+    // ✅ LibraryItem (الإصلاح الحقيقي)
     const libraryItem = await prisma.libraryItem.create({
       data: {
         titleAr,
         titleEn: titleEn || null,
-        
-        // الشروحات الثلاثة
+
         basicExplanation: basicExplanation || null,
         professionalExplanation: professionalExplanation || null,
         commercialExplanation: commercialExplanation || null,
-        
-        // التصنيفات
-        mainCategory: mainCategory as MainCategory,
-        itemType: itemType as ItemType,
-        
-        // الملفات
-        hasPDF: true,
-        pdfUrl: urlData?.publicUrl || null,
-        // ❌ لا يوجد pdfSize في LibraryItem - تمت إزالته
-        
-        hasWord: false,
-        
-        // بيانات قانونية
+
+        mainCategory,
+        itemType,
+
+        hasPDF: !isWord,
+        pdfUrl: !isWord ? urlData?.publicUrl : null,
+
+        hasWord: isWord,
+        wordUrl: isWord ? urlData?.publicUrl : null,
+
         jurisdiction: jurisdiction || null,
-        year: year,
+        year,
         author: author || null,
-        
-        // إحصائيات
+
         views: 0,
         downloads: 0,
         saves: 0,
         rating: 0,
-        
-        // حالة النشر
+
         isPublished: true,
         publishedAt: new Date(),
-        
-        // المستخدم الذي أضافها
-        createdById: session.user.id ? Number(session.user.id) : null
+
+        createdById: session.user.id
+          ? Number(session.user.id)
+          : null,
       },
     });
 
-    // ربط المادة بالملف
     await prisma.libraryItemDocument.create({
       data: {
         libraryItemId: libraryItem.id,
@@ -173,10 +177,9 @@ export async function POST(req: Request) {
       },
     });
 
-    // تسجيل العملية
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id ? Number(session.user.id) : null,
+        userId: Number(session.user.id),
         action: "UPLOAD_LIBRARY_ITEM",
         meta: {
           libraryItemId: libraryItem.id,
@@ -186,18 +189,15 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(
-      {
-        ok: true,
-        libraryItemId: libraryItem.id,
-        documentId: legalDoc.id,
-        url: urlData?.publicUrl,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({
+      ok: true,
+      libraryItemId: libraryItem.id,
+      documentId: legalDoc.id,
+      url: urlData?.publicUrl,
+    });
 
   } catch (err: any) {
-    console.error("LIBRARY UPLOAD ERROR:", err);
+    console.error(err);
     return NextResponse.json(
       { ok: false, error: err?.message || "فشل رفع المستند" },
       { status: 500 }
