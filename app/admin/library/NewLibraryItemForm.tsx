@@ -28,7 +28,7 @@ export default function NewLibraryItemForm() {
     };
 
     try {
-      const res = await fetch("/api/library/items", {
+      const res = await fetch("/api/library/upload-new ", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -126,6 +126,13 @@ export default function NewLibraryItemForm() {
           className="p-2 border rounded-lg"
         />
       </div>
+        {/* 🔹 إضافة رفع ملف Word/PDF */}
+  <input
+    type="file"
+    name="file"
+    accept=".doc,.docx"
+    className="w-full p-2 border rounded-lg"
+  />
 
       <button
         type="submit"

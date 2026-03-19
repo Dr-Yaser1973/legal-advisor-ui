@@ -116,7 +116,7 @@ export default async function AdminLibraryPage() {
         {/* إضافة نص */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-blue-500">📝</span> إضافة نص قانوني
+            <span className="text-blue-500">📝</span> إضافة ملف وورد
           </h2>
           <NewLibraryItemForm />
         </div>
