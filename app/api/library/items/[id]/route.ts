@@ -8,7 +8,10 @@ import { LibraryRelationType } from "@prisma/client";
 export const runtime = "nodejs";
 
  // في buildFileUrl
- function buildFileUrl(filename: string | null) {
+ function buildFileUrl(
+  filename: string | null,
+  type: "laws" | "studies" | "fiqh" | "misc" = "laws"
+) {
   if (!filename) return null;
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,12 +21,16 @@ export const runtime = "nodejs";
   }
 
   const cleanBase = base.replace(/\/$/, "");
-  
-  // الملفات موجودة في مجلد laws/
-  const url = `${cleanBase}/storage/v1/object/public/library/laws/${filename}`;
-  
-  console.log("🔗 Correct PDF URL:", url);
-  
+
+  // التحقق من أن النوع صحيح
+  const validTypes = ["laws", "studies", "fiqh", "misc"];
+  const folder = validTypes.includes(type) ? type : "laws";
+
+  // بناء الرابط النهائي
+  const url = `${cleanBase}/storage/v1/object/public/library/${folder}/${filename}`;
+
+  console.log("🔗 Generated File URL:", url);
+
   return url;
 }
 
@@ -113,6 +120,18 @@ export async function GET(
         { status: 404 }
       );
     }
+     function categoryToFolder(category: string) {
+  switch (category) {
+    case "LAW":
+      return "laws";
+    case "ACADEMIC":
+      return "studies";
+    case "FIQH":
+      return "fiqh";
+    default:
+      return "misc";
+  }
+}
 
     // تجهيز روابط جميع الملفات
     const documents = item.itemDocuments.map((doc) => ({
@@ -121,7 +140,10 @@ export async function GET(
       filename: doc.document.filename,
       mimetype: doc.document.mimetype,
       size: doc.document.size,
-      url: buildFileUrl(doc.document.filename),
+       url: buildFileUrl(
+  doc.document.filename,
+  categoryToFolder(item.mainCategory)
+),
       createdAt: doc.document.createdAt,
     }));
 

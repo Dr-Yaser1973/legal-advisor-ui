@@ -19,6 +19,10 @@ export async function GET(request: Request) {
 
     if (category && category !== "ALL") {
       where.mainCategory = category;
+     
+  // تحويل category المرسل من الواجهة إلى القيمة الصحيحة في DB
+  if (category.toLowerCase() === "law") where.mainCategory = "LAW";
+  else if (category.toLowerCase() === "studies") where.mainCategory = "ACADEMIC";
     }
 
     // جلب البيانات من النموذج الجديد LibraryItem
