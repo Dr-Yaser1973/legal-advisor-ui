@@ -1,35 +1,99 @@
  // app/api/library/items/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
+    // ✅ قراءة جميع معاملات الفلترة
     const category = searchParams.get("category");
+    const type = searchParams.get("type");
+    const year = searchParams.get("year");
+    const explanation = searchParams.get("explanation");
+    const hasPDF = searchParams.get("hasPDF");
+    const hasWord = searchParams.get("hasWord");
+    const sort = searchParams.get("sort") || "newest";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
 
-    // بناء where clause
+    // ✅ بناء where clause كامل
     const where: any = {
       isPublished: true
     };
 
+    // ✅ فلتر حسب التصنيف الرئيسي
     if (category && category !== "ALL") {
-      where.mainCategory = category;
-     
-  // تحويل category المرسل من الواجهة إلى القيمة الصحيحة في DB
-  if (category.toLowerCase() === "law") where.mainCategory = "LAW";
-  else if (category.toLowerCase() === "studies") where.mainCategory = "ACADEMIC";
+      // تحويل category المرسل من الواجهة إلى القيمة الصحيحة في DB
+      if (category === "LAW") where.mainCategory = "LAW";
+      else if (category === "FIQH") where.mainCategory = "FIQH";
+      else if (category === "ACADEMIC") where.mainCategory = "ACADEMIC";
+      else if (category === "CONTRACT") where.mainCategory = "CONTRACT";
+      else where.mainCategory = category;
     }
 
-    // جلب البيانات من النموذج الجديد LibraryItem
+    // ✅ فلتر حسب نوع المحتوى (itemType)
+    if (type && type !== "ALL") {
+      where.itemType = type;
+    }
+
+    // ✅ فلتر حسب السنة
+    if (year && year !== "ALL") {
+      where.year = parseInt(year);
+    }
+
+    // ✅ فلتر حسب وجود PDF
+    if (hasPDF === "true") {
+      where.hasPDF = true;
+    }
+
+    // ✅ فلتر حسب وجود Word
+    if (hasWord === "true") {
+      where.hasWord = true;
+    }
+
+    // ✅ فلتر حسب وجود شروحات
+    if (explanation && explanation !== "ALL") {
+      if (explanation === "basic") {
+        where.basicExplanation = { not: null };
+      } else if (explanation === "professional") {
+        where.professionalExplanation = { not: null };
+      } else if (explanation === "commercial") {
+        where.commercialExplanation = { not: null };
+      }
+    }
+
+    // ✅ بناء شرط الترتيب (sort)
+    let orderBy: any = {};
+    switch (sort) {
+      case "newest":
+        orderBy = { createdAt: "desc" };
+        break;
+      case "oldest":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "popular":
+        orderBy = { views: "desc" };
+        break;
+      case "rated":
+        orderBy = { rating: "desc" };
+        break;
+      default:
+        orderBy = { createdAt: "desc" };
+    }
+
+    // ✅ حساب إجمالي النتائج
+    const total = await prisma.libraryItem.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+
+    // ✅ جلب البيانات
     const items = await prisma.libraryItem.findMany({
       where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
+      orderBy,
+      skip,
       take: limit,
       select: {
         id: true,
@@ -37,8 +101,6 @@ export async function GET(request: Request) {
         titleEn: true,
         abstractAr: true,
         abstractEn: true,
-        // ملاحظة: لا يوجد حقل 'content' في الـ Schema
-        // basicExplanation: true, موجود
         basicExplanation: true,
         professionalExplanation: true,
         commercialExplanation: true,
@@ -53,21 +115,15 @@ export async function GET(request: Request) {
         year: true,
         author: true,
         university: true,
-        // ملاحظة: keywords هي String[] في الـ Schema
         keywords: true,
         views: true,
         downloads: true,
         saves: true,
         rating: true,
-        // ملاحظة: لا يوجد حقل 'featured' في الـ Schema
-        isPublished: true,
-        publishedAt: true,
         createdAt: true,
         updatedAt: true
       }
     });
-
-    const total = await prisma.libraryItem.count({ where });
 
     return NextResponse.json({
       success: true,
@@ -77,7 +133,7 @@ export async function GET(request: Request) {
           page,
           limit,
           total,
-          pages: Math.ceil(total / limit)
+          pages: totalPages
         }
       }
     });
@@ -85,7 +141,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      { success: false, error: "حدث خطأ في جلب البيانات" },
       { status: 500 }
     );
   }
@@ -112,49 +168,31 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    // إنشاء مادة جديدة - بدون الحقول غير الموجودة
     const newItem = await prisma.libraryItem.create({
       data: {
-        // الحقول المطلوبة من الـ Schema الأصلي
         titleAr: body.titleAr,
         titleEn: body.titleEn || null,
-        
-        // الشروحات الثلاثة (موجودة في الـ Schema)
         basicExplanation: body.basicExplanation || null,
         professionalExplanation: body.professionalExplanation || null,
         commercialExplanation: body.commercialExplanation || null,
-        
-        // التصنيفات
         mainCategory: body.mainCategory,
         subCategory: body.subCategory || null,
         itemType: body.itemType,
-        
-        // الملفات
         hasPDF: body.hasPDF || false,
         pdfUrl: body.pdfUrl || null,
         hasWord: body.hasWord || false,
         wordUrl: body.wordUrl || null,
-        
-        // بيانات قانونية (موجودة في الـ Schema)
         jurisdiction: body.jurisdiction || null,
         year: body.year ? parseInt(body.year) : null,
         author: body.author || null,
         university: body.university || null,
-        
-        // keywords مصفوفة
         keywords: body.keywords || [],
-        
-        // إحصائيات
         views: 0,
         downloads: 0,
         saves: 0,
         rating: 0,
-        
-        // حالة النشر
         isPublished: true,
         publishedAt: new Date(),
-        
-        // العلاقات
         createdById: (session.user as any).id
       }
     });

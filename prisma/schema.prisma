@@ -764,6 +764,7 @@ model LibraryItem {
   basicExplanation        String? @db.Text
   professionalExplanation String? @db.Text
   commercialExplanation   String? @db.Text
+   slug String @unique 
 
   mainCategory LibraryMainCategory
   subCategory  String?

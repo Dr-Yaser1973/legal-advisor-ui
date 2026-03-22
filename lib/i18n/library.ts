@@ -5,6 +5,7 @@ export const libraryTranslations = {
     title: "المكتبة القانونية",
     backToHome: "العودة للرئيسية",
     backToLibrary: "العودة للمكتبة",
+    searchPlaceholder: "ابحث عن قانون أو وثيقة...",
     loading: "جاري التحميل...",
     noItems: "لا توجد مواد",
     tryDifferentFilters: "جرب تغيير معايير البحث",
@@ -64,6 +65,7 @@ export const libraryTranslations = {
     title: "Legal Library",
     backToHome: "Back to Home",
     backToLibrary: "Back to Library",
+    searchPlaceholder: "Search laws or documents...", // ✅ أضف هذ
     loading: "Loading...",
     noItems: "No items found",
     tryDifferentFilters: "Try different search criteria",

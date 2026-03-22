@@ -1,39 +1,83 @@
-//app/(site)/library/list/components/LibraryListContent.tsx
+ // app/(site)/library/list/components/LibraryListContent.tsx
+
 'use client';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
- import LibraryCard from "@/app/(site)/library/_components/LibraryCard";
-import FiltersSidebar from "@/app/(site)/library/_components/FiltersSidebar";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import LibraryCard from "../../_components/LibraryCard";
+import FiltersSidebar from "../../_components/FiltersSidebar";
 import { useLocale } from "@/lib/hooks/useLocale";
 import { getLibraryTranslations } from "@/lib/i18n/library";
 import type { MainCategory, LibraryCardItem } from "@/types/library";
 
 export default function LibraryListContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { locale, dir } = useLocale();
+  
+  // ✅ قراءة اللغة من URL
+  const urlLang = searchParams.get('lang');
+  const { locale, setLocale, dir } = useLocale();
+  
+  // ✅ تحديث اللغة إذا تغيرت في URL
+  useEffect(() => {
+    if (urlLang && urlLang !== locale) {
+      setLocale(urlLang as 'ar' | 'en');
+    }
+  }, [urlLang, locale, setLocale]);
+  
   const t = getLibraryTranslations(locale);
   
-  // حالات التصنيف والفلترة
-  const [items, setItems] = useState<LibraryCardItem[]>([]);
+  // قراءة category من URL
+  const urlCategory = searchParams.get('category') as MainCategory | null;
+  
+  // حالة التصنيف المختار
   const [selectedCategory, setSelectedCategory] = useState<MainCategory | "ALL">(
-    (searchParams.get('category') as MainCategory) || "ALL"
+    urlCategory || "ALL"
   );
   
-  // حالات الفلاتر
+  // باقي حالات الفلاتر
+  const [items, setItems] = useState<LibraryCardItem[]>([]);
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
   const [showExplanations, setShowExplanations] = useState<string>("ALL");
   const [hasPDF, setHasPDF] = useState<boolean>(false);
   const [hasWord, setHasWord] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>("newest");
-  
-  // حالات التحميل والترقيم
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  // تحديث selectedCategory عندما يتغير URL
+  useEffect(() => {
+    const newCategory = searchParams.get('category') as MainCategory | null;
+    if (newCategory) {
+      setSelectedCategory(newCategory);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
+
+  // دالة تحديث URL مع الحفاظ على اللغة
+  const updateUrl = (params: Record<string, string | null>) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === 'ALL') {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value);
+      }
+    });
+    
+    // التأكد من بقاء اللغة
+    if (!newParams.has('lang')) {
+      newParams.set('lang', locale);
+    }
+    
+    router.push(`${pathname}?${newParams.toString()}`);
+  };
 
   // دالة إعادة ضبط الفلاتر
   const resetFilters = () => {
@@ -44,19 +88,34 @@ export default function LibraryListContent() {
     setHasWord(false);
     setSortBy("newest");
     setCurrentPage(1);
+    
+    // تحديث URL مع الحفاظ على اللغة والتصنيف
+    updateUrl({
+      type: null,
+      year: null,
+      explanation: null,
+      hasPDF: null,
+      hasWord: null,
+      sort: 'newest',
+      page: '1'
+    });
   };
 
   // جلب البيانات
   useEffect(() => {
     async function loadItems() {
+      if (typeof window === 'undefined') return;
+      
       setLoading(true);
       try {
         const params = new URLSearchParams();
         
+        // إضافة التصنيف
         if (selectedCategory !== "ALL") {
           params.append("category", selectedCategory);
         }
         
+        // إضافة باقي الفلاتر
         if (selectedType !== "ALL") params.append("type", selectedType);
         if (selectedYear !== "ALL") params.append("year", selectedYear);
         if (showExplanations !== "ALL") params.append("explanation", showExplanations);
@@ -67,29 +126,27 @@ export default function LibraryListContent() {
         params.append("page", currentPage.toString());
         params.append("limit", "12");
         
-          // ✅ استخدم المسار المطلق من المتصفح
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
-        const url = baseUrl 
-          ? `${baseUrl}/api/library/items?${params.toString()}`
-          : `/api/library/items?${params.toString()}`;
+        // ✅ إضافة اللغة إلى الطلب (اختياري)
+        params.append("lang", locale);
         
-        const res = await fetch(url);
+        const res = await fetch(`/api/library/items?${params.toString()}`);
         const json = await res.json();
         
         if (json.success) {
-          setItems(json.data.items);
-          setTotalPages(json.data.pagination.pages);
-          setTotalItems(json.data.pagination.total);
+          setItems(json.data.items || []);
+          setTotalPages(json.data.pagination?.pages || 1);
+          setTotalItems(json.data.pagination?.total || 0);
         }
       } catch (error) {
         console.error("Error loading library items:", error);
+        setItems([]);
       } finally {
         setLoading(false);
       }
     }
 
     loadItems();
-  }, [selectedCategory, selectedType, selectedYear, showExplanations, hasPDF, hasWord, sortBy, currentPage]);
+  }, [selectedCategory, selectedType, selectedYear, showExplanations, hasPDF, hasWord, sortBy, currentPage, locale]);
 
   // تبويبات التصنيفات
   const tabs = [
@@ -110,7 +167,7 @@ export default function LibraryListContent() {
               {t.title}
             </h1>
             <Link 
-              href="/library" 
+              href={`/library?lang=${locale}`} 
               className="text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
             >
               {dir === 'rtl' ? '←' : '→'} {t.backToHome}
@@ -127,6 +184,11 @@ export default function LibraryListContent() {
                   onClick={() => {
                     setSelectedCategory(tab.key as any);
                     setCurrentPage(1);
+                    // ✅ تحديث URL مع الحفاظ على اللغة
+                    updateUrl({
+                      category: tab.key === "ALL" ? null : tab.key,
+                      page: '1'
+                    });
                   }}
                   className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all whitespace-nowrap
                     ${active 
@@ -143,31 +205,54 @@ export default function LibraryListContent() {
         </div>
       </div>
 
-      {/* المحتوى الرئيسي */}
+      {/* باقي المحتوى */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* الشريط الجانبي للفلاتر */}
           <aside className="lg:w-80">
             <FiltersSidebar
               selectedType={selectedType}
-              setSelectedType={setSelectedType}
+              setSelectedType={(value) => {
+                setSelectedType(value);
+                setCurrentPage(1);
+                updateUrl({ type: value === "ALL" ? null : value, page: '1' });
+              }}
               selectedYear={selectedYear}
-              setSelectedYear={setSelectedYear}
+              setSelectedYear={(value) => {
+                setSelectedYear(value);
+                setCurrentPage(1);
+                updateUrl({ year: value === "ALL" ? null : value, page: '1' });
+              }}
               showExplanations={showExplanations}
-              setShowExplanations={setShowExplanations}
+              setShowExplanations={(value) => {
+                setShowExplanations(value);
+                setCurrentPage(1);
+                updateUrl({ explanation: value === "ALL" ? null : value, page: '1' });
+              }}
               hasPDF={hasPDF}
-              setHasPDF={setHasPDF}
+              setHasPDF={(value) => {
+                setHasPDF(value);
+                setCurrentPage(1);
+                updateUrl({ hasPDF: value ? 'true' : null, page: '1' });
+              }}
               hasWord={hasWord}
-              setHasWord={setHasWord}
+              setHasWord={(value) => {
+                setHasWord(value);
+                setCurrentPage(1);
+                updateUrl({ hasWord: value ? 'true' : null, page: '1' });
+              }}
               sortBy={sortBy}
-              setSortBy={setSortBy}
+              setSortBy={(value) => {
+                setSortBy(value);
+                setCurrentPage(1);
+                updateUrl({ sort: value, page: '1' });
+              }}
               onReset={resetFilters}
             />
           </aside>
 
           {/* قسم النتائج */}
           <main className="flex-1">
-            {/* معلومات النتائج */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
                 {loading ? t.loading : `عرض ${items.length} من أصل ${totalItems} نتيجة`}
@@ -179,6 +264,7 @@ export default function LibraryListContent() {
                   onChange={(e) => {
                     setSortBy(e.target.value);
                     setCurrentPage(1);
+                    updateUrl({ sort: e.target.value, page: '1' });
                   }}
                   className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
                 >
@@ -190,7 +276,6 @@ export default function LibraryListContent() {
               </div>
             </div>
 
-            {/* شبكة النتائج */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
@@ -218,11 +303,14 @@ export default function LibraryListContent() {
                   ))}
                 </div>
 
-                {/* أزرار الترقيم */}
                 {totalPages > 1 && (
                   <div className="flex justify-center gap-2 mt-12">
                     <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      onClick={() => {
+                        const newPage = Math.max(1, currentPage - 1);
+                        setCurrentPage(newPage);
+                        updateUrl({ page: newPage.toString() });
+                      }}
                       disabled={currentPage === 1}
                       className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                     >
@@ -234,7 +322,11 @@ export default function LibraryListContent() {
                     </span>
                     
                     <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => {
+                        const newPage = Math.min(totalPages, currentPage + 1);
+                        setCurrentPage(newPage);
+                        updateUrl({ page: newPage.toString() });
+                      }}
                       disabled={currentPage === totalPages}
                       className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                     >
