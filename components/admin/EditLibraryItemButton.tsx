@@ -1,16 +1,44 @@
-// components/admin/EditLibraryItemButton.tsx
+ // components/admin/EditLibraryItemButton.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 interface Props {
   item: any;
 }
 
+const MAIN_CATEGORIES = [
+  { value: "LAW", label: "قوانين" },
+  { value: "FIQH", label: "فقه" },
+  { value: "ACADEMIC", label: "أكاديمي" },
+  { value: "CONTRACT", label: "عقود" }
+];
+
+const ITEM_TYPES: Record<string, Array<{ value: string; label: string }>> = {
+  LAW: [
+    { value: "CONSTITUTION", label: "دستور" },
+    { value: "STATUTE", label: "قانون" },
+    { value: "REGULATION", label: "لائحة" },
+    { value: "COURT_RULING", label: "حكم قضائي" }
+  ],
+  FIQH: [{ value: "RESEARCH_PAPER", label: "بحث علمي" }],
+  ACADEMIC: [
+    { value: "PHD_THESIS", label: "أطروحة دكتوراه" },
+    { value: "MASTER_THESIS", label: "رسالة ماجستير" },
+    { value: "RESEARCH_PAPER", label: "بحث علمي" }
+  ],
+  CONTRACT: [
+    { value: "LOCAL_CONTRACT", label: "عقد محلي" },
+    { value: "INTERNATIONAL_CONTRACT", label: "عقد دولي" }
+  ]
+};
+
 export default function EditLibraryItemButton({ item }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(item.mainCategory || "LAW");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -21,12 +49,16 @@ export default function EditLibraryItemButton({ item }: Props) {
     const data = {
       titleAr: formData.get("titleAr"),
       titleEn: formData.get("titleEn"),
+      mainCategory: selectedCategory,
+      itemType: formData.get("itemType"),
       basicExplanation: formData.get("basicExplanation"),
       professionalExplanation: formData.get("professionalExplanation"),
       commercialExplanation: formData.get("commercialExplanation"),
       year: formData.get("year") ? parseInt(formData.get("year") as string) : null,
       author: formData.get("author"),
       jurisdiction: formData.get("jurisdiction"),
+      university: formData.get("university"),
+      keywords: formData.get("keywords") ? (formData.get("keywords") as string).split(",").map(k => k.trim()) : [],
     };
 
     try {
@@ -36,12 +68,18 @@ export default function EditLibraryItemButton({ item }: Props) {
         body: JSON.stringify(data),
       });
 
+      const result = await res.json();
+
       if (res.ok) {
+        toast.success(result.message || "تم التحديث بنجاح");
         router.refresh();
         setShowModal(false);
+      } else {
+        toast.error(result.error || "حدث خطأ");
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("فشل الاتصال بالخادم");
     } finally {
       setLoading(false);
     }
@@ -78,11 +116,39 @@ export default function EditLibraryItemButton({ item }: Props) {
                 className="w-full p-2 border rounded-lg"
               />
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">التصنيف الرئيسي</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full p-2 border rounded-lg"
+                  >
+                    {MAIN_CATEGORIES.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">نوع المادة</label>
+                  <select
+                    name="itemType"
+                    defaultValue={item.itemType || ""}
+                    className="w-full p-2 border rounded-lg"
+                  >
+                    <option value="">اختر النوع</option>
+                    {ITEM_TYPES[selectedCategory]?.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <textarea
                 name="basicExplanation"
                 defaultValue={item.basicExplanation || ""}
                 placeholder="شرح مبسط"
-                rows={4}
+                rows={3}
                 className="w-full p-2 border rounded-lg"
               />
 
@@ -90,7 +156,7 @@ export default function EditLibraryItemButton({ item }: Props) {
                 name="professionalExplanation"
                 defaultValue={item.professionalExplanation || ""}
                 placeholder="شرح احترافي"
-                rows={4}
+                rows={3}
                 className="w-full p-2 border rounded-lg"
               />
 
@@ -98,7 +164,7 @@ export default function EditLibraryItemButton({ item }: Props) {
                 name="commercialExplanation"
                 defaultValue={item.commercialExplanation || ""}
                 placeholder="شرح تجاري"
-                rows={4}
+                rows={3}
                 className="w-full p-2 border rounded-lg"
               />
 
@@ -124,7 +190,21 @@ export default function EditLibraryItemButton({ item }: Props) {
                 />
               </div>
 
-              <div className="flex gap-2 justify-end">
+              <input
+                name="university"
+                defaultValue={item.university || ""}
+                placeholder="الجامعة"
+                className="w-full p-2 border rounded-lg"
+              />
+
+              <input
+                name="keywords"
+                defaultValue={item.keywords?.join(", ") || ""}
+                placeholder="كلمات مفتاحية (مفصولة بفاصلة)"
+                className="w-full p-2 border rounded-lg"
+              />
+
+              <div className="flex gap-2 justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
