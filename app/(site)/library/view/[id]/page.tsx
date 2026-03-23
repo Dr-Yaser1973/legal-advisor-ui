@@ -104,14 +104,13 @@ function generateSlug(title: string): string {
 // ============================================
 // generateMetadata المحسن
 // ============================================
-export async function generateMetadata({
+ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params;
   
-  // جلب المادة من قاعدة البيانات مباشرة
   const item = await getLibraryItemByIdentifier(id);
   
   if (!item) {
@@ -124,11 +123,10 @@ export async function generateMetadata({
   const category = categoryNames[item.mainCategory as keyof typeof categoryNames] || { ar: "", en: "" };
   const itemType = itemTypeNames[item.itemType as keyof typeof itemTypeNames] || { ar: "", en: "" };
   
-  // عنوان SEO المثالي
+  // ✅ تعريف المتغيرات بشكل صحيح
   const seoTitleAr = `${item.titleAr} - ${category.ar} | المكتبة القانونية`;
   const seoTitleEn = `${item.titleEn || item.titleAr} - ${category.en} | Legal Library`;
   
-  // وصف SEO (160 حرفاً)
   const descriptionAr = item.abstractAr 
     ? (item.abstractAr.length > 157 
         ? item.abstractAr.slice(0, 157) + "..." 
@@ -141,7 +139,6 @@ export async function generateMetadata({
         : item.abstractEn)
     : `Browse ${item.titleAr} in the Legal Library. ${category.en} ${itemType.en} with detailed explanation and legal analysis.`;
 
-  // الكلمات المفتاحية
   const keywords = [
     ...(item.keywords || []),
     item.titleAr,
@@ -153,23 +150,15 @@ export async function generateMetadata({
     "شرح قانوني"
   ].slice(0, 10).join(", ");
 
-  // بناء الرابط الأساسي
-  // ✅ استخدم الرابط الفعلي للمنصة
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.vercel.app";
   const canonicalUrl = `${baseUrl}/library/view/${item.slug || item.id}`;
 
   return {
-    title: {
-      ar: seoTitleAr,
-      en: seoTitleEn,
-    },
-    description: {
-      ar: descriptionAr,
-      en: descriptionEn,
-    },
+    // ✅ استخدام المتغيرات الصحيحة
+    title: seoTitleAr,
+    description: descriptionAr,
     keywords,
     
-    // الروابط الأساسية
     alternates: {
       canonical: canonicalUrl,
       languages: {
@@ -178,7 +167,6 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.ve
       },
     },
     
-    // Open Graph (للمشاركة على وسائل التواصل)
     openGraph: {
       title: seoTitleAr,
       description: descriptionAr,
@@ -194,7 +182,6 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.ve
       tags: item.keywords || [],
     },
     
-    // Twitter Card
     twitter: {
       card: "summary_large_image",
       title: seoTitleAr,
@@ -202,7 +189,6 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.ve
       site: "@LegalAdvisor",
     },
     
-    // إعدادات الروبوتات
     robots: {
       index: true,
       follow: true,
@@ -215,12 +201,6 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.ve
       },
     },
     
-    // التقييم (للعرض في نتائج البحث)
-    verification: {
-      google: process.env.GOOGLE_VERIFICATION_ID,
-    },
-    
-    // معاينة الرابط
     other: {
       "rating:views": item.views?.toString(),
       "rating:value": item.rating?.toString(),
