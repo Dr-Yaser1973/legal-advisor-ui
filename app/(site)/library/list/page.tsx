@@ -1,10 +1,12 @@
-//app/(site)/library/list/page.tsx
+ // app/(site)/library/list/page.tsx
 import { Suspense } from 'react';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import LibraryListContent from './components/LibraryListContent';
 
-// ✅ هذه الصفحة Server Component
+// ✅ منع البناء الثابت لهذه الصفحة
+export const dynamic = "force-dynamic";
+
 export default function LibraryListPage() {
   return (
     <Suspense fallback={<LibraryListSkeleton />}>
@@ -26,29 +28,21 @@ function LibraryListSkeleton() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-80">
-            <div className="bg-white rounded-2xl p-6 space-y-4">
-              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
-              <div className="h-10 bg-gray-200 rounded animate-pulse" />
-              <div className="h-10 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </aside>
-          <main className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
-                  <div className="h-12 w-12 bg-gray-200 rounded-2xl mb-4" />
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
-                  <div className="flex gap-2">
-                    <div className="h-6 w-16 bg-gray-200 rounded-full" />
-                    <div className="h-6 w-16 bg-gray-200 rounded-full" />
-                  </div>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="h-12 w-12 bg-gray-200 rounded-2xl mb-4" />
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-3" />
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-gray-200 rounded-full" />
+                  <div className="h-6 w-16 bg-gray-200 rounded-full" />
                 </div>
-              ))}
-            </div>
-          </main>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
