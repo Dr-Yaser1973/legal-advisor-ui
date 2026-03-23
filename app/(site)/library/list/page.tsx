@@ -1,10 +1,10 @@
- // app/(site)/library/list/page.tsx
+//app/(site)/library/list/page.tsx
 import { Suspense } from 'react';
-import Link from 'next/link';  // ✅ أضف هذا الاستيراد
-import LibraryListContent from './components/LibraryListContent';
+import Link from 'next/link';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import LibraryListContent from './components/LibraryListContent';
 
-// هذه الصفحة هي Server Component (بدون "use client")
+// ✅ هذه الصفحة Server Component
 export default function LibraryListPage() {
   return (
     <Suspense fallback={<LibraryListSkeleton />}>
@@ -17,26 +17,23 @@ export default function LibraryListPage() {
 function LibraryListSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
-      {/* شريط التنقل العلوي */}
       <div className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-blue-600">
             Legal Advisor
           </Link>
-          <LanguageSwitcher />  {/* ✅ زر اللغة في مكانه الصحيح */}
+          <LanguageSwitcher />
         </div>
       </div>
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-80">
             <div className="bg-white rounded-2xl p-6 space-y-4">
-              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
+              <div className="h-10 bg-gray-200 rounded animate-pulse" />
+              <div className="h-10 bg-gray-200 rounded animate-pulse" />
             </div>
           </aside>
-          
           <main className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
