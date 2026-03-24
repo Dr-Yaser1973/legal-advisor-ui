@@ -114,7 +114,7 @@ export default function LibraryAIExplainPanel({
         <div className="flex items-center gap-2">
           <SparklesIcon className="h-5 w-5 text-purple-600" />
           <h3 className="font-semibold text-gray-900">
-            شرح بالذكاء الاصطناعي
+             الشرح
           </h3>
           {isCached && explanation && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full mr-2">

@@ -1,5 +1,4 @@
-//app/api/library/items/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -7,11 +6,25 @@ import { LibraryRelationType } from "@prisma/client";
 
 export const runtime = "nodejs";
 
- // في buildFileUrl
- function buildFileUrl(
+// ✅ دالة لتحديد المجلد حسب التصنيف (تعريفها في الأعلى)
+function categoryToFolder(category: string): string {
+  switch (category) {
+    case "LAW":
+      return "laws";
+    case "ACADEMIC":
+      return "studies";
+    case "FIQH":
+      return "fiqh";
+    default:
+      return "misc";
+  }
+}
+
+// ✅ دالة بناء رابط الملف
+function buildFileUrl(
   filename: string | null,
   type: "laws" | "studies" | "fiqh" | "misc" = "laws"
-) {
+): string | null {
   if (!filename) return null;
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -21,14 +34,10 @@ export const runtime = "nodejs";
   }
 
   const cleanBase = base.replace(/\/$/, "");
-
-  // التحقق من أن النوع صحيح
   const validTypes = ["laws", "studies", "fiqh", "misc"];
   const folder = validTypes.includes(type) ? type : "laws";
 
-  // بناء الرابط النهائي
   const url = `${cleanBase}/storage/v1/object/public/library/${folder}/${filename}`;
-
   console.log("🔗 Generated File URL:", url);
 
   return url;
@@ -39,7 +48,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // انتظار params لأنه Promise
     const { id } = await params;
     
     if (!id) {
@@ -49,7 +57,7 @@ export async function GET(
       );
     }
 
-    // زيادة عدد المشاهدات (غير متزامن - لا ننتظر النتيجة)
+    // زيادة عدد المشاهدات (غير متزامن)
     prisma.libraryItem
       .update({
         where: { id },
@@ -120,18 +128,9 @@ export async function GET(
         { status: 404 }
       );
     }
-     function categoryToFolder(category: string) {
-  switch (category) {
-    case "LAW":
-      return "laws";
-    case "ACADEMIC":
-      return "studies";
-    case "FIQH":
-      return "fiqh";
-    default:
-      return "misc";
-  }
-}
+
+    // ✅ تحديد المجلد المناسب لهذه المادة
+    const folder = categoryToFolder(item.mainCategory);
 
     // تجهيز روابط جميع الملفات
     const documents = item.itemDocuments.map((doc) => ({
@@ -140,10 +139,7 @@ export async function GET(
       filename: doc.document.filename,
       mimetype: doc.document.mimetype,
       size: doc.document.size,
-       url: buildFileUrl(
-  doc.document.filename,
-  categoryToFolder(item.mainCategory)
-),
+      url: buildFileUrl(doc.document.filename, folder as any),
       createdAt: doc.document.createdAt,
     }));
 
@@ -265,7 +261,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // انتظار params لأنه Promise
     const { id } = await params;
 
     const session = await getServerSession(authOptions);
@@ -398,6 +393,173 @@ export async function POST(
     console.error("Error in POST:", error);
     return NextResponse.json(
       { ok: false, error: "حدث خطأ داخلي في الخادم" },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ PATCH - تعديل المادة (لصفحة الادمن)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as any)?.role?.toUpperCase?.() || "CLIENT";
+    
+    if (!session || role !== "ADMIN") {
+      return NextResponse.json(
+        { ok: false, error: "غير مخول. يتطلب صلاحيات ADMIN." },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const {
+      titleAr,
+      titleEn,
+      basicExplanation,
+      professionalExplanation,
+      commercialExplanation,
+      year,
+      author,
+      jurisdiction,
+      university,
+      keywords,
+      mainCategory,
+      itemType,
+    } = body;
+
+    const existingItem = await prisma.libraryItem.findUnique({
+      where: { id },
+    });
+
+    if (!existingItem) {
+      return NextResponse.json(
+        { ok: false, error: "المادة غير موجودة" },
+        { status: 404 }
+      );
+    }
+
+    // دالة توليد slug
+    function generateSlug(title: string): string {
+      return title
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    const updateData: any = {};
+
+    if (titleAr !== undefined) {
+      updateData.titleAr = titleAr;
+      updateData.slug = generateSlug(titleAr);
+    }
+    if (titleEn !== undefined) updateData.titleEn = titleEn;
+    if (basicExplanation !== undefined) updateData.basicExplanation = basicExplanation;
+    if (professionalExplanation !== undefined) updateData.professionalExplanation = professionalExplanation;
+    if (commercialExplanation !== undefined) updateData.commercialExplanation = commercialExplanation;
+    if (year !== undefined) updateData.year = year;
+    if (author !== undefined) updateData.author = author;
+    if (jurisdiction !== undefined) updateData.jurisdiction = jurisdiction;
+    if (university !== undefined) updateData.university = university;
+    if (keywords !== undefined) updateData.keywords = keywords;
+    if (mainCategory !== undefined) updateData.mainCategory = mainCategory;
+    if (itemType !== undefined) updateData.itemType = itemType;
+
+    const updatedItem = await prisma.libraryItem.update({
+      where: { id },
+      data: updateData,
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: Number(session.user.id),
+        action: "UPDATE_LIBRARY_ITEM",
+        meta: {
+          libraryItemId: id,
+          changes: Object.keys(updateData),
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      data: updatedItem,
+      message: "تم تحديث المادة بنجاح",
+    });
+
+  } catch (error: any) {
+    console.error("PATCH error:", error);
+    return NextResponse.json(
+      { ok: false, error: error?.message || "فشل تحديث المادة" },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ DELETE - حذف المادة
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as any)?.role?.toUpperCase?.() || "CLIENT";
+    
+    if (!session || role !== "ADMIN") {
+      return NextResponse.json(
+        { ok: false, error: "غير مخول. يتطلب صلاحيات ADMIN." },
+        { status: 403 }
+      );
+    }
+
+    const existingItem = await prisma.libraryItem.findUnique({
+      where: { id },
+      include: { itemDocuments: true },
+    });
+
+    if (!existingItem) {
+      return NextResponse.json(
+        { ok: false, error: "المادة غير موجودة" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.libraryItemDocument.deleteMany({
+      where: { libraryItemId: id },
+    });
+
+    await prisma.libraryItem.delete({
+      where: { id },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: Number(session.user.id),
+        action: "DELETE_LIBRARY_ITEM",
+        meta: {
+          libraryItemId: id,
+          title: existingItem.titleAr,
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      message: "تم حذف المادة بنجاح",
+    });
+
+  } catch (error: any) {
+    console.error("DELETE error:", error);
+    return NextResponse.json(
+      { ok: false, error: error?.message || "فشل حذف المادة" },
       { status: 500 }
     );
   }

@@ -427,7 +427,7 @@ export default function LibraryItemViewClient({
   commercialExplanation={item.commercialExplanation}
 />
 
-{/* ✅ لوحة شرح الذكاء الاصطناعي */}
+{/* ✅  الشرح */}
 <LibraryAIExplainPanel
   itemId={item.id}
   title={item.titleAr}

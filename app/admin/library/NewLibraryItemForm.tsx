@@ -90,7 +90,7 @@ export default function NewLibraryItemForm() {
     data.append("file", file);
 
     try {
-      const res = await fetch("/api/admin/library/upload-new", {
+       const res = await fetch("/api/library/upload", {
         method: "POST",
         body: data,
       });
