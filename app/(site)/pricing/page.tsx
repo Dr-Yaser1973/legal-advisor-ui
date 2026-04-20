@@ -2,9 +2,16 @@
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "الباقات والأسعار | المستشار القانوني",
+  description:
+    "اختر الباقة المناسبة للاستشارات القانونية والعقود - للأفراد، الشركات، والمحامين. أسعار تنافسية بالدينار العراقي.",
+};
+
+type PlanId = "individual" | "business" | "professionals";
 
 type Plan = {
-  id: "individual" | "business" | "professionals";
+  id: PlanId;
   name: string;
   tagline: string;
   priceIQD: number;
@@ -17,8 +24,8 @@ type Plan = {
   whatsappMessage?: string;
 };
 
-const WHATSAPP_NUMBER = "9647719183785"; // ضع رقمك بصيغة دولية بدون + (مثال: 9647...)
-const SUPPORT_EMAIL = "support@legal-advisor.iq"; // اختياري (حتى لو الدومين غير جاهز اتركه فارغاً)
+const WHATSAPP_NUMBER = "9647719183785"; // الرقم بصيغة دولية بدون +
+const SUPPORT_EMAIL = "support@legal-advisor.iq";
 
 const formatIQD = (n: number) => new Intl.NumberFormat("ar-IQ").format(n);
 
@@ -89,12 +96,8 @@ const plans: Plan[] = [
 ];
 
 export default function PricingPage() {
-  const WHATSAPP_NUMBER: string = "9647719183785";
-
-  const hasWhatsapp =
-    WHATSAPP_NUMBER &&
-    WHATSAPP_NUMBER !== "9647719183785" &&
-    WHATSAPP_NUMBER.length >= 10;
+  // التحقق من وجود رقم واتساب صالح
+  const hasWhatsapp = WHATSAPP_NUMBER && WHATSAPP_NUMBER.length >= 10;
 
   return (
     <div className="space-y-10">
@@ -179,10 +182,10 @@ export default function PricingPage() {
 
               {/* Features */}
               <ul className="mb-6 space-y-2 text-sm text-zinc-200">
-                {plan.features.map((f, idx) => (
+                {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    <span className="leading-6">{f}</span>
+                    <span className="leading-6">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -192,6 +195,9 @@ export default function PricingPage() {
                 <Link
                   href={ctaHref}
                   target={plan.ctaType === "whatsapp" ? "_blank" : undefined}
+                  rel={
+                    plan.ctaType === "whatsapp" ? "noopener noreferrer" : undefined
+                  }
                   className={[
                     "w-full inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition",
                     isRecommended
@@ -200,7 +206,7 @@ export default function PricingPage() {
                   ].join(" ")}
                 >
                   {plan.ctaType === "whatsapp" && !hasWhatsapp
-                    ? "9647719183785"
+                    ? "رقم واتساب غير متوفر"
                     : plan.ctaLabel}
                 </Link>
 
@@ -235,7 +241,8 @@ export default function PricingPage() {
           <div className="text-xs text-zinc-500">
             {SUPPORT_EMAIL ? (
               <span>
-                بريد الدعم: <span className="text-zinc-300">{SUPPORT_EMAIL}</span>
+                بريد الدعم:{" "}
+                <span className="text-zinc-300">{SUPPORT_EMAIL}</span>
               </span>
             ) : (
               <span>يمكن إضافة بريد دعم رسمي لاحقاً.</span>
