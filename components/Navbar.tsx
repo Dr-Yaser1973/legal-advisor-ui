@@ -52,6 +52,10 @@ export default function Navbar() {
               href="/lawyers/my-consults"
               className="hover:text-white"
             >
+              {/* أضف هذا السطر */}
+<Link href="/pricing" className="hover:text-white">
+  الأسعار
+</Link>
               استشاراتي كمحامٍ
             </Link>
           )}
