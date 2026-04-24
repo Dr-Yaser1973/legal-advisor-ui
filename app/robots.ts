@@ -1,7 +1,7 @@
 // app/robots.ts
 import { MetadataRoute } from "next";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
