@@ -150,7 +150,7 @@ function generateSlug(title: string): string {
     "شرح قانوني"
   ].slice(0, 10).join(", ");
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
   const canonicalUrl = `${baseUrl}/library/view/${item.slug || item.id}`;
 
   return {
