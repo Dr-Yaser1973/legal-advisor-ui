@@ -44,6 +44,10 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon-32.png",
   },
+
+  verification: {
+    google: "yikvI_aIDpTIfA-B5ZfTIyPSBP6ljVOrWOecx-YbjWA",
+  },
   
 
   openGraph: {
