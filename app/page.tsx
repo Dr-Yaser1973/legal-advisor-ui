@@ -313,6 +313,9 @@ export default function HomeGovPortal() {
             <Link className="hover:text-white transition" href="/consultations">
               {lang === "ar" ? "الاستشارات" : "Consultations"}
             </Link>
+            <Link className="hover:text-white transition" href="/pricing">
+  {lang === "ar" ? "الأسعار" : "Pricing"}
+</Link>
           </nav>
 
           <div className="flex items-center gap-2">
