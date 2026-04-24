@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://legal-advisor.ui-vercel.app";
+const SITE_URL = "https://smartlegaladvisor.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,6 +44,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon-32.png",
   },
+  
 
   openGraph: {
     type: "website",
