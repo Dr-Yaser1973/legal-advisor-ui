@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { MetadataRoute } from "next";
 
 // الرابط الأساسي للموقع
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://legal-advisor-ui.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
 // في أعلى ملف app/sitemap.ts
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // إعادة إنشاء كل ساعة
