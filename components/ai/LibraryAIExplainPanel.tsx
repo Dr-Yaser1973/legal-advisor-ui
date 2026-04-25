@@ -1,13 +1,14 @@
  "use client";
 
 import { useState } from "react";
-import { SparklesIcon, AcademicCapIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, AcademicCapIcon, BuildingOfficeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 type Level = "basic" | "pro" | "business";
 
 interface Props {
   itemId: string;
   title: string;
+  isAuthenticated?: boolean;
   initialExplanations?: {
     basic?: string | null;
     pro?: string | null;
@@ -17,9 +18,11 @@ interface Props {
 
 export default function LibraryAIExplainPanel({ 
   itemId, 
-  title, 
+  title,
+  isAuthenticated = false,
   initialExplanations 
 }: Props) {
+  
   const [level, setLevel] = useState<Level>("basic");
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(
@@ -28,6 +31,7 @@ export default function LibraryAIExplainPanel({
   const [error, setError] = useState<string | null>(null);
   const [articleText, setArticleText] = useState("");
   const [isCached, setIsCached] = useState(!!initialExplanations?.basic);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const levelConfig = {
     basic: { 
@@ -51,7 +55,12 @@ export default function LibraryAIExplainPanel({
   };
 
   async function loadExplanation(lv: Level) {
-    // إذا كان الشرح موجود مسبقاً، استخدمه مباشرة
+    // التحقق من تسجيل الدخول قبل أي شيء
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true);
+      return;
+    }
+
     if (levelConfig[lv].existing) {
       setExplanation(levelConfig[lv].existing);
       setIsCached(true);
@@ -92,8 +101,13 @@ export default function LibraryAIExplainPanel({
   }
 
   const handleLevelChange = (lv: Level) => {
+    // التحقق من تسجيل الدخول عند تغيير المستوى
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true);
+      return;
+    }
+
     setLevel(lv);
-    // إذا كان الشرح موجود مسبقاً، عرضه مباشرة
     if (levelConfig[lv].existing) {
       setExplanation(levelConfig[lv].existing);
       setIsCached(true);
@@ -105,17 +119,64 @@ export default function LibraryAIExplainPanel({
     }
   };
 
-  const Icon = levelConfig[level].icon;
+  // ── واجهة طلب تسجيل الدخول ──────────────────────────────────────────────
+  if (showAuthPrompt || !isAuthenticated) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        {/* الرأس */}
+        <div className="p-4 border-b bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="h-5 w-5 text-purple-600" />
+            <h3 className="font-semibold text-gray-900">الشرح بالذكاء الاصطناعي</h3>
+          </div>
+        </div>
 
+        {/* رسالة تسجيل الدخول */}
+        <div className="p-8 flex flex-col items-center text-center gap-5">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center shadow-inner">
+            <LockClosedIcon className="h-8 w-8 text-purple-500" />
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-lg font-bold text-gray-900">
+              أنت بحاجة إلى تسجيل الدخول
+            </h4>
+            <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+              للاستفادة من ميزة الشرح القانوني بالذكاء الاصطناعي، يرجى تسجيل الدخول إلى حسابك أولاً.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+            <button
+              onClick={() => {
+  window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+}}
+              className="flex-1 py-2.5 px-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium shadow hover:from-purple-700 hover:to-blue-700 transition-all hover:shadow-md"
+            >
+              تسجيل الدخول
+            </button>
+            <button
+              onClick={() => {
+  window.location.href = "/auth/register";
+}}
+              className="flex-1 py-2.5 px-5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+            >
+              إنشاء حساب
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── الواجهة الأصلية (للمستخدمين المسجّلين) ──────────────────────────────
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       {/* الرأس */}
       <div className="p-4 border-b bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="flex items-center gap-2">
           <SparklesIcon className="h-5 w-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">
-             الشرح
-          </h3>
+          <h3 className="font-semibold text-gray-900">الشرح بالذكاء الاصطناعي</h3>
           {isCached && explanation && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full mr-2">
               من المخبأ
@@ -124,7 +185,7 @@ export default function LibraryAIExplainPanel({
         </div>
       </div>
 
-      {/* محتوى الشرح */}
+      {/* المحتوى */}
       <div className="p-6 space-y-4">
         {/* حقل إدخال النص */}
         <div>
@@ -163,16 +224,14 @@ export default function LibraryAIExplainPanel({
                 <config.icon className="h-4 w-4" />
                 {config.label}
                 {hasExisting && (
-                  <span className="text-xs bg-white/20 rounded-full px-1.5 py-0.5">
-                    ✓
-                  </span>
+                  <span className="text-xs bg-white/20 rounded-full px-1.5 py-0.5">✓</span>
                 )}
               </button>
             );
           })}
         </div>
 
-        {/* حالة التحميل */}
+        {/* التحميل */}
         {loading && (
           <div className="bg-gray-50 rounded-xl p-6">
             <div className="flex items-center gap-3">
@@ -189,7 +248,7 @@ export default function LibraryAIExplainPanel({
           </div>
         )}
 
-        {/* الشرح الناتج */}
+        {/* الشرح */}
         {!loading && !error && explanation && (
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
             <div className="prose prose-sm max-w-none">

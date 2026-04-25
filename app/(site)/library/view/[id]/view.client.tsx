@@ -428,16 +428,16 @@ export default function LibraryItemViewClient({
 />
 
 {/* ✅  الشرح */}
-<LibraryAIExplainPanel
+ <LibraryAIExplainPanel
   itemId={item.id}
   title={item.titleAr}
+  isAuthenticated={isAuthenticated}   // ← هذا السطر الجديد فقط
   initialExplanations={{
     basic: item.basicExplanation,
     pro: item.professionalExplanation,
     business: item.commercialExplanation,
   }}
 />
-
 {/* عرض المستندات */}
 {item.documents && item.documents.length > 0 && (
   <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
