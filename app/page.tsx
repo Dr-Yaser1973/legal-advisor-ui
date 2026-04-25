@@ -489,10 +489,9 @@ export default function HomeGovPortal() {
             <Link className="hover:text-zinc-200 transition" href="/about">
               {t.footer.about}
             </Link>
-            <Link className="hover:text-zinc-200 transition" href="/pricing">
-  {t.footer.pricing}
-</Link>
+    
             <span className="opacity-30">•</span>
+            <span className="opacity-30">•</span>  {/* ← أضف هذا */}
             <Link className="hover:text-zinc-200 transition" href="/privacy">
               {t.footer.privacy}
             </Link>
