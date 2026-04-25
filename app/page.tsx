@@ -95,6 +95,7 @@ const CONTENT = {
     footer: {
       rights: "جميع الحقوق محفوظة",
       about: "من نحن",
+      pricing: "الأسعار",
       privacy: "الخصوصية",
       terms: "الشروط",
       disclaimer: "إخلاء المسؤولية",
@@ -170,6 +171,7 @@ const CONTENT = {
     footer: {
       rights: "All rights reserved",
       about: "About",
+      pricing: "Pricing",
       privacy: "Privacy",
       terms: "Terms",
       disclaimer: "Disclaimer",
@@ -487,6 +489,9 @@ export default function HomeGovPortal() {
             <Link className="hover:text-zinc-200 transition" href="/about">
               {t.footer.about}
             </Link>
+            <Link className="hover:text-zinc-200 transition" href="/pricing">
+  {t.footer.pricing}
+</Link>
             <span className="opacity-30">•</span>
             <Link className="hover:text-zinc-200 transition" href="/privacy">
               {t.footer.privacy}
