@@ -250,11 +250,13 @@ export default function PricingPage() {
           </div>
 
           <Link
-            href="/contact"
-            className="text-emerald-400 hover:underline text-xs"
-          >
-            انتقل إلى صفحة اتصل بنا
-          </Link>
+           href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("مرحباً، أريد الاستفسار عن باقة المحامين ومكاتب الترجمة.")}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-emerald-400 hover:underline text-xs"
+>
+  تواصل معنا عبر واتساب
+</Link>
         </div>
       </section>
     </div>
