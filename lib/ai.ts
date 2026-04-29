@@ -40,7 +40,7 @@ export async function chatCompletion(
   opts?: { model?: string; temperature?: number }
 ) {
   const openai = getOpenAI();
-  const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-4o-mini";
+  const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-5.5";
 
   return openai.chat.completions.create({
     model,

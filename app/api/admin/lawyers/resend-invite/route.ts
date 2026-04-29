@@ -1,4 +1,5 @@
- import { NextRequest, NextResponse } from "next/server";
+//app/api/admin/lawers/resend-invite/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

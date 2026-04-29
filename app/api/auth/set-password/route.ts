@@ -1,3 +1,4 @@
+//app/api/auth/set-password/router.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
