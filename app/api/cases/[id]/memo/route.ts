@@ -1,13 +1,12 @@
- import { NextResponse } from "next/server";
+ // app/api/cases/[id]/memo/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
+import { chatCompletion } from "@/lib/ai";
 import { buildMemoPDF } from "@/lib/pdf/memoPdf";
+import { requireCaseAccess } from "@/lib/auth/guards";
+import { hasPermission, canPerformAction, consumePoints } from "@/lib/plans";
 
 export const runtime = "nodejs";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -15,57 +14,101 @@ interface RouteContext {
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    // ✅ نفكّ الـ Promise القادم من Next.js 16
     const { id: idStr } = await context.params;
     const id = Number(idStr);
 
     if (Number.isNaN(id)) {
       return NextResponse.json(
         { error: "معرّف القضية غير صالح." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
+    // ===============================
+    // التحقق من الصلاحية والباقة
+    // ===============================
+    const auth = await requireCaseAccess(id);
+    if (!auth.ok) return auth.res;
+
+    const userId = Number(auth.user.id);
+
+    // التحقق من صلاحية إدارة القضايا
+    const { allowed: canManage } = await canPerformAction(userId, "AI_CONSULT");
+    if (!canManage) {
+      return NextResponse.json(
+        {
+          error: "إنشاء المذكرات غير متاح في باقتك الحالية. يرجى الترقية.",
+          upgradeRequired: true,
+        },
+        { status: 403 }
+      );
+    }
+
+    // ===============================
+    // جلب القضية
+    // ===============================
     const c = await prisma.case.findUnique({ where: { id } });
     if (!c) {
       return NextResponse.json(
         { error: "القضية غير موجودة" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    // نحضّر Prompt مختصر يعتمد بيانات القضية
-    const prompt = `
-أنت محامٍ تجيد الصياغة القانونية بالعربية الفصحى.
-أمامك بيانات قضية:
+    // ===============================
+    // توليد المذكرة بـ GPT-5.5
+    // ===============================
+    const completion = await chatCompletion([
+      {
+        role: "system",
+        content: `# الدور
+أنت محامٍ عراقي متخصص تجيد الصياغة القانونية بالعربية الفصحى.
+
+# الشخصية
+دقيق، مهني، مباشر. لا تضف حشواً أو مقدمات غير ضرورية.
+
+# معايير النجاح
+- صياغة قانونية احترافية واضحة
+- الاستناد للقانون العراقي حيثما أمكن
+- هيكل منظم بترويسات واضحة
+- لا تتجاوز 600 كلمة`,
+      },
+      {
+        role: "user",
+        content: `# بيانات القضية
 - العنوان: ${c.title}
 - المحكمة: ${c.court}
 - النوع: ${c.type}
 - الحالة: ${c.status}
 - ملخص الوقائع: ${c.description}
 
-أعد لي مسوّدة مذكرة دفاع/رأي قانوني تشمل:
-1) الوقائع (صياغة دقيقة مختصرة)
-2) الأساس القانوني (مواد ذات صلة مع أرقامها إن أمكن)
-3) التحليل القانوني (منطقي وواضح)
-4) الطلبات (محددة ومباشرة)
+# المطلوب
+أعد مسوّدة مذكرة قانونية تشمل هذه الأقسام بالترتيب:
+1. الوقائع
+2. الأساس القانوني
+3. التحليل القانوني
+4. الطلبات`,
+      },
+    ]);
 
-اكتب بدون حشو، وبنقاط مرتبة وترويسات واضحة.
-    `.trim();
+    const content = completion?.choices?.[0]?.message?.content || "";
 
-    const chat = await openai.chat.completions.create({
-      model: process.env.CHAT_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
-      messages: [{ role: "user", content: prompt }],
-    });
+    // ===============================
+    // استهلاك النقاط بعد النجاح
+    // ===============================
+    try {
+      await consumePoints(userId, "AI_CONSULT");
+    } catch (err) {
+      console.error("Points consumption error:", err);
+    }
 
-    const content = chat.choices[0]?.message?.content || "";
-
-    // نفصل الأقسام الأربعة ببساطة (fallback إن لم يلتزم النموذج)
+    // ===============================
+    // تحليل أقسام المذكرة
+    // ===============================
     const pick = (label: string) => {
       const rx = new RegExp(
         `${label}\\s*[:：]?([\\s\\S]*?)(?=\\n\\s*\\S+\\s*[:：]|$)`,
-        "i",
+        "i"
       );
       const m = content.match(rx);
       return (m?.[1] || "").trim();
@@ -76,7 +119,6 @@ export async function POST(req: Request, context: RouteContext) {
     const analysis = pick("التحليل") || pick("التحليل القانوني");
     const requests = pick("الطلبات");
 
-    // الأطراف كنص مبسط من JSON
     let partiesText = "";
     try {
       const parties = (c.parties as any[]) || [];
@@ -84,10 +126,12 @@ export async function POST(req: Request, context: RouteContext) {
         .map((p) => `${p.role || "طرف"}: ${p.name || ""}`)
         .join("، ");
     } catch {
-      // تجاهل أي خطأ في تحويل الأطراف
+      // تجاهل
     }
 
+    // ===============================
     // بناء PDF
+    // ===============================
     const pdfBytes = await buildMemoPDF({
       title: "مذكرة قانونية",
       caseTitle: c.title,
@@ -97,11 +141,12 @@ export async function POST(req: Request, context: RouteContext) {
       legalBasis: legalBasis || "—",
       analysis: analysis || "—",
       requests: requests || "—",
-      footerNote:
-        "تم إنشاء هذه المذكرة إلكترونيًا عبر منصة المستشار القانوني.",
+      footerNote: "تم إنشاء هذه المذكرة إلكترونيًا عبر منصة المستشار القانوني.",
     });
 
+    // ===============================
     // حفظ المستند وربطه بالقضية
+    // ===============================
     const doc = await prisma.legalDocument.create({
       data: {
         title: `مذكرة - ${c.title}`,
@@ -116,7 +161,6 @@ export async function POST(req: Request, context: RouteContext) {
       data: { caseId: c.id, documentId: doc.id },
     });
 
-    // إرجاع الملف نفسه (للتنزيل) + الميتاداتا
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
@@ -128,8 +172,8 @@ export async function POST(req: Request, context: RouteContext) {
   } catch (e: any) {
     console.error("Error generating memo:", e);
     return NextResponse.json(
-      { error: e?.message ?? "Unexpected error while generating memo." },
-      { status: 500 },
+      { error: e?.message ?? "حدث خطأ أثناء إنشاء المذكرة." },
+      { status: 500 }
     );
   }
 }

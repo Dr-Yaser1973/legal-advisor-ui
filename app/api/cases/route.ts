@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { hasPermission, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -37,21 +38,14 @@ export async function GET(req: Request) {
 
   const where: any = {};
 
-  // 🔐 فلترة القضايا حسب الدور
   if (user.role === "ADMIN") {
-    // لا نضيف شرط userId → الأدمن يرى الكل
+    // الأدمن يرى الكل
   } else {
-    // المحامي + الشركة → فقط قضاياهم
     where.userId = Number(user.id);
   }
 
-  // فلاتر إضافية
-  if (status) {
-    where.status = status;
-  }
-  if (type) {
-    where.type = type;
-  }
+  if (status) where.status = status;
+  if (type) where.type = type;
 
   if (q) {
     where.OR = [
@@ -80,19 +74,13 @@ export async function GET(req: Request) {
     prisma.case.count({ where }),
   ]);
 
-  // تجهيز النتيجة بالشكل الذي يتوقعه الـ Client
   const jsonItems = items.map((c) => ({
     ...c,
     filingDate: c.filingDate.toISOString(),
     closingDate: c.closingDate ? c.closingDate.toISOString() : null,
   }));
 
-  return NextResponse.json({
-    items: jsonItems,
-    total,
-    page,
-    pageSize,
-  });
+  return NextResponse.json({ items: jsonItems, total, page, pageSize });
 }
 
 // POST /api/cases
@@ -107,7 +95,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // نسمح بإنشاء قضية فقط للأدمن + المحامي + الشركة
+  // التحقق من الدور
   if (!["ADMIN", "LAWYER", "COMPANY"].includes(user.role)) {
     return NextResponse.json(
       { error: "غير مصرح: لا يمكنك إنشاء قضايا" },
@@ -115,6 +103,32 @@ export async function POST(req: Request) {
     );
   }
 
+  // ===============================
+  // التحقق من الباقة
+  // ===============================
+  const userId = Number(user.id);
+  const planData = await getUserPlanData(userId);
+
+  if (!planData) {
+    return NextResponse.json(
+      { error: "تعذر التحقق من بيانات الاشتراك." },
+      { status: 500 }
+    );
+  }
+
+  if (!hasPermission(planData.effectivePlan, "caseManagement")) {
+    return NextResponse.json(
+      {
+        error: "إدارة القضايا غير متاحة في باقتك الحالية. يرجى الترقية إلى باقة المحامين أو الشركات.",
+        upgradeRequired: true,
+      },
+      { status: 403 }
+    );
+  }
+
+  // ===============================
+  // التحقق من البيانات
+  // ===============================
   const body = await req.json();
 
   const title = String(body.title || "").trim();
@@ -130,9 +144,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const filingDateRaw = body.filingDate
-    ? new Date(body.filingDate)
-    : new Date();
+  const filingDateRaw = body.filingDate ? new Date(body.filingDate) : new Date();
 
   if (Number.isNaN(filingDateRaw.getTime())) {
     return NextResponse.json(
@@ -159,15 +171,12 @@ export async function POST(req: Request) {
       closingDate: null,
       parties,
       notes,
-      userId: Number(user.id), // 👈 ربط القضية بصاحبها (محامي / شركة / أدمن)
+      userId,
     },
   });
 
   return NextResponse.json(
-    {
-      id: created.id,
-      message: "تم إنشاء القضية بنجاح.",
-    },
+    { id: created.id, message: "تم إنشاء القضية بنجاح." },
     { status: 201 }
   );
 }

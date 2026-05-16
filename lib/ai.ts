@@ -35,17 +35,19 @@ export async function getEmbedding(text: string): Promise<number[]> {
 // ===============================
 // Chat Completion (Generic)
 // ===============================
-export async function chatCompletion(
+ export async function chatCompletion(
   messages: any[],
   opts?: { model?: string; temperature?: number }
 ) {
   const openai = getOpenAI();
   const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-5.5";
 
+  const supportsTemperature = !model.startsWith("gpt-5");
+
   return openai.chat.completions.create({
     model,
     messages,
-    temperature: opts?.temperature ?? 0.2,
+    ...(supportsTemperature ? { temperature: opts?.temperature ?? 0.1 } : {}),
   });
 }
 
@@ -59,12 +61,24 @@ export async function generateAnswer(
   const messages = [
     {
       role: "system",
-      content:
-        "أنت مستشار قانوني عراقي خبير. أجب استنادًا إلى السياق المرسل فقط، وبأسلوب عربي قانوني واضح.",
+      content: `# الدور
+أنت مستشار قانوني عراقي متخصص. مهمتك تحليل المسائل القانونية وتقديم توصيات عملية مبنية على السياق المقدم فقط.
+
+# الشخصية
+كن مباشراً ومهنياً. استخدم اللغة العربية القانونية المبسطة. لا تضف مقدمات أو تعليقات غير ضرورية.
+
+# معايير النجاح
+- الإجابة مبنية على السياق المقدم فقط
+- تتضمن تقييماً قانونياً واضحاً
+- تتضمن توصيات عملية قابلة للتنفيذ
+- لا تتجاوز 300 كلمة
+
+# قواعد التوقف
+إذا كان السياق غير كافٍ للإجابة، اذكر ما ينقص بدلاً من التخمين.`,
     },
     {
       role: "user",
-      content: `السؤال: ${question}\n\nالسياق المتاح:\n${context}`,
+      content: `# المطلوب\n${question}\n\n# السياق المتاح\n${context}\n\n# شكل الإجابة\n1. التقييم القانوني\n2. المخاطر المحتملة\n3. التوصيات العملية`,
     },
   ];
 

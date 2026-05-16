@@ -1,4 +1,4 @@
-// app/api/contracts/generate/route.ts
+ // app/api/contracts/generate/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
@@ -7,13 +7,14 @@ import { getTemplateBySlug } from "@/lib/contracts/catalog";
 import { fillPlaceholders } from "@/lib/contracts/engine/placeholders";
 import { validateData } from "@/lib/contracts/engine/validate";
 import { wrapHtmlDoc } from "@/lib/contracts/engine/wrap";
+import { hasPermission, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
 type GenerateBody = {
-  slug: string;              // template slug
-  lang: "ar" | "en";         // output language
-  data: Record<string, any>; // form data
+  slug: string;
+  lang: "ar" | "en";
+  data: Record<string, any>;
 };
 
 export async function POST(req: Request) {
@@ -24,23 +25,48 @@ export async function POST(req: Request) {
     }
     const userId = Number(session.user.id);
 
+    // ===============================
+    // التحقق من الباقة
+    // ===============================
+    const planData = await getUserPlanData(userId);
+
+    if (!planData) {
+      return NextResponse.json(
+        { error: "تعذر التحقق من بيانات الاشتراك." },
+        { status: 500 }
+      );
+    }
+
+    if (!hasPermission(planData.effectivePlan, "contracts")) {
+      return NextResponse.json(
+        {
+          error: "توليد العقود غير متاح في باقتك الحالية. يرجى الترقية إلى باقة الأفراد أو أعلى.",
+          upgradeRequired: true,
+        },
+        { status: 403 }
+      );
+    }
+
+    // ===============================
+    // التحقق من البيانات
+    // ===============================
     const body = (await req.json()) as GenerateBody;
     if (!body?.slug || !body?.lang || !body?.data) {
       return NextResponse.json({ error: "بيانات غير مكتملة." }, { status: 400 });
     }
 
     const tpl = getTemplateBySlug(body.slug);
-    if (!tpl) return NextResponse.json({ error: "القالب غير موجود." }, { status: 404 });
+    if (!tpl) {
+      return NextResponse.json({ error: "القالب غير موجود." }, { status: 404 });
+    }
 
-    // نجبر اللغة على لغة القالب (حتى لا تختلط)
     const lang = tpl.lang;
 
-    // حقول افتراضية للقانون/الاختصاص (يمكن تخصيصها لاحقًا)
     const defaults =
       lang === "ar"
         ? {
             governingLawClause:
-              "يخضع هذا العقد ويُفسَّر وفقًا لأحكام القانون المدني العراقي رقم (40) لسنة 1951، ما لم يُتفق صراحةً على خلاف ذلك.",
+              "يخضع هذا العقد ويُفسَّر وفقًا لأحكام القانون المدني العراقي رقم (40) لسنة 1951، ما لم يُتفق صراحةً على خلاف ذلك.",
             jurisdictionClause:
               "تختص محاكم العراق بالنظر في أي نزاع ينشأ عن هذا العقد، ما لم يتفق الطرفان على التحكيم.",
           }
@@ -52,12 +78,13 @@ export async function POST(req: Request) {
           };
 
     const merged: Record<string, any> = {
-  ...defaults,
-  ...(body.data ?? {}),
-};
+      ...defaults,
+      ...(body.data ?? {}),
+    };
 
-
-    // Validator (including Incoterms rules)
+    // ===============================
+    // التحقق من صحة البيانات وتوليد العقد
+    // ===============================
     const v = validateData(
       { slug: tpl.slug, title: tpl.title, lang: tpl.lang, group: tpl.group, body: tpl.html },
       merged
@@ -66,16 +93,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: v.error, missing: v.missing }, { status: 400 });
     }
 
-    // Render: Fill placeholders -> Wrap
     const filled = fillPlaceholders(tpl.html, merged);
     const htmlBody = wrapHtmlDoc(filled, lang);
 
     const title =
-      lang === "ar"
-        ? `${tpl.title} — ${merged.partyAName ?? ""} / ${merged.partyBName ?? ""}`.trim()
-        : `${tpl.title} — ${merged.partyAName ?? ""} / ${merged.partyBName ?? ""}`.trim();
+      `${tpl.title} — ${merged.partyAName ?? ""} / ${merged.partyBName ?? ""}`.trim();
 
-    // Save
+    // ===============================
+    // حفظ العقد
+    // ===============================
     const created = await prisma.generatedContract.create({
       data: {
         title,
@@ -95,7 +121,6 @@ export async function POST(req: Request) {
       select: { id: true },
     });
 
-    // ✅ هذا هو المسار الذي قلت لا نغيره
     const pdfPath = `/api/contracts/generated/${created.id}/pdf`;
 
     await prisma.generatedContract.update({

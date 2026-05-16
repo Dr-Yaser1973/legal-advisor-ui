@@ -27,6 +27,8 @@ export default async function AdminUsersPage() {
       isApproved: true,
       subscriptionEndsAt: true,
       createdAt: true,
+      plan: true,   // ✅
+points: true, // ✅
     },
   });
 

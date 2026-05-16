@@ -1,3 +1,4 @@
+ //app(site)/cases/[id]AnalyzeCase.tsx
  "use client";
 
 import { useState } from "react";
