@@ -1,7 +1,7 @@
  import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/options";
+ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
