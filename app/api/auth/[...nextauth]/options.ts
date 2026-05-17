@@ -1,4 +1,4 @@
-//app/api/auth/[nextauth]/options.ts
+ //app/api/auth/[...nextauth]/options.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -31,22 +31,13 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.trim().toLowerCase();
         const plainPassword = credentials.password;
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+        const user = await prisma.user.findUnique({ where: { email } });
 
-        if (!user) {
-          throw new Error("البريد غير مسجل.");
-        }
-
-        if (!user.password) {
-          throw new Error("هذا الحساب مسجل عبر Google. استخدم زر Google للدخول.");
-        }
+        if (!user) throw new Error("البريد غير مسجل.");
+        if (!user.password) throw new Error("هذا الحساب مسجل عبر Google. استخدم زر Google للدخول.");
 
         const isValid = await bcrypt.compare(plainPassword, user.password);
-        if (!isValid) {
-          throw new Error("كلمة المرور غير صحيحة.");
-        }
+        if (!isValid) throw new Error("كلمة المرور غير صحيحة.");
 
         if (user.status !== UserStatus.ACTIVE) {
           throw new Error("الحساب غير مفعّل، يرجى مراجعة إدارة المنصة.");
@@ -103,7 +94,6 @@ export const authOptions: NextAuthOptions = {
           });
         }
       }
-
       return true;
     },
 
@@ -112,28 +102,39 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
           select: {
+            id: true,
             role: true,
             status: true,
             isApproved: true,
             authProvider: true,
+            branchId: true,
+            plan: true,
+            points: true,
           },
         });
 
-        token.role = dbUser?.role;
-        token.status = dbUser?.status;
+        token.id         = dbUser?.id;
+        token.role       = dbUser?.role;
+        token.status     = dbUser?.status;
         token.isApproved = dbUser?.isApproved;
         token.authProvider = dbUser?.authProvider;
+        token.branchId   = dbUser?.branchId ?? null;
+        token.plan       = dbUser?.plan;
+        token.points     = dbUser?.points;
       }
-
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).status = token.status;
+        (session.user as any).id         = token.id;
+        (session.user as any).role       = token.role;
+        (session.user as any).status     = token.status;
         (session.user as any).isApproved = token.isApproved;
         (session.user as any).authProvider = token.authProvider;
+        (session.user as any).branchId   = token.branchId;
+        (session.user as any).plan       = token.plan;
+        (session.user as any).points     = token.points;
       }
       return session;
     },
