@@ -114,46 +114,46 @@ export async function POST(req: Request) {
         );
       }
 
-      // إنشاء المستخدم المسؤول عن المؤسسة
-      const user = await prisma.user.create({
-        data: {
-          name: fullName || orgName,
-          email: normalizedEmail,
-          phone: phone || null,
-          password: hashed,
-          role: "LAWYER",      // المسؤول عن المكتب له دور LAWYER
-          status: "PENDING",
-          isApproved: false,
-        },
-      });
-
-      // إنشاء المؤسسة
-      const org = await prisma.organization.create({
-        data: {
-          name: orgName,
-          type: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY",
-          email: normalizedEmail,
-          phone: phone || null,
-          description: businessType ? `نوع النشاط: ${businessType}` : null,
-          isApproved: false,
-          branches: {
-            create: [{
-              name: "المقر الرئيسي",
-              city: officeAddress || "غير محدد",
-              country: "IQ",
-              email: normalizedEmail,
-              phone: phone || null,
-              address: officeAddress || null,
-            }],
+      // كل العمليات في transaction واحدة لتجنب Race Condition
+      await prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: {
+            name: fullName || orgName,
+            email: normalizedEmail,
+            phone: phone || null,
+            password: hashed,
+            role: "LAWYER",
+            status: "PENDING",
+            isApproved: false,
           },
-        },
-        include: { branches: true },
-      });
+        });
 
-      // ربط المستخدم بالفرع الرئيسي
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { branchId: org.branches[0].id },
+        const org = await tx.organization.create({
+          data: {
+            name: orgName,
+            type: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY",
+            email: normalizedEmail,
+            phone: phone || null,
+            description: businessType ? `نوع النشاط: ${businessType}` : null,
+            isApproved: false,
+            branches: {
+              create: [{
+                name: "المقر الرئيسي",
+                city: officeAddress || "غير محدد",
+                country: "IQ",
+                email: normalizedEmail,
+                phone: phone || null,
+                address: officeAddress || null,
+              }],
+            },
+          },
+          include: { branches: true },
+        });
+
+        await tx.user.update({
+          where: { id: newUser.id },
+          data: { branchId: org.branches[0].id },
+        });
       });
 
       // إشعار للأدمن
