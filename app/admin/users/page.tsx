@@ -27,24 +27,49 @@ export default async function AdminUsersPage() {
       isApproved: true,
       subscriptionEndsAt: true,
       createdAt: true,
-      plan: true,   // ✅
-points: true, // ✅
+      plan: true,
+      points: true,
+      phone: true,
+      // بيانات المحامي
+      lawyerProfile: {
+        select: {
+          specialties: true,
+          officeAddress: true,
+          phone: true,
+          bio: true, // يحتوي رقم النقابة
+          city: true,
+        },
+      },
+      // بيانات الفرع والمؤسسة
+      branch: {
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          address: true,
+          org: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              description: true, // يحتوي نوع النشاط
+              isApproved: true,
+            },
+          },
+        },
+      },
     },
   });
 
-  // تحويل التواريخ إلى string لأن الكلاينت لا يستقبل Date
   const plainUsers = users.map((u) => ({
     ...u,
     createdAt: u.createdAt?.toISOString() ?? null,
-    subscriptionEndsAt: u.subscriptionEndsAt
-      ? u.subscriptionEndsAt.toISOString()
-      : null,
+    subscriptionEndsAt: u.subscriptionEndsAt?.toISOString() ?? null,
   }));
 
   return (
     <div className="flex gap-0">
       <AdminSidebar />
-
       <section className="flex-1 p-6 space-y-4">
         <header className="border-b border-white/10 pb-4 mb-2">
           <h1 className="text-xl font-semibold">إدارة المستخدمين والأدوار</h1>
@@ -53,7 +78,6 @@ points: true, // ✅
             التحكم بالحالة، وتحديد تاريخ انتهاء الاشتراك.
           </p>
         </header>
-
         <AdminUsersTable initialUsers={plainUsers} />
       </section>
     </div>
