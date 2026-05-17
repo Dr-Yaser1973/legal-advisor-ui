@@ -1,5 +1,5 @@
  "use client";
-
+//app/chat/[roomid]/page.tsx
 import { useEffect, useState, useRef } from "react";
 
 export default function ChatRoomPage(props: {
