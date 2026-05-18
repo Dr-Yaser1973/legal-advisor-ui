@@ -1,4 +1,4 @@
-// lib/plans.ts
+ // lib/plans.ts
 import { UserPlan, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -10,19 +10,19 @@ export const PLAN_CONFIG = {
     label: "مجاني",
     points: 0,
     monthlyPoints: 0,
-    weeklyAiConsults: 1, // استشارة ذكية واحدة أسبوعياً
+    weeklyAiConsults: 1,
   },
   INDIVIDUAL: {
     label: "أفراد",
     points: 50,
     monthlyPoints: 50,
-    weeklyAiConsults: null, // غير محدود (يستهلك نقاط)
+    weeklyAiConsults: null,
   },
   LAWYER: {
     label: "محامون",
     points: 0,
     monthlyPoints: 0,
-    weeklyAiConsults: null, // بالنقاط فقط
+    weeklyAiConsults: null,
   },
   TRANSLATION: {
     label: "مكاتب الترجمة",
@@ -32,7 +32,7 @@ export const PLAN_CONFIG = {
   },
   BUSINESS: {
     label: "شركات",
-    points: -1, // غير محدود
+    points: -1,
     monthlyPoints: -1,
     weeklyAiConsults: null,
   },
@@ -60,37 +60,40 @@ export type PointsAction = keyof typeof POINTS_COST;
 // ===============================
 export const PLAN_PERMISSIONS = {
   FREE: {
-    aiConsult: true,        // محدود أسبوعياً
+    aiConsult: true,          // محدود أسبوعياً
     aiTranslation: false,
     contracts: false,
     caseManagement: false,
-    humanConsult: false,    // عرض فقط
+    humanConsult: false,
     humanTranslation: false,
     viewLawyers: true,
     submitOffers: false,
     receiveTranslations: false,
+    smartLawyer: false,       // ← المحامي الذكي: مقفل
   },
   INDIVIDUAL: {
     aiConsult: true,
     aiTranslation: true,
     contracts: true,
     caseManagement: false,
-    humanConsult: true,     // يستهلك نقاط
-    humanTranslation: true, // يستهلك نقاط
+    humanConsult: true,
+    humanTranslation: true,
     viewLawyers: true,
     submitOffers: false,
     receiveTranslations: false,
+    smartLawyer: false,       // ← المحامي الذكي: مقفل
   },
   LAWYER: {
-    aiConsult: true,        // بنقاط إضافية
-    aiTranslation: true,    // بنقاط إضافية
+    aiConsult: true,
+    aiTranslation: true,
     contracts: true,
     caseManagement: true,
     humanConsult: false,
     humanTranslation: false,
     viewLawyers: false,
-    submitOffers: true,     // تقديم عروض
+    submitOffers: true,
     receiveTranslations: false,
+    smartLawyer: false,       // ← المحامي الذكي: مقفل
   },
   TRANSLATION: {
     aiConsult: false,
@@ -101,7 +104,8 @@ export const PLAN_PERMISSIONS = {
     humanTranslation: false,
     viewLawyers: false,
     submitOffers: false,
-    receiveTranslations: true, // استقبال طلبات ترجمة
+    receiveTranslations: true,
+    smartLawyer: false,       // ← المحامي الذكي: مقفل
   },
   BUSINESS: {
     aiConsult: true,
@@ -113,6 +117,7 @@ export const PLAN_PERMISSIONS = {
     viewLawyers: true,
     submitOffers: false,
     receiveTranslations: false,
+    smartLawyer: true,        // ← المحامي الذكي: متاح فقط للـ BUSINESS
   },
 } satisfies Record<UserPlan, Record<string, boolean>>;
 
@@ -177,22 +182,15 @@ export async function canPerformAction(
 
   const cost = POINTS_COST[action];
 
-  // BUSINESS = غير محدود
   if (userData.isUnlimited) return { allowed: true, cost: 0 };
 
-  // FREE = استشارة ذكية واحدة أسبوعياً فقط
   if (userData.effectivePlan === "FREE") {
     if (action === "AI_CONSULT") {
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
       const recentConsult = await prisma.consultation.findFirst({
-        where: {
-          userId,
-          createdAt: { gte: oneWeekAgo },
-        },
+        where: { userId, createdAt: { gte: oneWeekAgo } },
       });
-
       if (recentConsult) {
         return {
           allowed: false,
@@ -209,7 +207,6 @@ export async function canPerformAction(
     };
   }
 
-  // التحقق من النقاط لباقة الأفراد والمحامين
   if (userData.points < cost) {
     return {
       allowed: false,
@@ -242,11 +239,7 @@ export async function consumePoints(
       data: { points: { decrement: cost } },
     }),
     prisma.pointsTransaction.create({
-      data: {
-        userId,
-        amount: -cost,
-        reason: action,
-      },
+      data: { userId, amount: -cost, reason: action },
     }),
   ]);
 
@@ -254,7 +247,7 @@ export async function consumePoints(
 }
 
 // ===============================
-// إضافة نقاط (عند الشراء أو التجديد)
+// إضافة نقاط
 // ===============================
 export async function addPoints(
   userId: number,
@@ -270,12 +263,11 @@ export async function addPoints(
       data: { userId, amount, reason },
     }),
   ]);
-
   return { success: true, newBalance: updated.points };
 }
 
 // ===============================
-// تفعيل باقة جديدة للمستخدم
+// تفعيل باقة جديدة
 // ===============================
 export async function activatePlan(
   userId: number,
@@ -291,7 +283,6 @@ export async function activatePlan(
       data: {
         plan,
         subscriptionEndsAt: endsAt,
-        // إضافة النقاط الشهرية إذا وجدت
         ...(config.monthlyPoints > 0
           ? { points: { increment: config.monthlyPoints } }
           : {}),
