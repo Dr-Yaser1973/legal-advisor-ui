@@ -1,45 +1,43 @@
-// app/(site)/firm-dashboard/page.tsx
+ // app/(site)/firm-dashboard/page.tsx
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import FirmRequestCard from "./FirmRequestCard";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 function statusLabel(status: string) {
   switch (status) {
-    case "PENDING":    return "بانتظار ردّنا";
-    case "OFFER_SENT": return "تم إرسال العرض";
-    case "ACCEPTED":   return "قبل العميل العرض";
-    case "IN_PROGRESS":return "قيد التنفيذ";
-    case "COMPLETED":  return "منجزة";
-    case "CANCELED":   return "ملغاة";
-    default:           return status;
+    case "PENDING":     return "بانتظار ردّنا";
+    case "OFFER_SENT":  return "تم إرسال العرض";
+    case "ACCEPTED":    return "قبل العميل العرض";
+    case "IN_PROGRESS": return "قيد التنفيذ";
+    case "COMPLETED":   return "منجزة";
+    case "CANCELED":    return "ملغاة";
+    default:            return status;
   }
 }
 
 function statusColor(status: string) {
   switch (status) {
-    case "PENDING":    return "text-amber-300 border-amber-500/40 bg-amber-500/10";
-    case "OFFER_SENT": return "text-blue-300 border-blue-500/40 bg-blue-500/10";
-    case "ACCEPTED":   return "text-emerald-300 border-emerald-500/40 bg-emerald-500/10";
-    case "IN_PROGRESS":return "text-sky-300 border-sky-500/40 bg-sky-500/10";
-    case "COMPLETED":  return "text-zinc-300 border-zinc-500/40 bg-zinc-500/10";
-    case "CANCELED":   return "text-red-300 border-red-500/40 bg-red-500/10";
-    default:           return "text-zinc-300 border-zinc-600 bg-zinc-700/40";
+    case "PENDING":     return "text-amber-300 border-amber-500/40 bg-amber-500/10";
+    case "OFFER_SENT":  return "text-blue-300 border-blue-500/40 bg-blue-500/10";
+    case "ACCEPTED":    return "text-emerald-300 border-emerald-500/40 bg-emerald-500/10";
+    case "IN_PROGRESS": return "text-sky-300 border-sky-500/40 bg-sky-500/10";
+    case "COMPLETED":   return "text-zinc-300 border-zinc-500/40 bg-zinc-500/10";
+    case "CANCELED":    return "text-red-300 border-red-500/40 bg-red-500/10";
+    default:            return "text-zinc-300 border-zinc-600 bg-zinc-700/40";
   }
 }
 
 export default async function FirmDashboardPage() {
-
-  // ── الجلسة ───────────────────────────────────────────────────
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
-
+console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branchId, email: user?.email }));
   if (!user || !user.email) redirect("/login");
 
-  // التحقق من أن المستخدم ينتمي لفرع مؤسسة
   const dbUser = await prisma.user.findUnique({
     where: { email: user.email },
     select: {
@@ -49,7 +47,12 @@ export default async function FirmDashboardPage() {
       branchId: true,
       branch: {
         include: {
-          org: { select: { id: true, name: true, type: true } },
+          org: {
+            select: {
+              id: true, name: true, type: true,
+              email: true, phone: true, website: true,
+            },
+          },
         },
       },
     },
@@ -58,98 +61,125 @@ export default async function FirmDashboardPage() {
   if (!dbUser) redirect("/login");
   if (!dbUser.branchId || !dbUser.branch) redirect("/dashboard");
 
-  const orgId    = dbUser.branch.orgId;
+  const orgId   = dbUser.branch.orgId;
   const branchId = dbUser.branchId;
-  const orgName  = dbUser.branch.org.name;
+  const org     = dbUser.branch.org;
 
-  // ── الطلبات الواردة (PENDING) ────────────────────────────────
-  const pending = await prisma.firmConsultRequest.findMany({
-    where: { orgId, branchId, status: "PENDING" },
-    orderBy: { createdAt: "desc" },
-    include: {
-      client: { select: { id: true, name: true, email: true, phone: true } },
-      documents: {
-        include: {
-          document: { select: { id: true, title: true, filePath: true, mimetype: true } },
+  // ── جلب الطلبات ─────────────────────────────────────────────
+  const [pending, offered, active, completed] = await Promise.all([
+    prisma.firmConsultRequest.findMany({
+      where: { orgId, branchId, status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true, phone: true } },
+        documents: {
+          include: {
+            document: { select: { id: true, title: true, filePath: true, mimetype: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.firmConsultRequest.findMany({
+      where: { orgId, branchId, status: "OFFER_SENT" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        offer: true,
+      },
+    }),
+    prisma.firmConsultRequest.findMany({
+      where: { orgId, branchId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        offer: true,
+        chatRoom: { select: { id: true } },
+      },
+    }),
+    prisma.firmConsultRequest.findMany({
+      where: { orgId, branchId, status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        offer: true,
+      },
+    }),
+  ]);
 
-  // ── الطلبات التي أُرسل عليها عرض (OFFER_SENT) ───────────────
-  const offered = await prisma.firmConsultRequest.findMany({
-    where: { orgId, branchId, status: "OFFER_SENT" },
-    orderBy: { createdAt: "desc" },
-    include: {
-      client: { select: { id: true, name: true, email: true } },
-      offer: true,
-    },
-  });
-
-  // ── الطلبات المقبولة والجارية ─────────────────────────────────
-  const active = await prisma.firmConsultRequest.findMany({
-    where: { orgId, branchId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
-    orderBy: { createdAt: "desc" },
-    include: {
-      client: { select: { id: true, name: true, email: true } },
-      offer: true,
-      chatRoom: { select: { id: true } },
-    },
-  });
-
-  // ── الطلبات المكتملة ──────────────────────────────────────────
-  const completed = await prisma.firmConsultRequest.findMany({
-    where: { orgId, branchId, status: "COMPLETED" },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    include: {
-      client: { select: { id: true, name: true, email: true } },
-      offer: true,
-    },
-  });
+  // ── الأرباح ──────────────────────────────────────────────────
+  const totalEarnings = completed.reduce((sum, r) => sum + (r.offer?.fee ?? 0), 0);
+  const earningsCurrency = completed[0]?.offer?.currency || "USD";
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
-      <div className="max-w-5xl mx-auto px-4 py-10 text-right space-y-10">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
-        {/* الهيدر */}
+        {/* ── الهيدر ── */}
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-1">لوحة تحكم {orgName}</h1>
-            <p className="text-sm text-zinc-400">
-              متابعة طلبات الاستشارة الواردة وإدارة العروض والمحادثات.
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                ✓ مكتب معتمد
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold">{org.name}</h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              {dbUser.branch.name} — {dbUser.branch.city}
             </p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <div className="text-center bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 min-w-[80px]">
-              <div className="text-xl font-bold text-amber-400">{pending.length}</div>
-              <div className="text-xs text-zinc-400">جديد</div>
-            </div>
-            <div className="text-center bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 min-w-[80px]">
-              <div className="text-xl font-bold text-blue-400">{offered.length}</div>
-              <div className="text-xs text-zinc-400">عرض مُرسل</div>
-            </div>
-            <div className="text-center bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 min-w-[80px]">
-              <div className="text-xl font-bold text-emerald-400">{active.length}</div>
-              <div className="text-xs text-zinc-400">نشط</div>
-            </div>
-            <div className="text-center bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 min-w-[80px]">
-              <div className="text-xl font-bold text-zinc-300">{completed.length}</div>
-              <div className="text-xs text-zinc-400">منجز</div>
+            <div className="flex flex-wrap gap-2 mt-2 text-xs text-zinc-500">
+              {org.email && <span>✉️ {org.email}</span>}
+              {org.phone && <span>📞 {org.phone}</span>}
+              {org.website && (
+                <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
+                  🌐 {org.website}
+                </a>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── الطلبات الجديدة الواردة ── */}
+        {/* ── الإحصاءات ── */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: "جديد",       value: pending.length,   color: "text-amber-400",  border: "border-amber-500/20",  bg: "bg-amber-500/5" },
+            { label: "عرض مُرسل",  value: offered.length,   color: "text-blue-400",   border: "border-blue-500/20",   bg: "bg-blue-500/5" },
+            { label: "نشط",        value: active.length,    color: "text-emerald-400",border: "border-emerald-500/20",bg: "bg-emerald-500/5" },
+            { label: "منجز",       value: completed.length, color: "text-zinc-300",   border: "border-zinc-700",      bg: "bg-zinc-900/60" },
+            { label: `الأرباح`,    value: `${totalEarnings.toLocaleString()}`, color: "text-emerald-300", border: "border-emerald-500/20", bg: "bg-emerald-500/5", sub: earningsCurrency },
+          ].map((s, i) => (
+            <div key={i} className={`rounded-xl border ${s.border} ${s.bg} p-3 text-center`}>
+              <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
+              <div className="text-[10px] text-zinc-400 mt-0.5">{s.label}</div>
+              {s.sub && <div className="text-[9px] text-zinc-500">{s.sub}</div>}
+            </div>
+          ))}
+        </div>
+
+        {/* ── الروابط السريعة ── */}
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+          {[
+            { href: "/consultations", emoji: "⚖️", label: "الاستشارات" },
+            { href: "/contracts",     emoji: "📄", label: "العقود" },
+            { href: "/cases",         emoji: "📁", label: "القضايا" },
+            { href: "/library",       emoji: "📚", label: "المكتبة" },
+          ].map((l) => (
+            <Link key={l.href} href={l.href} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-amber-500/40 transition">
+              <div className="text-lg mb-1">{l.emoji}</div>
+              <div className="text-xs text-zinc-300">{l.label}</div>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── الطلبات الجديدة ── */}
         <section>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse"></span>
             الطلبات الجديدة الواردة
             {pending.length > 0 && (
               <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">{pending.length}</span>
             )}
           </h2>
-
           {pending.length === 0 ? (
             <p className="text-sm text-zinc-500">لا توجد طلبات جديدة حالياً.</p>
           ) : (
@@ -180,11 +210,10 @@ export default async function FirmDashboardPage() {
 
         {/* ── العروض المُرسلة ── */}
         <section>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
             العروض المُرسلة — بانتظار رد العميل
           </h2>
-
           {offered.length === 0 ? (
             <p className="text-sm text-zinc-500">لا توجد عروض مُرسلة حالياً.</p>
           ) : (
@@ -192,16 +221,14 @@ export default async function FirmDashboardPage() {
               {offered.map((req) => (
                 <div key={req.id} className="border border-blue-500/20 rounded-xl bg-zinc-900/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>
-                      {statusLabel(req.status)}
-                    </span>
+                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>{statusLabel(req.status)}</span>
                     <span className="text-xs text-zinc-500">#{req.id}</span>
                   </div>
-                  <div className="text-sm font-semibold text-white">{req.subject}</div>
+                  <div className="text-sm font-semibold">{req.subject}</div>
                   <div className="text-xs text-zinc-400">العميل: {req.client?.name || req.client?.email}</div>
                   {req.offer && (
                     <div className="text-xs text-blue-300 border border-blue-500/20 bg-blue-500/5 rounded-lg p-2">
-                      العرض المُرسل: <span className="font-bold">{req.offer.fee} {req.offer.currency}</span>
+                      العرض: <span className="font-bold">{req.offer.fee} {req.offer.currency}</span>
                       {req.offer.note && <span className="text-zinc-400"> — {req.offer.note}</span>}
                     </div>
                   )}
@@ -212,13 +239,12 @@ export default async function FirmDashboardPage() {
           )}
         </section>
 
-        {/* ── الطلبات النشطة ── */}
+        {/* ── النشطة ── */}
         <section>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
             الطلبات النشطة
           </h2>
-
           {active.length === 0 ? (
             <p className="text-sm text-zinc-500">لا توجد طلبات نشطة حالياً.</p>
           ) : (
@@ -226,23 +252,18 @@ export default async function FirmDashboardPage() {
               {active.map((req) => (
                 <div key={req.id} className="border border-emerald-500/20 rounded-xl bg-zinc-900/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>
-                      {statusLabel(req.status)}
-                    </span>
+                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>{statusLabel(req.status)}</span>
                     <span className="text-xs text-zinc-500">#{req.id}</span>
                   </div>
-                  <div className="text-sm font-semibold text-white">{req.subject}</div>
+                  <div className="text-sm font-semibold">{req.subject}</div>
                   <div className="text-xs text-zinc-400">العميل: {req.client?.name || req.client?.email}</div>
                   {req.offer && (
                     <div className="text-xs text-zinc-300">
-                      الأتعاب المتفق عليها: <span className="font-bold text-emerald-300">{req.offer.fee} {req.offer.currency}</span>
+                      الأتعاب: <span className="font-bold text-emerald-300">{req.offer.fee} {req.offer.currency}</span>
                     </div>
                   )}
                   {req.chatRoom && (
-                    <a
-                      href={`/firm-chat/${req.chatRoom.id}`}
-                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition"
-                    >
+                    <a href={`/firm-chat/${req.chatRoom.id}`} className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition">
                       فتح المحادثة ←
                     </a>
                   )}
@@ -253,13 +274,12 @@ export default async function FirmDashboardPage() {
           )}
         </section>
 
-        {/* ── الطلبات المكتملة ── */}
+        {/* ── المكتملة ── */}
         <section>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block"></span>
             الطلبات المكتملة
           </h2>
-
           {completed.length === 0 ? (
             <p className="text-sm text-zinc-500">لا توجد طلبات مكتملة بعد.</p>
           ) : (
@@ -267,18 +287,12 @@ export default async function FirmDashboardPage() {
               {completed.map((req) => (
                 <div key={req.id} className="border border-white/10 rounded-xl bg-zinc-900/40 p-4 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>
-                      {statusLabel(req.status)}
-                    </span>
+                    <span className={`text-xs px-3 py-0.5 rounded-full border ${statusColor(req.status)}`}>{statusLabel(req.status)}</span>
                     <span className="text-xs text-zinc-500">#{req.id}</span>
                   </div>
-                  <div className="text-sm font-semibold text-white">{req.subject}</div>
+                  <div className="text-sm font-semibold">{req.subject}</div>
                   <div className="text-xs text-zinc-400">العميل: {req.client?.name || req.client?.email}</div>
-                  {req.offer && (
-                    <div className="text-xs text-zinc-400">
-                      الأتعاب: {req.offer.fee} {req.offer.currency}
-                    </div>
-                  )}
+                  {req.offer && <div className="text-xs text-zinc-400">الأتعاب: {req.offer.fee} {req.offer.currency}</div>}
                   <div className="text-xs text-zinc-500">{new Date(req.createdAt).toLocaleString("ar-IQ")}</div>
                 </div>
               ))}
@@ -290,4 +304,3 @@ export default async function FirmDashboardPage() {
     </main>
   );
 }
-

@@ -1,4 +1,4 @@
-// app/api/firm-consult/[id]/accept/route.ts
+ // app/api/firm-consult/[id]/accept/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -6,17 +6,16 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export const runtime = "nodejs";
 
-// POST: العميل يقبل عرض المكتب وتُفتح غرفة الجات
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const userId = Number(session.user.id);
-    const requestId = Number(params.id);
+    const userId = Number((session.user as any).id);
+    const { id } = await params;
+    const requestId = Number(id);
     if (isNaN(requestId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
 
-    // التحقق من الطلب وأن العميل هو صاحبه
     const request = await prisma.firmConsultRequest.findUnique({
       where: { id: requestId },
       include: { offer: true, org: { select: { name: true } } },
@@ -29,7 +28,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: "لا يمكن قبول هذا الطلب." }, { status: 400 });
     }
 
-    // قبول العرض + فتح غرفة الجات
     const [, , chatRoom] = await prisma.$transaction([
       prisma.firmConsultOffer.update({
         where: { id: request.offer.id },
@@ -46,10 +44,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
     // إشعار لمحامي الفرع
     const orgUsers = await prisma.user.findMany({
-      where: {
-        branchId: request.branchId ?? undefined,
-        role: "LAWYER",
-      },
+      where: { branchId: request.branchId ?? undefined, role: "LAW_FIRM" },
       select: { id: true },
     });
 
@@ -69,4 +64,3 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: e.message || "حدث خطأ." }, { status: 500 });
   }
 }
-

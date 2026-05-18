@@ -1,4 +1,4 @@
-// app/api/firm-chat/[roomId]/messages/route.ts
+ // app/api/firm-chat/[roomId]/messages/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -7,19 +7,18 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 export const runtime = "nodejs";
 
 // GET: جلب رسائل غرفة الجات
-export async function GET(_req: Request, { params }: { params: { roomId: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ roomId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const roomId = Number(params.roomId);
+    const { roomId: roomIdStr } = await params;
+    const roomId = Number(roomIdStr);
     if (isNaN(roomId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
 
     const room = await prisma.firmChatRoom.findUnique({
       where: { id: roomId },
-      include: {
-        request: { select: { clientId: true, branchId: true } },
-      },
+      include: { request: { select: { clientId: true, branchId: true } } },
     });
 
     if (!room) return NextResponse.json({ error: "الغرفة غير موجودة." }, { status: 404 });
@@ -29,7 +28,7 @@ export async function GET(_req: Request, { params }: { params: { roomId: string 
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ messages });
+    return NextResponse.json({ messages, room });
   } catch (e: any) {
     console.error("GET /api/firm-chat/[roomId]/messages error:", e);
     return NextResponse.json({ error: "حدث خطأ." }, { status: 500 });
@@ -37,13 +36,14 @@ export async function GET(_req: Request, { params }: { params: { roomId: string 
 }
 
 // POST: إرسال رسالة
-export async function POST(req: Request, { params }: { params: { roomId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ roomId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const userId = Number(session.user.id);
-    const roomId = Number(params.roomId);
+    const userId = Number((session.user as any).id);
+    const { roomId: roomIdStr } = await params;
+    const roomId = Number(roomIdStr);
     if (isNaN(roomId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
 
     const body = await req.json();
@@ -64,11 +64,7 @@ export async function POST(req: Request, { params }: { params: { roomId: string 
     const otherId = room.request.clientId === userId ? null : room.request.clientId;
     if (otherId) {
       await prisma.notification.create({
-        data: {
-          userId: otherId,
-          title: "رسالة جديدة",
-          body: text.slice(0, 80),
-        },
+        data: { userId: otherId, title: "رسالة جديدة", body: text.slice(0, 80) },
       });
     }
 
@@ -78,4 +74,3 @@ export async function POST(req: Request, { params }: { params: { roomId: string 
     return NextResponse.json({ error: e.message || "حدث خطأ." }, { status: 500 });
   }
 }
-

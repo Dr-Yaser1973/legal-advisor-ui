@@ -1,5 +1,4 @@
-
-// app/api/firm-consult/[id]/offer/route.ts
+ // app/api/firm-consult/[id]/offer/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -7,13 +6,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export const runtime = "nodejs";
 
-// POST: المكتب يقدم عرضاً على الطلب
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const requestId = Number(params.id);
+    const { id } = await params;
+    const requestId = Number(id);
     if (isNaN(requestId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
 
     const body = await req.json();
@@ -21,7 +20,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     if (!fee) return NextResponse.json({ error: "الأتعاب مطلوبة." }, { status: 400 });
 
-    // التحقق من وجود الطلب
     const request = await prisma.firmConsultRequest.findUnique({
       where: { id: requestId },
       select: { id: true, clientId: true, subject: true, status: true },
@@ -31,7 +29,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: "لا يمكن تقديم عرض على هذا الطلب." }, { status: 400 });
     }
 
-    // إنشاء العرض وتحديث حالة الطلب
     const [offer] = await prisma.$transaction([
       prisma.firmConsultOffer.create({
         data: {
@@ -47,7 +44,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       }),
     ]);
 
-    // إشعار للعميل
     await prisma.notification.create({
       data: {
         userId: request.clientId,

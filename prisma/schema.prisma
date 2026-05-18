@@ -892,6 +892,7 @@ enum LawCategory {
 enum UserRole {
   ADMIN
   LAWYER
+  LAW_FIRM 
   CLIENT
   COMPANY
   TRANSLATION_OFFICE

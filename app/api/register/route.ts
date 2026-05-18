@@ -9,29 +9,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { role, email, password, fullName, phone,
-            // محامٍ
             barNumber, officeAddress,
-            // مكتب محاماة / شركة
             orgName, orgType, businessType } = body;
 
-    // ── التحقق الأساسي ──────────────────────────────────────────
     if (!email || !password || !role) {
-      return NextResponse.json(
-        { ok: false, message: "البريد وكلمة المرور ونوع الحساب مطلوبة." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, message: "البريد وكلمة المرور ونوع الحساب مطلوبة." }, { status: 400 });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-
-    const existing = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
-      return NextResponse.json(
-        { ok: false, message: "هذا البريد مسجّل مسبقًا." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, message: "هذا البريد مسجّل مسبقًا." }, { status: 400 });
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -40,38 +28,24 @@ export async function POST(req: Request) {
     if (role === "CLIENT") {
       await prisma.user.create({
         data: {
-          name: fullName || null,
-          email: normalizedEmail,
-          phone: phone || null,
-          password: hashed,
-          role: "CLIENT",
-          status: "ACTIVE",
-          isApproved: true,
+          name: fullName || null, email: normalizedEmail,
+          phone: phone || null, password: hashed,
+          role: "CLIENT", status: "ACTIVE", isApproved: true,
         },
       });
-      return NextResponse.json({
-        ok: true,
-        message: "تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن.",
-      }, { status: 201 });
+      return NextResponse.json({ ok: true, message: "تم إنشاء الحساب بنجاح." }, { status: 201 });
     }
 
     // ── LAWYER ──────────────────────────────────────────────────
     if (role === "LAWYER") {
       if (!fullName || !barNumber) {
-        return NextResponse.json(
-          { ok: false, message: "اسم المحامي ورقم هوية النقابة مطلوبان." },
-          { status: 400 }
-        );
+        return NextResponse.json({ ok: false, message: "اسم المحامي ورقم هوية النقابة مطلوبان." }, { status: 400 });
       }
       await prisma.user.create({
         data: {
-          name: fullName,
-          email: normalizedEmail,
-          phone: phone || null,
-          password: hashed,
-          role: "LAWYER",
-          status: "PENDING",   // ينتظر موافقة الأدمن
-          isApproved: false,
+          name: fullName, email: normalizedEmail,
+          phone: phone || null, password: hashed,
+          role: "LAWYER", status: "PENDING", isApproved: false,
           lawyerProfile: {
             create: {
               specialties: null,
@@ -83,11 +57,7 @@ export async function POST(req: Request) {
         },
       });
 
-      // إشعار للأدمن
-      const admins = await prisma.user.findMany({
-        where: { role: "ADMIN" },
-        select: { id: true },
-      });
+      const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
       if (admins.length > 0) {
         await prisma.notification.createMany({
           data: admins.map((a) => ({
@@ -98,33 +68,22 @@ export async function POST(req: Request) {
         });
       }
 
-      return NextResponse.json({
-        ok: true,
-        pending: true,
-        message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن.",
-      }, { status: 201 });
+      return NextResponse.json({ ok: true, pending: true, message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن." }, { status: 201 });
     }
 
-    // ── COMPANY أو LAW_FIRM (مكتب محاماة) ──────────────────────
-    if (role === "COMPANY" || role === "LAW_FIRM") {
+    // ── LAW_FIRM أو COMPANY ──────────────────────────────────────
+    if (role === "LAW_FIRM" || role === "COMPANY") {
       if (!orgName) {
-        return NextResponse.json(
-          { ok: false, message: "اسم المؤسسة مطلوب." },
-          { status: 400 }
-        );
+        return NextResponse.json({ ok: false, message: "اسم المؤسسة مطلوب." }, { status: 400 });
       }
 
-      // كل العمليات في transaction واحدة لتجنب Race Condition
       await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
-            name: fullName || orgName,
-            email: normalizedEmail,
-            phone: phone || null,
-            password: hashed,
-            role: "LAWYER",
-            status: "PENDING",
-            isApproved: false,
+            name: fullName || orgName, email: normalizedEmail,
+            phone: phone || null, password: hashed,
+            role: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY", // ← الدور الصحيح
+            status: "PENDING", isApproved: false,
           },
         });
 
@@ -132,8 +91,7 @@ export async function POST(req: Request) {
           data: {
             name: orgName,
             type: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY",
-            email: normalizedEmail,
-            phone: phone || null,
+            email: normalizedEmail, phone: phone || null,
             description: businessType ? `نوع النشاط: ${businessType}` : null,
             isApproved: false,
             branches: {
@@ -156,11 +114,7 @@ export async function POST(req: Request) {
         });
       });
 
-      // إشعار للأدمن
-      const admins = await prisma.user.findMany({
-        where: { role: "ADMIN" },
-        select: { id: true },
-      });
+      const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
       if (admins.length > 0) {
         await prisma.notification.createMany({
           data: admins.map((a) => ({
@@ -171,23 +125,13 @@ export async function POST(req: Request) {
         });
       }
 
-      return NextResponse.json({
-        ok: true,
-        pending: true,
-        message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن.",
-      }, { status: 201 });
+      return NextResponse.json({ ok: true, pending: true, message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن." }, { status: 201 });
     }
 
-    return NextResponse.json(
-      { ok: false, message: "نوع الحساب غير معروف." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, message: "نوع الحساب غير معروف." }, { status: 400 });
 
   } catch (err) {
     console.error("REGISTER_ERROR", err);
-    return NextResponse.json(
-      { ok: false, message: "حدث خطأ غير متوقع أثناء التسجيل." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message: "حدث خطأ غير متوقع أثناء التسجيل." }, { status: 500 });
   }
 }

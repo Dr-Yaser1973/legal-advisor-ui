@@ -1,5 +1,5 @@
 "use client";
-// app/firm-chat/[roomId]/page.tsx
+// app/(site)/firm-chat/[roomId]/page.tsx
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
