@@ -1,24 +1,18 @@
- import { NextResponse } from "next/server";
+ // app/api/cases/[id]/memo-text/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
+import { chatCompletion } from "@/lib/ai";
 import { requireCaseAccess } from "@/lib/auth/guards";
+import { canPerformAction, consumePoints } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-/* ===============================
-   Route Context (Next.js صحيح)
-=============================== */
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 export async function POST(req: Request, context: RouteContext) {
   try {
-    // ✅ فكّ params بشكل صحيح
     const { id: idStr } = await context.params;
     const id = Number(idStr);
 
@@ -29,10 +23,28 @@ export async function POST(req: Request, context: RouteContext) {
       );
     }
 
-    // 🔐 التحقق من الصلاحية
+    // ===============================
+    // التحقق من الصلاحية
+    // ===============================
     const auth = await requireCaseAccess(id);
     if (!auth.ok) return auth.res;
 
+    const userId = Number(auth.user.id);
+
+    // ===============================
+    // التحقق من الباقة والنقاط
+    // ===============================
+    const { allowed, reason } = await canPerformAction(userId, "AI_CONSULT");
+    if (!allowed) {
+      return NextResponse.json(
+        { error: reason, upgradeRequired: true },
+        { status: 403 }
+      );
+    }
+
+    // ===============================
+    // جلب القضية
+    // ===============================
     const c = await prisma.case.findUnique({ where: { id } });
     if (!c) {
       return NextResponse.json(
@@ -44,40 +56,59 @@ export async function POST(req: Request, context: RouteContext) {
     const body = (await req.json().catch(() => ({}))) as { tone?: string };
     const tone = (body.tone || "professional").toString();
 
-    const prompt = `اكتب مذكرة قانونية نصية (بدون PDF) للقضية التالية مع توصيات عملية.
+    // ===============================
+    // توليد المذكرة عبر chatCompletion
+    // ===============================
+    const completion = await chatCompletion([
+      {
+        role: "system",
+        content: `أنت محامٍ عراقي متخصص تجيد الصياغة القانونية بالعربية الفصحى.
+دقيق، مهني، مباشر. لا تضف حشواً أو مقدمات غير ضرورية.
+نبرة الكتابة المطلوبة: ${tone}.`,
+      },
+      {
+        role: "user",
+        content: `اكتب مذكرة قانونية نصية للقضية التالية مع توصيات عملية.
 
 العنوان: ${c.title ?? ""}
 الوصف: ${c.description ?? ""}
-👥 الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}
+الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}
 
-نبرة الكتابة: ${tone}`;
+المطلوب: مذكرة منظمة تشمل: الوقائع، الأساس القانوني، التحليل، الطلبات.`,
+      },
+    ]);
 
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-    });
+    const memo = completion?.choices?.[0]?.message?.content?.trim() || "";
 
-    const memoText =
-      completion.choices?.[0]?.message?.content?.trim() || "";
-
-    if (!memoText) {
+    if (!memo) {
       return NextResponse.json(
         { error: "تعذر توليد النص." },
         { status: 500 }
       );
     }
 
+    // ===============================
+    // استهلاك النقاط بعد النجاح
+    // ===============================
+    try {
+      await consumePoints(userId, "AI_CONSULT");
+    } catch (err) {
+      console.error("Points consumption error:", err);
+    }
+
+    // ===============================
+    // حفظ المذكرة كحدث في القضية
+    // ===============================
     await prisma.caseEvent.create({
       data: {
         caseId: id,
         title: "مذكرة AI (نص)",
-        note: memoText,
+        note: memo,
         date: new Date(),
       },
     });
 
-    return NextResponse.json({ ok: true, memoText });
+    return NextResponse.json({ ok: true, memo });
   } catch (e: any) {
     console.error("memo-text error:", e);
     return NextResponse.json(

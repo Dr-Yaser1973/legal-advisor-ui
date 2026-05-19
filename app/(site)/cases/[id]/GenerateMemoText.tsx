@@ -1,5 +1,5 @@
 "use client";
-
+//app/(site)/cases/[id]/generatememotex.tsx
 import { useState } from "react";
 
 export function GenerateMemoText({ caseId }: { caseId: number }) {

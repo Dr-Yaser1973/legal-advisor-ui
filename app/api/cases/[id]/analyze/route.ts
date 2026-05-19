@@ -7,9 +7,14 @@ import { canPerformAction, consumePoints } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(_req: Request, context: RouteContext) {
   try {
-    const id = Number(params.id);
+    const { id: idStr } = await context.params;
+    const id = Number(idStr);
 
     if (!Number.isFinite(id)) {
       return NextResponse.json({ error: "معرّف القضية غير صالح." }, { status: 400 });
