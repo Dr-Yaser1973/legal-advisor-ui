@@ -1,4 +1,4 @@
-// app/api/organizations/route.ts
+ // app/api/organizations/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -9,23 +9,29 @@ export const runtime = "nodejs";
 // GET: /api/organizations?type=&q=&page=&pageSize=
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user as any)?.role;
+
     const { searchParams } = new URL(req.url);
-    const q = (searchParams.get("q") || "").trim();
-    const type = (searchParams.get("type") || "").trim();
-    const page = Math.max(1, Number(searchParams.get("page") || "1"));
+    const q        = (searchParams.get("q") || "").trim();
+    const type     = (searchParams.get("type") || "").trim();
+    const page     = Math.max(1, Number(searchParams.get("page") || "1"));
     const pageSize = Math.min(50, Math.max(6, Number(searchParams.get("pageSize") || "12")));
 
     const where: any = { isApproved: true, isActive: true };
+
+    // الأدمن يرى الكل — غيره يرى مكاتب المحاماة فقط
+    if (userRole === "ADMIN") {
+      if (type) where.type = type;
+    } else {
+      where.type = type || "LAW_FIRM";
+    }
 
     if (q) {
       where.OR = [
         { name: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },
       ];
-    }
-
-    if (type) {
-      where.type = type;
     }
 
     const total = await prisma.organization.count({ where });
@@ -68,7 +74,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session || (session.user as any).role !== "ADMIN") {
       return NextResponse.json({ error: "غير مصرح." }, { status: 403 });
     }
 
@@ -81,26 +87,15 @@ export async function POST(req: Request) {
 
     const org = await prisma.organization.create({
       data: {
-        name,
-        type,
-        logo: logo || null,
-        website: website || null,
-        description: description || null,
-        email: email || null,
-        phone: phone || null,
-        isApproved: true,
-        branches: branches?.length
-          ? {
-              create: branches.map((b: any) => ({
-                name: b.name,
-                city: b.city,
-                country: b.country || "IQ",
-                email: b.email || null,
-                phone: b.phone || null,
-                address: b.address || null,
-              })),
-            }
-          : undefined,
+        name, type, logo: logo || null, website: website || null,
+        description: description || null, email: email || null,
+        phone: phone || null, isApproved: true,
+        branches: branches?.length ? {
+          create: branches.map((b: any) => ({
+            name: b.name, city: b.city, country: b.country || "IQ",
+            email: b.email || null, phone: b.phone || null, address: b.address || null,
+          })),
+        } : undefined,
       },
       include: { branches: true },
     });
@@ -111,4 +106,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message || "حدث خطأ." }, { status: 500 });
   }
 }
-

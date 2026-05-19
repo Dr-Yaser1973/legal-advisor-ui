@@ -4,100 +4,51 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  User2,
-  Mail,
-  Phone,
-  MapPin,
-  Star,
-  Briefcase,
-  CheckCircle2,
-  XCircle,
-  Building2,
-  Globe,
-  ChevronLeft,
+  User2, Mail, Phone, MapPin, Star, Briefcase,
+  CheckCircle2, XCircle, Building2, Globe, ChevronLeft,
 } from "lucide-react";
+import AddFirmModal from "@/components/admin/AddFirmModal";
 
 type Lawyer = {
-  id: number;
-  fullName: string;
-  email: string;
-  phone?: string;
-  specialization: string;
-  bio?: string;
-  experience?: number | null;
-  location?: string;
-  rating: number;
-  avatarUrl?: string;
-  available: boolean;
+  id: number; fullName: string; email: string; phone?: string;
+  specialization: string; bio?: string; experience?: number | null;
+  location?: string; rating: number; avatarUrl?: string; available: boolean;
 };
 
 type HumanRequestItem = {
-  id: number;
-  status: string;
-  createdAt: string;
-  consultation: {
-    id: number;
-    title: string;
-    description: string;
-    user?: { id: number; name: string | null } | null;
-  } | null;
+  id: number; status: string; createdAt: string;
+  consultation: { id: number; title: string; description: string; user?: { id: number; name: string | null } | null } | null;
   hasOffered: boolean;
-  myOffer: {
-    id: number;
-    fee: number;
-    currency: string;
-    status: string;
-  } | null;
+  myOffer: { id: number; fee: number; currency: string; status: string } | null;
 };
 
-type Branch = {
-  id: number;
-  name: string;
-  city: string;
-  country: string;
-  email?: string;
-  phone?: string;
-};
+type Branch = { id: number; name: string; city: string; country: string; email?: string; phone?: string };
 
 type Organization = {
-  id: number;
-  name: string;
-  type: string;
-  logo?: string;
-  website?: string;
-  description?: string;
-  email?: string;
-  phone?: string;
-  branches: Branch[];
-  totalRequests: number;
+  id: number; name: string; type: string; logo?: string; website?: string;
+  description?: string; email?: string; phone?: string;
+  branches: Branch[]; totalRequests: number;
 };
 
-type LawyersResponse = {
-  items: Lawyer[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
-
+type LawyersResponse = { items: Lawyer[]; total: number; page: number; pageSize: number };
 type OpenRequestsResponse = { items: HumanRequestItem[] };
 type OrgsResponse = { items: Organization[]; total: number };
-
 type TabKey = "list" | "requests" | "firms";
 
 const orgTypeLabel: Record<string, string> = {
-  LAW_FIRM: "مكتب محاماة",
-  COMPANY: "شركة",
-  GOVERNMENT: "جهة حكومية",
-  OTHER: "أخرى",
+  LAW_FIRM: "مكتب محاماة", COMPANY: "شركة",
+  GOVERNMENT: "جهة حكومية", OTHER: "أخرى",
 };
 
 export default function LawyersPage() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
+  const isAdmin = role === "ADMIN";
 
   const [activeTab, setActiveTab] = useState<TabKey>("list");
+  const [showFirmModal, setShowFirmModal] = useState(false);
 
-  // ─── قائمة المحامين ───────────────────────────────────────────
+  // ─── قائمة المحامين ──────────────────────────────────────────
   const [q, setQ] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [location, setLocation] = useState("");
@@ -116,9 +67,7 @@ export default function LawyersPage() {
       const res = await fetch(`/api/lawyers?${params.toString()}`);
       if (!res.ok) return;
       setData(await res.json());
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchLawyers(1); }, []);
@@ -130,8 +79,7 @@ export default function LawyersPage() {
     const locationVal = prompt("الموقع (المدينة):") || "بغداد";
     if (!fullName || !email) return;
     const res = await fetch("/api/admin/lawyers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fullName, email, specialization: specializationVal, location: locationVal }),
     });
     if (res.ok) fetchLawyers(data.page);
@@ -142,8 +90,7 @@ export default function LawyersPage() {
     if (!confirm("هل تريد إعادة إرسال رابط تفعيل الحساب؟")) return;
     try {
       const res = await fetch("/api/admin/lawyers/resend-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const json = await res.json();
@@ -155,12 +102,9 @@ export default function LawyersPage() {
   function AdminUploadAvatar({ lawyerId, onUploaded }: { lawyerId: number; onUploaded?: () => void }) {
     const [loading, setLoading] = useState(false);
     async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      const file = e.target.files?.[0]; if (!file) return;
       setLoading(true);
-      const form = new FormData();
-      form.append("file", file);
-      form.append("lawyerId", String(lawyerId));
+      const form = new FormData(); form.append("file", file); form.append("lawyerId", String(lawyerId));
       const res = await fetch("/api/lawyers/avatar/upload", { method: "POST", body: form });
       setLoading(false);
       if (res.ok) { alert("تم رفع صورة المحامي بنجاح"); onUploaded?.(); }
@@ -174,15 +118,14 @@ export default function LawyersPage() {
     );
   }
 
-  // ─── طلبات الاستشارة للمحامين ─────────────────────────────────
+  // ─── طلبات الاستشارة ─────────────────────────────────────────
   const [requests, setRequests] = useState<HumanRequestItem[]>([]);
   const [reqLoading, setReqLoading] = useState(false);
   const [reqError, setReqError] = useState<string | null>(null);
 
   const fetchOpenRequests = async () => {
     try {
-      setReqLoading(true);
-      setReqError(null);
+      setReqLoading(true); setReqError(null);
       const res = await fetch("/api/lawyers/human-requests/open");
       const json: OpenRequestsResponse | { error: string } = await res.json();
       if (!res.ok) { setReqError((json as any)?.error || "فشل تحميل الطلبات."); setRequests([]); return; }
@@ -195,14 +138,12 @@ export default function LawyersPage() {
 
   async function handleOffer(requestId: number) {
     try {
-      const feeStr = prompt("أدخل أجرة الاستشارة (دينار عراقي):");
-      if (!feeStr) return;
+      const feeStr = prompt("أدخل أجرة الاستشارة (دينار عراقي):"); if (!feeStr) return;
       const fee = Number(feeStr);
       if (!fee || isNaN(fee) || fee <= 0) { alert("يرجى إدخال رقم صحيح أكبر من صفر."); return; }
       const note = prompt("ملاحظة للمستفيد (اختياري):") || "";
       const res = await fetch(`/api/lawyers/human-requests/${requestId}/offer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fee, note, currency: "IQD" }),
       });
       const json = await res.json();
@@ -217,16 +158,16 @@ export default function LawyersPage() {
   const [orgsLoading, setOrgsLoading] = useState(false);
   const [orgsError, setOrgsError] = useState<string | null>(null);
   const [orgQ, setOrgQ] = useState("");
-  const [orgType, setOrgType] = useState("");
+  // افتراضياً LAW_FIRM — الأدمن يستطيع تغييره
+  const [orgType, setOrgType] = useState("LAW_FIRM");
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
   const fetchOrgs = async () => {
     try {
-      setOrgsLoading(true);
-      setOrgsError(null);
+      setOrgsLoading(true); setOrgsError(null);
       const params = new URLSearchParams();
       if (orgQ) params.set("q", orgQ);
-      if (orgType) params.set("type", orgType);
+      params.set("type", orgType || "LAW_FIRM");
       const res = await fetch(`/api/organizations?${params.toString()}`);
       const json: OrgsResponse | { error: string } = await res.json();
       if (!res.ok) { setOrgsError((json as any)?.error || "فشل تحميل المكاتب."); return; }
@@ -241,15 +182,10 @@ export default function LawyersPage() {
     const branchId = org.branches.length === 1
       ? org.branches[0].id
       : Number(prompt(`اختر رقم الفرع:\n${org.branches.map(b => `${b.id}: ${b.name} - ${b.city}`).join("\n")}`));
-
-    const subject = prompt("موضوع الاستشارة:");
-    if (!subject) return;
-    const details = prompt("تفاصيل الاستشارة:");
-    if (!details) return;
-
+    const subject = prompt("موضوع الاستشارة:"); if (!subject) return;
+    const details = prompt("تفاصيل الاستشارة:"); if (!details) return;
     const res = await fetch("/api/firm-consult", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orgId: org.id, branchId, subject, details }),
     });
     const json = await res.json();
@@ -260,44 +196,46 @@ export default function LawyersPage() {
   return (
     <main className="p-6 max-w-6xl mx-auto space-y-6 text-right text-zinc-100" dir="rtl">
 
+      {/* المودال */}
+      {showFirmModal && (
+        <AddFirmModal
+          onClose={() => setShowFirmModal(false)}
+          onSuccess={() => { if (activeTab === "firms") fetchOrgs(); }}
+        />
+      )}
+
       {/* العنوان */}
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-white">إدارة المحامين وطلبات الاستشارة</h1>
-          <p className="text-sm text-zinc-400">
-            يمكنك من هنا إدارة قائمة المحامين، والاطلاع على طلبات الاستشارة البشرية وتقديم عروضك كمحامٍ.
-          </p>
+          <p className="text-sm text-zinc-400">يمكنك من هنا إدارة قائمة المحامين والمكاتب المعتمدة وطلبات الاستشارة.</p>
         </div>
-        {role === "ADMIN" && (
-          <button onClick={quickCreate} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
-            + إضافة محامٍ
-          </button>
+        {isAdmin && (
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={quickCreate} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+              + إضافة محامٍ
+            </button>
+            <button onClick={() => setShowFirmModal(true)} className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+              🏛️ إضافة مكتب
+            </button>
+          </div>
         )}
       </header>
 
       {/* التبويبات */}
       <div className="flex gap-2 justify-end flex-wrap">
-        <button
-          onClick={() => setActiveTab("list")}
-          className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "list" ? "bg-emerald-600 text-white border-emerald-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}
-        >
+        <button onClick={() => setActiveTab("list")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "list" ? "bg-emerald-600 text-white border-emerald-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           📚 قائمة المحامين
         </button>
-        <button
-          onClick={() => setActiveTab("requests")}
-          className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "requests" ? "bg-blue-600 text-white border-blue-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}
-        >
+        <button onClick={() => setActiveTab("requests")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "requests" ? "bg-blue-600 text-white border-blue-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           👨‍⚖️ طلبات الاستشارة للمحامين
         </button>
-        <button
-          onClick={() => setActiveTab("firms")}
-          className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "firms" ? "bg-amber-600 text-white border-amber-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}
-        >
+        <button onClick={() => setActiveTab("firms")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "firms" ? "bg-amber-600 text-white border-amber-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           🏛️ المكاتب المعتمدة
         </button>
       </div>
 
-      {/* ── تبويب قائمة المحامين ── */}
+      {/* ── تبويب المحامين ── */}
       {activeTab === "list" && (
         <section className="space-y-4">
           <section className="flex gap-2 flex-wrap items-center justify-end">
@@ -312,9 +250,7 @@ export default function LawyersPage() {
             <button onClick={() => fetchLawyers(1)} className="px-4 py-2 rounded-lg border border-emerald-600 text-sm text-emerald-300 hover:bg-emerald-600/10 transition-colors">تصفية</button>
           </section>
 
-          {loading ? (
-            <p className="text-sm text-zinc-400">جاري التحميل...</p>
-          ) : (
+          {loading ? <p className="text-sm text-zinc-400">جاري التحميل...</p> : (
             <>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {data.items.map((l) => (
@@ -325,7 +261,7 @@ export default function LawyersPage() {
                         <span className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] border border-zinc-900 ${l.available ? "bg-emerald-500 text-white" : "bg-zinc-600 text-white"}`}>
                           {l.available ? "✔" : "⏸"}
                         </span>
-                        {role === "ADMIN" && (
+                        {isAdmin && (
                           <div className="mt-2 flex flex-col gap-1">
                             <AdminUploadAvatar lawyerId={l.id} onUploaded={() => fetchLawyers(data.page)} />
                             <button onClick={(e) => { e.preventDefault(); resendInvite(l.email); }} className="text-xs px-3 py-1 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition">
@@ -356,7 +292,7 @@ export default function LawyersPage() {
         </section>
       )}
 
-      {/* ── تبويب طلبات الاستشارة للمحامين ── */}
+      {/* ── تبويب طلبات الاستشارة ── */}
       {activeTab === "requests" && (
         <section className="space-y-4">
           {reqLoading && <p className="text-sm text-zinc-400">جارٍ تحميل طلبات الاستشارة...</p>}
@@ -398,15 +334,11 @@ export default function LawyersPage() {
       {/* ── تبويب المكاتب المعتمدة ── */}
       {activeTab === "firms" && (
         <section className="space-y-4">
-
-          {/* صفحة تفاصيل المكتب */}
           {selectedOrg ? (
             <div className="space-y-4">
               <button onClick={() => setSelectedOrg(null)} className="flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition">
                 <ChevronLeft className="w-4 h-4" /> العودة للقائمة
               </button>
-
-              {/* هيدر المكتب */}
               <div className="border border-amber-500/30 rounded-2xl p-6 bg-zinc-900/80 space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xl font-serif">
@@ -420,16 +352,12 @@ export default function LawyersPage() {
                     <p className="text-sm text-zinc-400">{orgTypeLabel[selectedOrg.type] || selectedOrg.type}</p>
                   </div>
                 </div>
-
                 {selectedOrg.description && <p className="text-sm text-zinc-300 leading-relaxed">{selectedOrg.description}</p>}
-
                 <div className="flex flex-wrap gap-3 text-xs text-zinc-400">
                   {selectedOrg.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{selectedOrg.email}</span>}
                   {selectedOrg.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{selectedOrg.phone}</span>}
                   {selectedOrg.website && <a href={selectedOrg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-amber-400 hover:underline"><Globe className="w-3 h-3" />{selectedOrg.website}</a>}
                 </div>
-
-                {/* الفروع */}
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-200 mb-2">الفروع الإقليمية</h3>
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
@@ -443,35 +371,24 @@ export default function LawyersPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* زر طلب الاستشارة */}
-                <button
-                  onClick={() => requestFirmConsult(selectedOrg)}
-                  className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition"
-                >
+                <button onClick={() => requestFirmConsult(selectedOrg)} className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition">
                   طلب استشارة من {selectedOrg.name}
                 </button>
               </div>
             </div>
           ) : (
             <>
-              {/* فلاتر البحث */}
               <div className="flex gap-2 flex-wrap items-center justify-end">
-                <input
-                  className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  placeholder="بحث عن مكتب..."
-                  value={orgQ}
-                  onChange={(e) => setOrgQ(e.target.value)}
-                />
+                <input className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500" placeholder="بحث عن مكتب..." value={orgQ} onChange={(e) => setOrgQ(e.target.value)} />
                 <select
                   className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   value={orgType}
                   onChange={(e) => setOrgType(e.target.value)}
                 >
-                  <option value="">الكل</option>
-                  <option value="LAW_FIRM">مكتب محاماة</option>
-                  <option value="COMPANY">شركة</option>
-                  <option value="GOVERNMENT">جهة حكومية</option>
+                  <option value="LAW_FIRM">مكاتب المحاماة</option>
+                  {/* الشركات تظهر فقط للأدمن */}
+                  {isAdmin && <option value="COMPANY">الشركات</option>}
+                  {isAdmin && <option value="">الكل</option>}
                 </select>
                 <button onClick={fetchOrgs} className="px-4 py-2 rounded-lg border border-amber-600 text-sm text-amber-300 hover:bg-amber-600/10 transition-colors">تصفية</button>
               </div>
@@ -480,24 +397,14 @@ export default function LawyersPage() {
               {orgsError && <p className="text-sm text-red-400 border border-red-500/40 bg-red-950/40 rounded-lg p-2">{orgsError}</p>}
               {!orgsLoading && !orgsError && orgs.length === 0 && <p className="text-zinc-400 text-sm">لا توجد مكاتب معتمدة حالياً.</p>}
 
-              {/* بطاقات المكاتب */}
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {orgs.map((org) => (
-                  <div
-                    key={org.id}
-                    onClick={() => setSelectedOrg(org)}
-                    className="border border-amber-500/30 rounded-2xl overflow-hidden bg-zinc-900/80 hover:border-amber-400/60 transition cursor-pointer"
-                  >
-                    {/* شريط علوي */}
+                  <div key={org.id} onClick={() => setSelectedOrg(org)} className="border border-amber-500/30 rounded-2xl overflow-hidden bg-zinc-900/80 hover:border-amber-400/60 transition cursor-pointer">
                     <div className="bg-amber-900/40 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between">
-                      <span className="text-xs text-amber-300 font-semibold flex items-center gap-1">
-                        ✓ مكتب معتمد
-                      </span>
+                      <span className="text-xs text-amber-300 font-semibold">✓ مكتب معتمد</span>
                       <span className="text-xs text-amber-400/70">{orgTypeLabel[org.type] || org.type}</span>
                     </div>
-
                     <div className="p-4 space-y-3">
-                      {/* الشعار والاسم */}
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm font-serif flex-shrink-0">
                           {org.name.slice(0, 3)}
@@ -507,19 +414,12 @@ export default function LawyersPage() {
                           <div className="text-xs text-zinc-400">{org.branches.length} {org.branches.length === 1 ? "فرع" : "فروع"}</div>
                         </div>
                       </div>
-
                       {org.description && <p className="text-xs text-zinc-400 line-clamp-2">{org.description}</p>}
-
-                      {/* الفروع */}
                       <div className="flex flex-wrap gap-1">
                         {org.branches.map((b) => (
-                          <span key={b.id} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
-                            {b.city}
-                          </span>
+                          <span key={b.id} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">{b.city}</span>
                         ))}
                       </div>
-
-                      {/* الإحصاءات */}
                       <div className="grid grid-cols-2 gap-2 border-t border-zinc-700/50 pt-3">
                         <div className="text-center">
                           <div className="text-sm font-bold text-amber-400">{org.branches.length}</div>
@@ -530,7 +430,6 @@ export default function LawyersPage() {
                           <div className="text-[10px] text-zinc-500">استشارة منجزة</div>
                         </div>
                       </div>
-
                       <button className="w-full py-2 rounded-xl bg-amber-600/80 hover:bg-amber-500 text-white text-xs font-bold transition">
                         عرض الصفحة الكاملة ←
                       </button>
