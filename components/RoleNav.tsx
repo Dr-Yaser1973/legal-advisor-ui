@@ -21,6 +21,7 @@ export default function RoleNav() {
   const isLawFirm     = role === "LAW_FIRM";
   const isLawyer      = role === "LAWYER";
   const isTranslation = role === "TRANSLATION_OFFICE";
+  const isCompany = role === "COMPANY";
 
   return (
     <nav className="hidden md:flex items-center gap-1">
@@ -72,6 +73,16 @@ export default function RoleNav() {
           <NavLink href="/translation-office/requests" label="الطلبات الجديدة" />
         </>
       )}
+
+      {isCompany && (
+  <>
+    <NavLink href="/company-dashboard" label="🏢 لوحة الشركة" highlight />
+    <NavLink href="/consultations"     label="الاستشارات" />
+    <NavLink href="/contracts"         label="العقود" />
+    <NavLink href="/cases"             label="القضايا" />
+    <NavLink href="/smart-lawyer"      label="المحامي الذكي" />
+  </>
+)}
 
       {/* أدمن — يرى كل شيء */}
       {isAdmin && (

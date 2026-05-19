@@ -84,6 +84,7 @@ export default async function DashboardPage() {
   if (role === "TRANSLATION_OFFICE")  redirect("/translation-office");
   if (role === "LAW_FIRM")            redirect("/firm-dashboard");
   if (role === "LAWYER")              redirect("/lawyers/my-consults");
+  if (role === "COMPANY")             redirect("/company-dashboard");
 
   // ── CLIENT / COMPANY ─────────────────────────────────────────
   const dbUser = await prisma.user.findUnique({

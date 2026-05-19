@@ -668,6 +668,7 @@ model Organization {
 
   @@index([type])
   @@index([isApproved])
+  maxUsers    Int     @default(5)   // ← جديد
 }
 
 model Branch {
