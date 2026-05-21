@@ -1,24 +1,26 @@
  import type { NextConfig } from "next";
+import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
-  // تشغيل Turbopack
   turbopack: {},
 
-  // تجاهل أخطاء TypeScript أثناء build
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // Prisma on Vercel (صحيح عندك)
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
   },
 
-  // ✅ هذا هو المفتاح الحاسم
   experimental: {
     middlewareClientMaxBodySize: "200mb",
   },
 };
 
-export default nextConfig;
+ export default withPWA({
+  dest: "public",
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+})(nextConfig);

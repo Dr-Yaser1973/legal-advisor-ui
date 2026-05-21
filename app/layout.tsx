@@ -38,17 +38,16 @@ export const metadata: Metadata = {
       en: "/?lang=en",
     },
   },
-
  
 
   icons: {
     icon: "/favicon-32.png",
+    apple: "/icons/icon-192x192.png",
   },
 
   verification: {
     google: "yikvI_aIDpTIfA-B5ZfTIyPSBP6ljVOrWOecx-YbjWA",
   },
-  
 
   openGraph: {
     type: "website",
@@ -131,8 +130,27 @@ export default function RootLayout({
       </head>
 
       <body className="font-sans antialiased bg-[#0b1220] text-gray-200">
+        {/* ✅ التحديث التلقائي عند deploy جديد */}
+        <ServiceWorkerUpdater />
         {children}
       </body>
     </html>
+  );
+}
+
+// ✅ مكوّن منفصل للتحديث التلقائي
+function ServiceWorkerUpdater() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+              window.location.reload();
+            });
+          }
+        `,
+      }}
+    />
   );
 }
