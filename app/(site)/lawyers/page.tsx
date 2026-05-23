@@ -73,18 +73,26 @@ export default function LawyersPage() {
   useEffect(() => { fetchLawyers(1); }, []);
 
   async function quickCreate() {
-    const fullName = prompt("اسم المحامي الكامل:");
-    const email = prompt("البريد الإلكتروني:");
-    const specializationVal = prompt("الاختصاص (مدني/جزائي/تجاري/...)") || "مدني";
-    const locationVal = prompt("الموقع (المدينة):") || "بغداد";
-    if (!fullName || !email) return;
-    const res = await fetch("/api/admin/lawyers", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName, email, specialization: specializationVal, location: locationVal }),
-    });
-    if (res.ok) fetchLawyers(data.page);
-    else alert("فشل إنشاء محامٍ");
+  const name = prompt("اسم المحامي الكامل:");
+  const email = prompt("البريد الإلكتروني:");
+  const phone = prompt("رقم الهاتف (اختياري):") || "";
+  const locationVal = prompt("الموقع (المدينة):") || "بغداد";
+  if (!name || !email) return;
+
+  const res = await fetch("/api/admin/lawyers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, phone, location: locationVal }), // ← name بدل fullName
+  });
+
+  const json = await res.json();
+  if (res.ok) {
+    alert("تم إنشاء حساب المحامي وإرسال رابط التفعيل");
+    fetchLawyers(data.page);
+  } else {
+    alert(json?.error || "فشل إنشاء محامٍ");
   }
+}
 
   async function resendInvite(email: string) {
     if (!confirm("هل تريد إعادة إرسال رابط تفعيل الحساب؟")) return;
