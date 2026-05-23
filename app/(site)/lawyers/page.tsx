@@ -1,4 +1,4 @@
- //app/(site)/lawyer/page.tsx
+ // app/(site)/lawyer/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -30,10 +30,15 @@ type Organization = {
   branches: Branch[]; totalRequests: number;
 };
 
+type PendingItem = {
+  id: number; name: string | null; email: string | null;
+  pendingBio: string | null; pendingAvatarUrl: string | null;
+};
+
 type LawyersResponse = { items: Lawyer[]; total: number; page: number; pageSize: number };
 type OpenRequestsResponse = { items: HumanRequestItem[] };
 type OrgsResponse = { items: Organization[]; total: number };
-type TabKey = "list" | "requests" | "firms";
+type TabKey = "list" | "requests" | "firms" | "pending";
 
 const orgTypeLabel: Record<string, string> = {
   LAW_FIRM: "مكتب محاماة", COMPANY: "شركة",
@@ -73,26 +78,20 @@ export default function LawyersPage() {
   useEffect(() => { fetchLawyers(1); }, []);
 
   async function quickCreate() {
-  const name = prompt("اسم المحامي الكامل:");
-  const email = prompt("البريد الإلكتروني:");
-  const phone = prompt("رقم الهاتف (اختياري):") || "";
-  const locationVal = prompt("الموقع (المدينة):") || "بغداد";
-  if (!name || !email) return;
-
-  const res = await fetch("/api/admin/lawyers", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, phone, location: locationVal }), // ← name بدل fullName
-  });
-
-  const json = await res.json();
-  if (res.ok) {
-    alert("تم إنشاء حساب المحامي وإرسال رابط التفعيل");
-    fetchLawyers(data.page);
-  } else {
-    alert(json?.error || "فشل إنشاء محامٍ");
+    const name = prompt("اسم المحامي الكامل:");
+    const email = prompt("البريد الإلكتروني:");
+    const phone = prompt("رقم الهاتف (اختياري):") || "";
+    const locationVal = prompt("الموقع (المدينة):") || "بغداد";
+    if (!name || !email) return;
+    const res = await fetch("/api/admin/lawyers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone, location: locationVal }),
+    });
+    const json = await res.json();
+    if (res.ok) { alert("تم إنشاء حساب المحامي وإرسال رابط التفعيل"); fetchLawyers(data.page); }
+    else alert(json?.error || "فشل إنشاء محامٍ");
   }
-}
 
   async function resendInvite(email: string) {
     if (!confirm("هل تريد إعادة إرسال رابط تفعيل الحساب؟")) return;
@@ -166,7 +165,6 @@ export default function LawyersPage() {
   const [orgsLoading, setOrgsLoading] = useState(false);
   const [orgsError, setOrgsError] = useState<string | null>(null);
   const [orgQ, setOrgQ] = useState("");
-  // افتراضياً LAW_FIRM — الأدمن يستطيع تغييره
   const [orgType, setOrgType] = useState("LAW_FIRM");
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
 
@@ -201,10 +199,34 @@ export default function LawyersPage() {
     alert("تم إرسال طلب الاستشارة بنجاح — سيردّ عليك المكتب خلال 24 ساعة.");
   }
 
+  // ─── طلبات المراجعة (أدمن) ───────────────────────────────────
+  const [pending, setPending] = useState<PendingItem[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+
+  const fetchPending = async () => {
+    setPendingLoading(true);
+    const res = await fetch("/api/admin/lawyers/pending-profiles");
+    const json = await res.json();
+    setPending(json.items || []);
+    setPendingLoading(false);
+  };
+
+  useEffect(() => { if (activeTab === "pending" && isAdmin) fetchPending(); }, [activeTab]);
+
+  async function handleApprove(lawyerId: number, field: string, action: string) {
+    const res = await fetch(`/api/admin/lawyers/${lawyerId}/approve-profile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, field }),
+    });
+    const json = await res.json();
+    alert(json.message || json.error);
+    fetchPending();
+  }
+
   return (
     <main className="p-6 max-w-6xl mx-auto space-y-6 text-right text-zinc-100" dir="rtl">
 
-      {/* المودال */}
       {showFirmModal && (
         <AddFirmModal
           onClose={() => setShowFirmModal(false)}
@@ -212,7 +234,6 @@ export default function LawyersPage() {
         />
       )}
 
-      {/* العنوان */}
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-white">إدارة المحامين وطلبات الاستشارة</h1>
@@ -241,6 +262,12 @@ export default function LawyersPage() {
         <button onClick={() => setActiveTab("firms")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "firms" ? "bg-amber-600 text-white border-amber-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           🏛️ المكاتب المعتمدة
         </button>
+        {/* تبويب المراجعة للأدمن فقط */}
+        {isAdmin && (
+          <button onClick={() => setActiveTab("pending")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "pending" ? "bg-rose-600 text-white border-rose-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
+            🔔 طلبات المراجعة
+          </button>
+        )}
       </div>
 
       {/* ── تبويب المحامين ── */}
@@ -388,23 +415,16 @@ export default function LawyersPage() {
             <>
               <div className="flex gap-2 flex-wrap items-center justify-end">
                 <input className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500" placeholder="بحث عن مكتب..." value={orgQ} onChange={(e) => setOrgQ(e.target.value)} />
-                <select
-                  className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  value={orgType}
-                  onChange={(e) => setOrgType(e.target.value)}
-                >
+                <select className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-500" value={orgType} onChange={(e) => setOrgType(e.target.value)}>
                   <option value="LAW_FIRM">مكاتب المحاماة</option>
-                  {/* الشركات تظهر فقط للأدمن */}
                   {isAdmin && <option value="COMPANY">الشركات</option>}
                   {isAdmin && <option value="">الكل</option>}
                 </select>
                 <button onClick={fetchOrgs} className="px-4 py-2 rounded-lg border border-amber-600 text-sm text-amber-300 hover:bg-amber-600/10 transition-colors">تصفية</button>
               </div>
-
               {orgsLoading && <p className="text-sm text-zinc-400">جارٍ تحميل المكاتب...</p>}
               {orgsError && <p className="text-sm text-red-400 border border-red-500/40 bg-red-950/40 rounded-lg p-2">{orgsError}</p>}
               {!orgsLoading && !orgsError && orgs.length === 0 && <p className="text-zinc-400 text-sm">لا توجد مكاتب معتمدة حالياً.</p>}
-
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {orgs.map((org) => (
                   <div key={org.id} onClick={() => setSelectedOrg(org)} className="border border-amber-500/30 rounded-2xl overflow-hidden bg-zinc-900/80 hover:border-amber-400/60 transition cursor-pointer">
@@ -447,6 +467,61 @@ export default function LawyersPage() {
               </div>
             </>
           )}
+        </section>
+      )}
+
+      {/* ── تبويب طلبات المراجعة (أدمن فقط) ── */}
+      {activeTab === "pending" && isAdmin && (
+        <section className="space-y-4">
+          {pendingLoading && <p className="text-sm text-zinc-400">جارٍ التحميل...</p>}
+          {!pendingLoading && pending.length === 0 && (
+            <p className="text-zinc-400 text-sm">لا توجد طلبات مراجعة معلقة.</p>
+          )}
+          {pending.map((p) => (
+            <div key={p.id} className="border border-zinc-700 rounded-2xl p-4 bg-zinc-900/70 space-y-4">
+              <div className="font-semibold text-white">
+                {p.name} — <span className="text-zinc-400 text-sm font-normal">{p.email}</span>
+              </div>
+
+              {/* نبذة معلقة */}
+              {p.pendingBio && (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-400 font-semibold">📝 نبذة جديدة بانتظار الموافقة:</p>
+                  <p className="text-sm text-zinc-200 border border-zinc-700 rounded-lg p-3 bg-zinc-800/50 whitespace-pre-wrap">
+                    {p.pendingBio}
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApprove(p.id, "bio", "approve")} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs transition">
+                      ✅ موافقة ونشر
+                    </button>
+                    <button onClick={() => handleApprove(p.id, "bio", "reject")} className="px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs transition">
+                      ❌ رفض وحذف
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* صورة معلقة */}
+              {p.pendingAvatarUrl && (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-400 font-semibold">🖼️ صورة جديدة بانتظار الموافقة:</p>
+                  <img
+                    src={p.pendingAvatarUrl}
+                    alt="pending avatar"
+                    className="w-24 h-24 rounded-full object-cover border border-zinc-600"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApprove(p.id, "avatar", "approve")} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs transition">
+                      ✅ موافقة ونشر
+                    </button>
+                    <button onClick={() => handleApprove(p.id, "avatar", "reject")} className="px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs transition">
+                      ❌ رفض وحذف
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </section>
       )}
 

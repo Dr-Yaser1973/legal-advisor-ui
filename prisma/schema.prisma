@@ -109,7 +109,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model LawyerProfile {
+ model LawyerProfile {
   id              Int           @id @default(autoincrement())
   userId          Int           @unique
   bio             String?
@@ -121,6 +121,11 @@ model LawyerProfile {
   consultFee      Int?
   officeAddress   String?
   avatarPath      String?
+  
+  // ✅ حقول جديدة للمحتوى المعلق
+  pendingBio        String?
+  pendingAvatarPath String?
+
   appointments    Appointment[]
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
