@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { HumanConsultStatus } from "@prisma/client";
 import Link from "next/link";
+import OfferButton from "@/components/lawyers/OfferButton";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +55,18 @@ export default async function LawyerDashboardPage() {
           rating: true,
           consultFee: true,
           consultCurrency: true,
+          pendingBio: true,
+          pendingAvatarPath: true,
         },
       },
     },
   });
 
-  // ── جلب الاستشارات ──────────────────────────────────────────
+  const hasPending =
+    !!lawyerData?.lawyerProfile?.pendingBio ||
+    !!lawyerData?.lawyerProfile?.pendingAvatarPath;
+
+  // ── جلب استشاراتي ───────────────────────────────────────────
   const requests = await prisma.humanConsultRequest.findMany({
     where: {
       OR: [
@@ -76,21 +83,37 @@ export default async function LawyerDashboardPage() {
     },
   });
 
+  // ── جلب الطلبات المفتوحة الجديدة (لم يتقدم لها بعد) ─────────
+  const myRequestIds = requests.map((r) => r.id);
+  const openRequests = await prisma.humanConsultRequest.findMany({
+    where: {
+      status: "PENDING",
+      lawyerId: null,
+      id: { notIn: myRequestIds.length > 0 ? myRequestIds : [-1] },
+      offers: { none: { lawyerId } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      consultation: { select: { id: true, title: true, description: true } },
+      client: { select: { id: true, name: true } },
+    },
+  });
+
   // ── إحصاءات ─────────────────────────────────────────────────
   const stats = {
-    total:      requests.length,
-    pending:    requests.filter(r => r.status === "PENDING").length,
-    active:     requests.filter(r => ["ACCEPTED","IN_PROGRESS"].includes(r.status)).length,
-    completed:  requests.filter(r => r.status === "COMPLETED").length,
-    earnings:   requests
-      .filter(r => r.status === "COMPLETED")
+    total:     requests.length,
+    pending:   requests.filter((r) => r.status === "PENDING").length,
+    active:    requests.filter((r) => ["ACCEPTED", "IN_PROGRESS"].includes(r.status)).length,
+    completed: requests.filter((r) => r.status === "COMPLETED").length,
+    earnings:  requests
+      .filter((r) => r.status === "COMPLETED")
       .reduce((sum, r) => sum + (r.offers[0]?.fee ?? 0), 0),
   };
 
-  // ── تقسيم الطلبات ────────────────────────────────────────────
-  const activeRequests    = requests.filter(r => ["ACCEPTED","IN_PROGRESS"].includes(r.status));
-  const pendingRequests   = requests.filter(r => r.status === "PENDING");
-  const completedRequests = requests.filter(r => r.status === "COMPLETED");
+  const activeRequests    = requests.filter((r) => ["ACCEPTED", "IN_PROGRESS"].includes(r.status));
+  const pendingRequests   = requests.filter((r) => r.status === "PENDING");
+  const completedRequests = requests.filter((r) => r.status === "COMPLETED");
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-50" dir="rtl">
@@ -131,6 +154,30 @@ export default async function LawyerDashboardPage() {
           </Link>
         </header>
 
+        {/* بطاقة الملف الشخصي */}
+        <div className="flex items-center gap-4 border border-zinc-800 rounded-2xl bg-zinc-900/60 p-4">
+          <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-300 font-bold text-sm flex-shrink-0">
+            {lawyerData?.name?.slice(0, 2) || "م"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-zinc-100">{lawyerData?.name || user.email}</div>
+            <div className="text-xs text-zinc-400 mt-0.5">
+              {lawyerData?.lawyerProfile?.specialties || "محامٍ"} — {lawyerData?.lawyerProfile?.city || "غير محدد"}
+            </div>
+            {hasPending && (
+              <span className="inline-block mt-1.5 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                ⏳ تحديثات بانتظار موافقة الإدارة
+              </span>
+            )}
+          </div>
+          <Link
+            href={`/lawyers/${lawyerId}`}
+            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition flex-shrink-0"
+          >
+            ✏️ تعديل الملف
+          </Link>
+        </div>
+
         {/* الإحصاءات */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center">
@@ -164,33 +211,37 @@ export default async function LawyerDashboardPage() {
           </div>
         )}
 
-        {/* الروابط السريعة */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <Link href="/lawyers" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">👥</div>
-            <div className="text-xs text-zinc-300">قائمة المحامين</div>
-          </Link>
-          <Link href="/consultations" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">⚖️</div>
-            <div className="text-xs text-zinc-300">الطلبات المفتوحة</div>
-          </Link>
-          <Link href="/contracts" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">📄</div>
-            <div className="text-xs text-zinc-300">العقود الذكية</div>
-          </Link>
-          <Link href="/cases" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">📁</div>
-            <div className="text-xs text-zinc-300">إدارة القضايا</div>
-          </Link>
-          <Link href="/library" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">📚</div>
-            <div className="text-xs text-zinc-300">المكتبة القانونية</div>
-          </Link>
-          <Link href="/translate" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
-            <div className="text-xl mb-1">🌐</div>
-            <div className="text-xs text-zinc-300">الترجمة القانونية</div>
-          </Link>
-        </div>
+        {/* الطلبات الجديدة المتاحة */}
+        {openRequests.length > 0 && (
+          <section className="border border-zinc-800 rounded-2xl bg-zinc-900/60 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+              <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                🔔 طلبات جديدة متاحة
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                  {openRequests.length} طلب
+                </span>
+              </h2>
+              <Link href="/lawyer" className="text-xs text-zinc-400 hover:text-zinc-200 transition">
+                عرض الكل ←
+              </Link>
+            </div>
+            <div className="divide-y divide-zinc-800/60">
+              {openRequests.map((req) => (
+                <div key={req.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-zinc-100 truncate">
+                      {req.consultation?.title || "استشارة بدون عنوان"}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">
+                      {req.client?.name || "مستخدم مسجل"} • {new Date(req.createdAt).toLocaleDateString("ar-IQ")}
+                    </div>
+                  </div>
+                  <OfferButton requestId={req.id} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* الاستشارات النشطة */}
         {activeRequests.length > 0 && (
@@ -231,15 +282,46 @@ export default async function LawyerDashboardPage() {
           </section>
         )}
 
-        {requests.length === 0 && (
+        {requests.length === 0 && openRequests.length === 0 && (
           <div className="text-center py-12 space-y-3">
             <div className="text-4xl">⚖️</div>
             <p className="text-zinc-400 text-sm">لا توجد استشارات مرتبطة بحسابك بعد.</p>
-            <Link href="/lawyers" className="inline-block px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm transition">
+            <Link
+              href="/lawyer"
+              className="inline-block px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm transition"
+            >
               تصفح الطلبات المفتوحة ↗
             </Link>
           </div>
         )}
+
+        {/* الروابط السريعة */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Link href="/lawyer" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
+            <div className="text-xl mb-1">⚖️</div>
+            <div className="text-xs text-zinc-300">الطلبات المفتوحة</div>
+          </Link>
+          <Link href="/contracts" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
+            <div className="text-xl mb-1">📄</div>
+            <div className="text-xs text-zinc-300">العقود الذكية</div>
+          </Link>
+          <Link href="/cases" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
+            <div className="text-xl mb-1">📁</div>
+            <div className="text-xs text-zinc-300">إدارة القضايا</div>
+          </Link>
+          <Link href="/library" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
+            <div className="text-xl mb-1">📚</div>
+            <div className="text-xs text-zinc-300">المكتبة القانونية</div>
+          </Link>
+          <Link href="/translate" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-emerald-500/50 transition">
+            <div className="text-xl mb-1">🌐</div>
+            <div className="text-xs text-zinc-300">الترجمة القانونية</div>
+          </Link>
+          <Link href={`/lawyers/${lawyerId}`} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-blue-500/50 transition">
+            <div className="text-xl mb-1">👤</div>
+            <div className="text-xs text-zinc-300">ملفي الشخصي</div>
+          </Link>
+        </div>
 
       </div>
     </main>
