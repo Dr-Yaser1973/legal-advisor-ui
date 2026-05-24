@@ -5,17 +5,19 @@ import { UserRole } from "@prisma/client";
 
 export const runtime = "nodejs";
 
-type Params = { params: { id: string } };
+ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   try {
-    const lawyerId = Number(params.id);
+    const { id } = await params; // ← await هنا
+    const lawyerId = Number(id);
     if (!lawyerId || Number.isNaN(lawyerId)) {
       return NextResponse.json(
         { error: "معرّف المحامي غير صالح." },
         { status: 400 }
       );
     }
+    // ... باقي الكود بدون تغيير
 
     const user = await prisma.user.findFirst({
       where: {
