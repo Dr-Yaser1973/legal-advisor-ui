@@ -63,6 +63,8 @@ model User {
   branch                     Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
   ClientFirmConsults         FirmConsultRequest[]  @relation("ClientFirmConsults")
   aiUsageLogs        AiUsageLog[] 
+   blogPosts    BlogPost[]    // ← أضف
+  blogComments BlogComment[] // ← أضف
 }
 
 model PointsTransaction {
@@ -637,7 +639,80 @@ model LawDocFaq {
   @@index([docId])
 }
 
- 
+ // ─── المدونة ───────────────────────────────────────────────
+
+model BlogPost {
+  id          Int           @id @default(autoincrement())
+  title       String
+  slug        String        @unique
+  excerpt     String?       @db.Text
+  content     String        @db.Text
+  coverImage  String?
+  status      BlogStatus    @default(PENDING)
+  views       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  publishedAt DateTime?
+  authorId    Int
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories  BlogPostCategory[]
+  tags        BlogPostTag[]
+  comments    BlogComment[]
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@index([slug])
+}
+
+model BlogCategory {
+  id        Int                @id @default(autoincrement())
+  name      String             @unique
+  slug      String             @unique
+  posts     BlogPostCategory[]
+
+  @@index([slug])
+}
+
+model BlogPostCategory {
+  postId     Int
+  categoryId Int
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+
+model BlogTag {
+  id    Int           @id @default(autoincrement())
+  name  String        @unique
+  slug  String        @unique
+  posts BlogPostTag[]
+
+  @@index([slug])
+}
+
+model BlogPostTag {
+  postId Int
+  tagId  Int
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model BlogComment {
+  id        Int           @id @default(autoincrement())
+  postId    Int
+  authorId  Int
+  content   String        @db.Text
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, status])
+  @@index([authorId])
+}
 
 model ExternalSourceItem {
   id           Int                @id @default(autoincrement())
@@ -1031,4 +1106,16 @@ enum FirmOfferStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+enum BlogStatus {
+  PENDING     // بانتظار مراجعة الأدمن
+  PUBLISHED   // منشور
+  REJECTED    // مرفوض
+  ARCHIVED    // مؤرشف
+}
+
+enum CommentStatus {
+  PENDING   // بانتظار المراجعة
+  APPROVED  // معتمد
+  REJECTED  // مرفوض
 }
