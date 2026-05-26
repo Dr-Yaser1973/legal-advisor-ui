@@ -96,7 +96,16 @@ const orgTypeLabel: Record<string, string> = {
   GOVERNMENT: "جهة حكومية",
   OTHER: "أخرى",
 };
-
+export const metadata = {
+  title: "الاستشارات القانونية | Legal Consultations",
+  description: "احصل على استشارة قانونية ذكية فورية أو تواصل مع محامٍ متخصص. Get instant AI legal advice or connect with a specialist lawyer.",
+  alternates: { canonical: "/consultations" },
+  openGraph: {
+    title: "استشارات قانونية ذكية",
+    description: "استشارات قانونية فورية بالذكاء الاصطناعي أو مع محامين متخصصين.",
+    url: "https://smartlegaladvisor.com/consultations",
+  },
+};
 function firmStatusLabel(status: string) {
   switch (status) {
     case "PENDING": return "بانتظار رد المكتب";
@@ -260,7 +269,7 @@ export default function ConsultationsPage() {
     } finally { setAiLoading(false); }
   }
 
-  // ── المحامي البشري ────────────────────────────────────────────
+  // ─المحامي المعتمد────────────────────────────────────────────
   async function handleHumanSubmit(e: React.FormEvent) {
     e.preventDefault();
     setHumanLoading(true); setHumanError(null); setHumanSuccess(null);

@@ -6,6 +6,20 @@ type Props = {
   searchParams?: Promise<{ lang?: string }>;
 };
 
+export const metadata = {
+  title: "المكتبة القانونية | Legal Library",
+  description: "تصفح آلاف الوثائق والقوانين العراقية والعربية. Browse thousands of Iraqi and Arab legal documents.",
+  alternates: {
+    canonical: "/library",
+    languages: { ar: "/library?lang=ar", en: "/library?lang=en" },
+  },
+  openGraph: {
+    title: "المكتبة القانونية الذكية",
+    description: "مكتبة قانونية شاملة للقوانين والوثائق والأبحاث القانونية العراقية والعربية.",
+    url: "https://smartlegaladvisor.com/library",
+  },
+};
+
 export default async function LibraryPage({ searchParams }: Props) {
   // قراءة اللغة من searchParams
   const params = await searchParams;
@@ -67,7 +81,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       ]
     }
   };
-
+  
   const texts = t[locale];
 
   // جلب إحصائيات الأقسام

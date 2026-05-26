@@ -44,7 +44,16 @@ const orgTypeLabel: Record<string, string> = {
   LAW_FIRM: "مكتب محاماة", COMPANY: "شركة",
   GOVERNMENT: "جهة حكومية", OTHER: "أخرى",
 };
-
+export const metadata = {
+  title: "المحامون | Lawyers Directory",
+  description: "تصفح قائمة المحامين العراقيين المعتمدين على المنصة. Browse certified Iraqi lawyers on the platform.",
+  alternates: { canonical: "/lawyers" },
+  openGraph: {
+    title: "دليل المحامين العراقيين",
+    description: "تواصل مع أفضل المحامين العراقيين المتخصصين في مختلف مجالات القانون.",
+    url: "https://smartlegaladvisor.com/lawyers",
+  },
+};
 export default function LawyersPage() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;

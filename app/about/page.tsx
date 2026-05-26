@@ -2,7 +2,16 @@
 "use client";
 
 import { useState } from "react";
-
+export const metadata = {
+  title: "عن المنصة | About Us",
+  description: "منصة المستشار القانوني الذكي — بوابة رقمية ثنائية اللغة للخدمات القانونية في العراق والعالم العربي.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "عن المستشار القانوني الذكي",
+    description: "بوابة رقمية ثنائية اللغة للخدمات القانونية في العراق.",
+    url: "https://smartlegaladvisor.com/about",
+  },
+};
 export default function AboutPage() {
   const [lang, setLang] = useState<"ar" | "en">("ar");
   const isArabic = lang === "ar";

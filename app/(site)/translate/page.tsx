@@ -7,7 +7,16 @@ import Link from "next/link";
 
 
 type TargetLang = "AR" | "EN" | "FR" | "TR" | "FA";
-
+export const metadata = {
+  title: "الترجمة القانونية | Legal Translation",
+  description: "ترجمة قانونية دقيقة بالذكاء الاصطناعي أو مع مكاتب ترجمة متخصصة. Accurate legal translation via AI or certified offices.",
+  alternates: { canonical: "/translation" },
+  openGraph: {
+    title: "الترجمة القانونية الذكية",
+    description: "ترجمة المستندات القانونية بدقة عالية.",
+    url: "https://smartlegaladvisor.com/translate",
+  },
+};
 
 export default function LegalTranslationPage() {
   const [file, setFile] = useState<File | null>(null);

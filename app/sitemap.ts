@@ -1,131 +1,71 @@
- // app/sitemap.ts
+//sitemap.ts
 import { prisma } from "@/lib/prisma";
 import { MetadataRoute } from "next";
 
-// الرابط الأساسي للموقع
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
-// في أعلى ملف app/sitemap.ts
+
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // إعادة إنشاء كل ساعة
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+
   // ============================================
-  // 1. الصفحات الثابتة (Static Pages)
+  // 1. الصفحات الثابتة
   // ============================================
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: `${baseUrl}`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/library`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/library/list`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/library/search`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/library/categories`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
+    { url: baseUrl,                        priority: 1.0, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/library`,           priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/consultations`,     priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/contracts`,         priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/translation`,       priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/smart-lawyer`,      priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/lawyers`,           priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/pricing`,           priority: 0.7, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/about`,             priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
+    { url: `${baseUrl}/privacy`,           priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
+    { url: `${baseUrl}/terms`,             priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
   ];
 
   // ============================================
-  // 2. المواد القانونية (Dynamic Pages)
+  // 2. مواد المكتبة الديناميكية
   // ============================================
-  // جلب جميع المواد المنشورة
   const items = await prisma.libraryItem.findMany({
     where: { isPublished: true },
-    select: {
-      id: true,
-      slug: true,
-      updatedAt: true,
-      createdAt: true,
-      mainCategory: true,
-      itemType: true,
-    },
+    select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: "desc" },
   });
 
-  // صفحات المواد (باستخدام slug أو id)
-  const libraryItemsPages: MetadataRoute.Sitemap = items.map((item) => ({
-    url: `${baseUrl}/library/view/${item.slug || item.id}`,
+  const libraryPages: MetadataRoute.Sitemap = items.map((item) => ({
+    url: `${baseUrl}/library/view/${item.slug}`,
     lastModified: item.updatedAt,
     changeFrequency: "monthly",
-    priority: 0.8,
+    priority: 0.7,
+    alternates: {
+      languages: {
+        ar: `${baseUrl}/library/view/${item.slug}?lang=ar`,
+        en: `${baseUrl}/library/view/${item.slug}?lang=en`,
+      },
+    },
   }));
 
   // ============================================
-  // 3. صفحات الأقسام (Categories)
+  // 3. صفحات المحامين
   // ============================================
-  const categories = ["LAW", "FIQH", "ACADEMIC", "CONTRACT"];
-  const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: `${baseUrl}/library/list?category=${category}`,
-    lastModified: new Date(),
+  const lawyers = await prisma.user.findMany({
+    where: { role: "LAWYER", isApproved: true },
+    select: { id: true, updatedAt: true },
+  });
+
+  const lawyerPages: MetadataRoute.Sitemap = lawyers.map((lawyer) => ({
+    url: `${baseUrl}/lawyers/${lawyer.id}`,
+    lastModified: lawyer.updatedAt,
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
-  // ============================================
-  // 4. إضافة إصدارات اللغة (hreflang ضمن sitemap)
-  // ============================================
-  // نضيف صفحات المواد مع اللغة
-  const multilingualPages: MetadataRoute.Sitemap = items.flatMap((item) => [
-    {
-      url: `${baseUrl}/library/view/${item.slug || item.id}?lang=ar`,
-      lastModified: item.updatedAt,
-      changeFrequency: "monthly",
-      priority: 0.8,
-      alternates: {
-        languages: {
-          ar: `${baseUrl}/library/view/${item.slug || item.id}?lang=ar`,
-          en: `${baseUrl}/library/view/${item.slug || item.id}?lang=en`,
-        },
-      },
-    },
-    {
-      url: `${baseUrl}/library/view/${item.slug || item.id}?lang=en`,
-      lastModified: item.updatedAt,
-      changeFrequency: "monthly",
-      priority: 0.8,
-      alternates: {
-        languages: {
-          ar: `${baseUrl}/library/view/${item.slug || item.id}?lang=ar`,
-          en: `${baseUrl}/library/view/${item.slug || item.id}?lang=en`,
-        },
-      },
-    },
-  ]);
-
-  // ============================================
-  // دمج جميع الصفحات (مع تجنب التكرار)
-  // ============================================
-  const allPages = [
+  return [
     ...staticPages,
-    ...libraryItemsPages,
-    ...categoryPages,
-    ...multilingualPages,
+    ...libraryPages,
+    ...lawyerPages,
   ];
-
-  // إزالة التكرار (حسب url)
-  const uniquePages = allPages.filter(
-    (page, index, self) => index === self.findIndex((p) => p.url === page.url)
-  );
-
-  return uniquePages;
 }

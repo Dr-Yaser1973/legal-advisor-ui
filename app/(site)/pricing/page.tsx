@@ -2,10 +2,15 @@
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "الباقات والأسعار | المستشار القانوني",
-  description:
-    "اختر الباقة المناسبة للاستشارات القانونية والعقود - للأفراد، الشركات، والمحامين. أسعار تنافسية بالدينار العراقي.",
+ export const metadata = {
+  title: "الأسعار والباقات | Pricing",
+  description: "اختر الباقة المناسبة لك: مجاني، أفراد، محامون، أو شركات. Choose your plan: Free, Individual, Lawyer, or Business.",
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "باقات المستشار القانوني الذكي",
+    description: "باقات مرنة تناسب الأفراد والمحامين والشركات.",
+    url: "https://smartlegaladvisor.com/pricing",
+  },
 };
 
 const WHATSAPP_NUMBER = "9647719183785";
