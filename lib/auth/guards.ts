@@ -98,6 +98,7 @@ export async function requireCaseAccess(caseId: number) {
     UserRole.ADMIN,
     UserRole.LAWYER,
     UserRole.COMPANY,
+    UserRole.LAW_FIRM, 
   ]);
   if (!auth.ok) return auth;
 

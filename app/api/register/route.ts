@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail, sendPendingReviewEmail } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,14 @@ export async function POST(req: Request) {
           role: "CLIENT", status: "ACTIVE", isApproved: true,
         },
       });
+
+      // إيميل ترحيب
+      try {
+        await sendWelcomeEmail(normalizedEmail, fullName);
+      } catch (err) {
+        console.error("Welcome email error:", err);
+      }
+
       return NextResponse.json({ ok: true, message: "تم إنشاء الحساب بنجاح." }, { status: 201 });
     }
 
@@ -41,6 +50,7 @@ export async function POST(req: Request) {
       if (!fullName || !barNumber) {
         return NextResponse.json({ ok: false, message: "اسم المحامي ورقم هوية النقابة مطلوبان." }, { status: 400 });
       }
+
       await prisma.user.create({
         data: {
           name: fullName, email: normalizedEmail,
@@ -48,10 +58,10 @@ export async function POST(req: Request) {
           role: "LAWYER", status: "PENDING", isApproved: false,
           lawyerProfile: {
             create: {
+              barNumber: barNumber,        // ← حقل مستقل الآن
               specialties: null,
               officeAddress: officeAddress || null,
               phone: phone || null,
-              bio: `رقم هوية النقابة: ${barNumber}`,
             },
           },
         },
@@ -68,6 +78,13 @@ export async function POST(req: Request) {
         });
       }
 
+      // إيميل قيد المراجعة
+      try {
+        await sendPendingReviewEmail(normalizedEmail, fullName);
+      } catch (err) {
+        console.error("Pending email error:", err);
+      }
+
       return NextResponse.json({ ok: true, pending: true, message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن." }, { status: 201 });
     }
 
@@ -82,7 +99,7 @@ export async function POST(req: Request) {
           data: {
             name: fullName || orgName, email: normalizedEmail,
             phone: phone || null, password: hashed,
-            role: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY", // ← الدور الصحيح
+            role: role === "LAW_FIRM" ? "LAW_FIRM" : "COMPANY",
             status: "PENDING", isApproved: false,
           },
         });
@@ -123,6 +140,13 @@ export async function POST(req: Request) {
             body: `${orgName} طلب الانضمام للمنصة${businessType ? ` — نوع النشاط: ${businessType}` : ""}`,
           })),
         });
+      }
+
+      // إيميل قيد المراجعة
+      try {
+        await sendPendingReviewEmail(normalizedEmail, fullName || orgName);
+      } catch (err) {
+        console.error("Pending email error:", err);
       }
 
       return NextResponse.json({ ok: true, pending: true, message: "تم إرسال طلب التسجيل — سيتم تفعيل حسابك بعد مراجعة الأدمن." }, { status: 201 });

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { chatCompletion } from "@/lib/ai";
 import { buildMemoPDF } from "@/lib/pdf/memoPdf";
 import { requireCaseAccess } from "@/lib/auth/guards";
-import { hasPermission, canPerformAction, consumePoints } from "@/lib/plans";
+ import { hasPermission, canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -97,10 +97,11 @@ export async function POST(req: Request, context: RouteContext) {
     // استهلاك النقاط بعد النجاح
     // ===============================
     try {
-      await consumePoints(userId, "AI_CONSULT");
-    } catch (err) {
-      console.error("Points consumption error:", err);
-    }
+  await logAiUsage(userId, "AI_CONSULT");  // ← أضف هذا السطر
+  await consumePoints(userId, "AI_CONSULT");
+} catch (err) {
+  console.error("Points consumption error:", err);
+}
 
     // ===============================
     // تحليل أقسام المذكرة

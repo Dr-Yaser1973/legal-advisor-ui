@@ -1,9 +1,10 @@
-
 // app/api/mobile/login/route.ts
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { signUserToken } from "@/lib/jwt";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
 
     if (!user || !user.password) {
       return NextResponse.json(
@@ -32,6 +36,20 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    if (!user.isApproved || user.status === "PENDING") {
+      return NextResponse.json(
+        { error: "حسابك قيد المراجعة، سيتم تفعيله خلال 24-48 ساعة" },
+        { status: 403 }
+      );
+    }
+
+     if (user.status === "SUSPENDED") {
+  return NextResponse.json(
+    { error: "تم تعليق حسابك. يرجى التواصل مع الدعم." },
+    { status: 403 }
+  );
+}
 
     const token = await signUserToken({
       id: user.id,

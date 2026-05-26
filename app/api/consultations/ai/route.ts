@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { chatCompletion } from "@/lib/ai";
-import { canPerformAction, consumePoints } from "@/lib/plans";
+ import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -113,12 +113,12 @@ export async function POST(req: Request) {
     // ===============================
     // استهلاك النقاط بعد نجاح الاستشارة
     // ===============================
-    try {
-      await consumePoints(userId, "AI_CONSULT");
-    } catch (err) {
-      console.error("Points consumption error:", err);
-      // لا نوقف العملية إذا فشل استهلاك النقاط
-    }
+     try {
+  await logAiUsage(userId, "AI_CONSULT");  // ← أضف هذا السطر
+  await consumePoints(userId, "AI_CONSULT");
+} catch (err) {
+  console.error("Points consumption error:", err);
+}
 
     // ===============================
     // حفظ الإجابة

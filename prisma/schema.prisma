@@ -62,6 +62,7 @@ model User {
   pointsTransactions         PointsTransaction[]
   branch                     Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
   ClientFirmConsults         FirmConsultRequest[]  @relation("ClientFirmConsults")
+  aiUsageLogs        AiUsageLog[] 
 }
 
 model PointsTransaction {
@@ -113,6 +114,7 @@ model VerificationToken {
   id              Int           @id @default(autoincrement())
   userId          Int           @unique
   bio             String?
+  barNumber       String?
   specialties     String?
   phone           String?
   city            String?
@@ -157,6 +159,16 @@ model Appointment {
 
   @@index([lawyerId, startsAt])
   @@index([clientId, startsAt])
+}
+
+model AiUsageLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String   // AI_CONSULT, AI_TRANSLATION...
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, action, createdAt])
 }
 
 model Notification {
@@ -625,11 +637,7 @@ model LawDocFaq {
   @@index([docId])
 }
 
-model playing_with_neon {
-  id    Int    @id @default(autoincrement())
-  name  String
-  value Float? @db.Real
-}
+ 
 
 model ExternalSourceItem {
   id           Int                @id @default(autoincrement())

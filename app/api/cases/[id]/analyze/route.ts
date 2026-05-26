@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateAnswer } from "@/lib/ai";
 import { requireCaseAccess } from "@/lib/auth/guards";
-import { canPerformAction, consumePoints } from "@/lib/plans";
+ import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -61,11 +61,15 @@ export async function POST(_req: Request, context: RouteContext) {
     // ===============================
     // استهلاك النقاط بعد نجاح التحليل
     // ===============================
-    try {
-      await consumePoints(userId, "AI_CONSULT");
-    } catch (err) {
-      console.error("Points consumption error:", err);
-    }
+     // ===============================
+// استهلاك النقاط بعد نجاح التحليل
+// ===============================
+try {
+  await logAiUsage(userId, "AI_CONSULT");  // ← أضف هذا السطر
+  await consumePoints(userId, "AI_CONSULT");
+} catch (err) {
+  console.error("Points consumption error:", err);
+}
 
     // ===============================
     // حفظ نتيجة التحليل

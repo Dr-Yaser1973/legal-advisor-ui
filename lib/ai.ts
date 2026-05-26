@@ -1,5 +1,24 @@
- // lib/ai.ts
+//lip/ai.ts
 import OpenAI from "openai";
+
+// ===============================
+// اللهجات المدعومة
+// ===============================
+export type Dialect = "formal" | "iraqi" | "egyptian" | "jordanian" | "auto";
+
+const DIALECT_PROMPTS: Record<Dialect, string> = {
+  formal: "",
+  iraqi: "تحدث بالعامية العراقية الدارجة. استخدم مفردات بغدادية مألوفة وطبيعية. حافظ على المصطلحات القانونية بالفصحى فقط.",
+  egyptian: "تحدث بالعامية المصرية الدارجة. استخدم مفردات قاهرية مألوفة وطبيعية. حافظ على المصطلحات القانونية بالفصحى فقط.",
+  jordanian: "تحدث بالعامية الأردنية الشامية الدارجة. استخدم مفردات عمّانية مألوفة وطبيعية. حافظ على المصطلحات القانونية بالفصحى فقط.",
+  auto: `حلّل لهجة المستخدم من سؤاله تلقائياً وأجب بنفس اللهجة.
+- إذا كان السؤال بالعراقية → أجب بالعراقية
+- إذا كان بالمصرية → أجب بالمصرية
+- إذا كان بالأردنية أو الشامية → أجب بالشامية
+- إذا كان بالفصحى → أجب بالفصحى
+- إذا كانت اللهجة غير واضحة → أجب بالفصحى المبسطة
+حافظ على المصطلحات القانونية بالفصحى دائماً بغض النظر عن اللهجة.`,
+};
 
 // ===============================
 // Factory آمن — لا يُنفّذ إلا وقت الطلب
@@ -35,18 +54,27 @@ export async function getEmbedding(text: string): Promise<number[]> {
 // ===============================
 // Chat Completion (Generic)
 // ===============================
- export async function chatCompletion(
+export async function chatCompletion(
   messages: any[],
-  opts?: { model?: string; temperature?: number }
+  opts?: {
+    model?: string
+    temperature?: number
+    dialect?: Dialect
+  }
 ) {
   const openai = getOpenAI();
   const model = opts?.model ?? process.env.CHAT_MODEL ?? "gpt-5.5";
-
   const supportsTemperature = !model.startsWith("gpt-5");
+
+  const dialectPrompt = opts?.dialect ? DIALECT_PROMPTS[opts.dialect] : "";
+  const dialectMessages = dialectPrompt ? [{
+    role: "system" as const,
+    content: dialectPrompt,
+  }] : [];
 
   return openai.chat.completions.create({
     model,
-    messages,
+    messages: [...dialectMessages, ...messages],
     ...(supportsTemperature ? { temperature: opts?.temperature ?? 0.1 } : {}),
   });
 }
@@ -56,7 +84,8 @@ export async function getEmbedding(text: string): Promise<number[]> {
 // ===============================
 export async function generateAnswer(
   question: string,
-  context: string
+  context: string,
+  dialect: Dialect = "auto"
 ): Promise<string> {
   const messages = [
     {
@@ -82,7 +111,7 @@ export async function generateAnswer(
     },
   ];
 
-  const res = await chatCompletion(messages);
+  const res = await chatCompletion(messages, { dialect });
   const answer = res.choices[0]?.message?.content ?? "";
   return answer.trim();
 }

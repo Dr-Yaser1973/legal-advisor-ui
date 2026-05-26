@@ -173,6 +173,9 @@ export async function getUserPlanData(userId: number) {
 // ===============================
 // التحقق قبل تنفيذ عملية تستهلك نقاطاً
 // ===============================
+ // ===============================
+// التحقق قبل تنفيذ عملية تستهلك نقاطاً
+// ===============================
 export async function canPerformAction(
   userId: number,
   action: PointsAction
@@ -182,16 +185,25 @@ export async function canPerformAction(
 
   const cost = POINTS_COST[action];
 
+  // BUSINESS — غير محدود
   if (userData.isUnlimited) return { allowed: true, cost: 0 };
 
+  // FREE — تحقق أسبوعي عبر AiUsageLog
   if (userData.effectivePlan === "FREE") {
     if (action === "AI_CONSULT") {
+      const weeklyLimit = PLAN_CONFIG.FREE.weeklyAiConsults ?? 1;
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const recentConsult = await prisma.consultation.findFirst({
-        where: { userId, createdAt: { gte: oneWeekAgo } },
+
+      const usageCount = await prisma.aiUsageLog.count({
+        where: {
+          userId,
+          action,
+          createdAt: { gte: oneWeekAgo },
+        },
       });
-      if (recentConsult) {
+
+      if (usageCount >= weeklyLimit) {
         return {
           allowed: false,
           reason: "استنفدت استشارتك المجانية هذا الأسبوع. اشترك في باقة الأفراد للحصول على المزيد.",
@@ -200,6 +212,7 @@ export async function canPerformAction(
       }
       return { allowed: true, cost: 0 };
     }
+
     return {
       allowed: false,
       reason: "هذه الخدمة غير متاحة في الباقة المجانية. يرجى الترقية.",
@@ -207,6 +220,7 @@ export async function canPerformAction(
     };
   }
 
+  // باقات مدفوعة — تحقق من النقاط
   if (userData.points < cost) {
     return {
       allowed: false,
@@ -216,6 +230,18 @@ export async function canPerformAction(
   }
 
   return { allowed: true, cost };
+}
+
+// ===============================
+// تسجيل استخدام AI
+// ===============================
+export async function logAiUsage(
+  userId: number,
+  action: PointsAction
+): Promise<void> {
+  await prisma.aiUsageLog.create({
+    data: { userId, action },
+  });
 }
 
 // ===============================

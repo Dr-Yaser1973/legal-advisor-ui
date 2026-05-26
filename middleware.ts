@@ -1,4 +1,5 @@
- import { NextResponse } from "next/server";
+//middleware.ts
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
@@ -59,6 +60,7 @@ export async function middleware(request: NextRequest) {
 // =========================
 if (
   pathname.startsWith("/api/auth") ||
+  pathname.startsWith("/api/mobile") || 
   pathname.startsWith("/api/debug/prisma") ||
   pathname.startsWith("/api/library") ||
   pathname.startsWith("/api/ocr") ||
@@ -94,25 +96,28 @@ if (
     | "LAWYER"
     | "CLIENT"
     | "COMPANY"
+    | "LAW_FIRM"  
     | "TRANSLATION_OFFICE"
     | undefined;
 
-  const status = (token as any).status as "ACTIVE" | "BLOCKED" | undefined;
+  const status = (token as any).status as "ACTIVE" | "PENDING" | "SUSPENDED" | "EXPIRED" | undefined;
+if (status === "SUSPENDED") {
 
   // =========================
   // حساب محظور
   // =========================
-  if (status === "BLOCKED") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/account-blocked";
-    return NextResponse.redirect(url);
-  }
+ if (status === "SUSPENDED") {
+  const url = request.nextUrl.clone();
+  url.pathname = "/account-blocked";
+  return NextResponse.redirect(url);
+}
+}
 
   // =========================
   // صلاحيات القضايا
   // =========================
   if (pathname.startsWith("/cases")) {
-    if (!["ADMIN", "LAWYER", "COMPANY"].includes(role || "")) {
+    if (!["ADMIN", "LAWYER", "COMPANY", "LAW_FIRM"].includes(role || "")) {
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
@@ -176,7 +181,14 @@ if (
       return NextResponse.redirect(url);
     }
   }
-
+// 3. إضافة حماية /dashboard
+if (pathname.startsWith("/dashboard")) {
+  if (!["ADMIN", "LAWYER", "CLIENT", "COMPANY", "LAW_FIRM", "TRANSLATION_OFFICE"].includes(role || "")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+}
   return NextResponse.next();
 }
 
