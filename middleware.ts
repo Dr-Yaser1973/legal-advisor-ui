@@ -26,6 +26,7 @@ const PUBLIC_PATHS = [
   "/register",
   "/unauthorized",
   "/consultations",
+    "/blog",  // ← أضف هذا
 ];
 
 function isPublicPath(pathname: string) {
@@ -62,6 +63,7 @@ if (
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/mobile") || 
   pathname.startsWith("/api/debug/prisma") ||
+   pathname.startsWith("/api/blog") ||
   pathname.startsWith("/api/library") ||
   pathname.startsWith("/api/ocr") ||
   pathname.startsWith("/api/translation")
@@ -186,6 +188,15 @@ if (pathname.startsWith("/dashboard")) {
   if (!["ADMIN", "LAWYER", "CLIENT", "COMPANY", "LAW_FIRM", "TRANSLATION_OFFICE"].includes(role || "")) {
     const url = request.nextUrl.clone();
     url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+}
+
+// blog عام لكن new يحتاج تسجيل دخول
+if (pathname.startsWith("/blog/new")) {
+  if (!token) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 }
