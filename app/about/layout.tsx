@@ -10,3 +10,6 @@ export const metadata: Metadata = {
     url: "https://smartlegaladvisor.com/about",
   },
 };
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
