@@ -2,8 +2,8 @@
  import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { signUserToken } from "@/lib/jwt";
-
+ 
+import { signUserToken, signRefreshToken } from "@/lib/jwt";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
@@ -56,9 +56,11 @@ export async function POST(req: NextRequest) {
       role: user.role,
       isApproved: user.isApproved,
     });
-
+    
+    const refreshToken = await signRefreshToken(user.id);
     return NextResponse.json({
       token,
+      refreshToken,  // ← أضف هذا
       user: {
         id: user.id,
         name: user.name,
