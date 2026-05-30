@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const payload: any = await verifyUserToken(authHeader.split(" ")[1]);
-    const userId = Number(payload.id);
+    const userId = Number(payload.sub);
 
     // ── التحقق من الباقة والنقاط ──
     const planData = await getUserPlanData(userId);

@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 // ── إرسال طلب ترجمة رسمية ──
 export async function POST(req: NextRequest) {
   try {
+    
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ ok: false, error: "غير مصرح" }, { status: 401 });
     }
     const payload: any = await verifyUserToken(authHeader.split(" ")[1]);
-    const clientId = Number(payload.id);
+     const clientId = Number(payload.sub); 
 
     const body = await req.json();
     const officeId = Number(body.officeId);
@@ -68,9 +69,14 @@ export async function POST(req: NextRequest) {
       requestId: request.id,
       message: "تم إرسال طلب الترجمة الرسمية إلى المكتب.",
     });
-  } catch (err) {
+    
+    } catch (err: any) {
     console.error("mobile translation requests POST error:", err);
-    return NextResponse.json({ ok: false, error: "خطأ داخلي في الخادم." }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "خطأ داخلي", debug: err?.message || String(err) },
+      { status: 500 }
+      
+    );
   }
 }
 
@@ -82,7 +88,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "غير مصرح" }, { status: 401 });
     }
     const payload: any = await verifyUserToken(authHeader.split(" ")[1]);
-    const clientId = Number(payload.id);
+     const clientId = Number(payload.sub); 
 
     const requests = await prisma.translationRequest.findMany({
       where: { clientId },
