@@ -1,5 +1,5 @@
 "use client";
-
+//app/(site)translate/page.tsx
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import RequestOfficialTranslationButton from "./RequestOfficialTranslationButton";
