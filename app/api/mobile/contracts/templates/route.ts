@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { verifyUserToken } from "@/lib/jwt";
 import { CONTRACT_CATALOG } from "@/lib/contracts/catalog";
 
@@ -12,14 +12,13 @@ export async function GET(req: NextRequest) {
     }
     await verifyUserToken(authHeader.split(" ")[1]);
 
-    // إرجاع القوالب مع حقولها
     const templates = CONTRACT_CATALOG.map((t) => ({
       id: t.id,
       slug: t.slug,
       title: t.title,
       lang: t.lang,
       group: t.group,
-      fields: t.fields,
+      fields: Array.isArray(t.fields) ? t.fields : [],
     }));
 
     return NextResponse.json({ templates });

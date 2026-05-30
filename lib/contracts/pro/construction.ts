@@ -8,38 +8,46 @@ export const CONSTRUCTION_AR: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "رقم العقد", required: true },
-    { key: "contractDate", label: "تاريخ العقد", required: true },
-    { key: "contractCity", label: "مدينة الإبرام", required: true },
+    // ── معلومات العقد ──
+    { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
 
-    { key: "employerName", label: "اسم رب العمل", required: true },
-    { key: "employerId", label: "هوية/سجل رب العمل", required: true },
+    // ── رب العمل ──
+    { key: "employerName", label: "اسم رب العمل", required: true, type: "text", group: "رب العمل" },
+    { key: "employerId", label: "هوية/سجل رب العمل", required: true, type: "text", group: "رب العمل" },
 
-    { key: "contractorName", label: "اسم المقاول", required: true },
-    { key: "contractorId", label: "هوية/سجل المقاول", required: true },
+    // ── المقاول ──
+    { key: "contractorName", label: "اسم المقاول", required: true, type: "text", group: "المقاول" },
+    { key: "contractorId", label: "هوية/سجل المقاول", required: true, type: "text", group: "المقاول" },
 
-    { key: "projectName", label: "اسم المشروع", required: true },
-    { key: "projectLocation", label: "موقع المشروع", required: true },
-    { key: "scopeOfWork", label: "نطاق الأعمال", required: true },
+    // ── المشروع ──
+    { key: "projectName", label: "اسم المشروع", required: true, type: "text", group: "المشروع" },
+    { key: "projectLocation", label: "موقع المشروع", required: true, type: "text", group: "المشروع" },
+    { key: "scopeOfWork", label: "نطاق الأعمال", required: true, type: "textarea", group: "المشروع" },
 
-    { key: "contractPrice", label: "قيمة العقد", required: true },
-    { key: "currency", label: "العملة", required: true },
+    // ── القيمة المالية ──
+    { key: "contractPrice", label: "قيمة العقد", required: true, type: "number", group: "القيمة المالية" },
+    { key: "currency", label: "العملة", required: true, type: "select", group: "القيمة المالية",
+      options: ["دينار عراقي", "دولار أمريكي", "يورو"] },
+    { key: "advancePayment", label: "الدفعة المقدمة (إن وجدت)", required: false, type: "text", group: "القيمة المالية" },
+    { key: "paymentSchedule", label: "جدول الدفعات", required: true, type: "textarea", group: "القيمة المالية" },
+    { key: "retentionPercentage", label: "نسبة الاستقطاع (%)", required: false, type: "number", group: "القيمة المالية" },
 
-    { key: "advancePayment", label: "الدفعة المقدمة (إن وجدت)", required: false },
-    { key: "paymentSchedule", label: "جدول الدفعات", required: true },
+    // ── المدة ──
+    { key: "startDate", label: "تاريخ المباشرة", required: true, type: "date", group: "المدة" },
+    { key: "completionDate", label: "تاريخ الإنجاز", required: true, type: "date", group: "المدة" },
 
-    { key: "startDate", label: "تاريخ المباشرة", required: true },
-    { key: "completionDate", label: "تاريخ الإنجاز", required: true },
-
-    { key: "delayPenalty", label: "غرامة التأخير اليومية", required: true },
-    { key: "retentionPercentage", label: "نسبة الاستقطاع (Retention %)", required: false },
-
-    { key: "defectsLiabilityPeriod", label: "مدة ضمان العيوب", required: true },
-
-    { key: "forceMajeureClause", label: "أحكام القوة القاهرة", required: false },
-
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true },
-    { key: "disputeCity", label: "الاختصاص المكاني", required: true },
+    // ── أحكام ──
+    { key: "delayPenalty", label: "غرامة التأخير اليومية", required: true, type: "text", group: "أحكام",
+      placeholder: "مثال: 100,000 دينار عن كل يوم" },
+    { key: "defectsLiabilityPeriod", label: "مدة ضمان العيوب", required: true, type: "text", group: "أحكام",
+      placeholder: "مثال: سنة واحدة" },
+    { key: "forceMajeureClause", label: "أحكام القوة القاهرة", required: false, type: "textarea", group: "أحكام" },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام",
+      placeholder: "القانون المدني العراقي رقم 40 لسنة 1951" },
+    { key: "disputeCity", label: "الاختصاص المكاني", required: true, type: "text", group: "أحكام",
+      placeholder: "بغداد" },
   ],
 
   html: `
@@ -96,39 +104,47 @@ export const CONSTRUCTION_EN: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "Contract Ref", required: true },
-    { key: "contractDate", label: "Contract Date", required: true },
-    { key: "contractCity", label: "Place of Execution", required: true },
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
 
-    { key: "employerName", label: "Employer Name", required: true },
-    { key: "employerId", label: "Employer ID/Registration", required: true },
+    // ── Employer ──
+    { key: "employerName", label: "Employer Name", required: true, type: "text", group: "Employer" },
+    { key: "employerId", label: "Employer ID/Registration", required: true, type: "text", group: "Employer" },
 
-    { key: "contractorName", label: "Contractor Name", required: true },
-    { key: "contractorId", label: "Contractor ID/Registration", required: true },
+    // ── Contractor ──
+    { key: "contractorName", label: "Contractor Name", required: true, type: "text", group: "Contractor" },
+    { key: "contractorId", label: "Contractor ID/Registration", required: true, type: "text", group: "Contractor" },
 
-    { key: "projectName", label: "Project Name", required: true },
-    { key: "projectLocation", label: "Project Location", required: true },
-    { key: "scopeOfWork", label: "Scope of Work", required: true },
+    // ── Project ──
+    { key: "projectName", label: "Project Name", required: true, type: "text", group: "Project" },
+    { key: "projectLocation", label: "Project Location", required: true, type: "text", group: "Project" },
+    { key: "scopeOfWork", label: "Scope of Work", required: true, type: "textarea", group: "Project" },
 
-    { key: "contractPrice", label: "Contract Price", required: true },
-    { key: "currency", label: "Currency", required: true },
+    // ── Financials ──
+    { key: "contractPrice", label: "Contract Price", required: true, type: "number", group: "Financials" },
+    { key: "currency", label: "Currency", required: true, type: "select", group: "Financials",
+      options: ["IQD", "USD", "EUR"] },
+    { key: "advancePayment", label: "Advance Payment (if any)", required: false, type: "text", group: "Financials" },
+    { key: "paymentSchedule", label: "Payment Schedule", required: true, type: "textarea", group: "Financials" },
+    { key: "retentionPercentage", label: "Retention Percentage (%)", required: false, type: "number", group: "Financials" },
 
-    { key: "advancePayment", label: "Advance Payment (if any)", required: false },
-    { key: "paymentSchedule", label: "Payment Schedule", required: true },
+    // ── Time ──
+    { key: "startDate", label: "Commencement Date", required: true, type: "date", group: "Time" },
+    { key: "completionDate", label: "Completion Date", required: true, type: "date", group: "Time" },
 
-    { key: "startDate", label: "Commencement Date", required: true },
-    { key: "completionDate", label: "Completion Date", required: true },
-
-    { key: "delayPenalty", label: "Daily Delay Penalty", required: true },
-    { key: "retentionPercentage", label: "Retention Percentage (%)", required: false },
-
-    { key: "defectsLiabilityPeriod", label: "Defects Liability Period", required: true },
-    { key: "forceMajeureClause", label: "Force Majeure Clause", required: false },
-
-    { key: "governingLaw", label: "Governing Law", required: false },
-    { key: "disputeCity", label: "Jurisdiction/Court", required: false },
+    // ── Provisions ──
+    { key: "delayPenalty", label: "Daily Delay Penalty", required: true, type: "text", group: "Provisions",
+      placeholder: "e.g. USD 100 per day" },
+    { key: "defectsLiabilityPeriod", label: "Defects Liability Period", required: true, type: "text", group: "Provisions",
+      placeholder: "e.g. One year" },
+    { key: "forceMajeureClause", label: "Force Majeure Clause", required: false, type: "textarea", group: "Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions",
+      placeholder: "Iraqi Civil Code No. 40 of 1951" },
+    { key: "disputeCity", label: "Jurisdiction/Court", required: false, type: "text", group: "Provisions",
+      placeholder: "Baghdad" },
   ],
-
   html: `
 <div class="doc" dir="ltr" lang="en">
 

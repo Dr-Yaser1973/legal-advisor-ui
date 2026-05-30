@@ -1,4 +1,4 @@
-// lib/contracts/pro/nda.ts
+ // lib/contracts/pro/nda.ts
 import { ContractTemplate } from "../engine/types";
 
 /**
@@ -12,6 +12,32 @@ export const NDA_AR: ContractTemplate = {
   title: "اتفاقية عدم إفشاء (NDA)",
   lang: "ar",
   group: "PRO",
+  fields: [
+    // ── معلومات الاتفاقية ──
+    { key: "contractNo", label: "رقم الاتفاقية", required: true, type: "text", group: "معلومات الاتفاقية" },
+    { key: "date", label: "التاريخ", required: true, type: "date", group: "معلومات الاتفاقية" },
+    { key: "place", label: "المكان", required: true, type: "text", group: "معلومات الاتفاقية" },
+
+    // ── الطرف الأول (المُفصح) ──
+    { key: "partyAName", label: "اسم الطرف المُفصح", required: true, type: "text", group: "الطرف المُفصح" },
+    { key: "partyAAddress", label: "عنوان الطرف المُفصح", required: true, type: "text", group: "الطرف المُفصح" },
+
+    // ── الطرف الثاني (المُستلم) ──
+    { key: "partyBName", label: "اسم الطرف المُستلم", required: true, type: "text", group: "الطرف المُستلم" },
+    { key: "partyBAddress", label: "عنوان الطرف المُستلم", required: true, type: "text", group: "الطرف المُستلم" },
+
+    // ── السرية ──
+    { key: "confidentialInfoDef", label: "تعريف المعلومات السرية", required: true, type: "textarea", group: "السرية",
+      placeholder: "مثال: الأسرار التجارية وبيانات العملاء والخطط المالية" },
+    { key: "purpose", label: "الغرض من الإفصاح", required: true, type: "textarea", group: "السرية",
+      placeholder: "مثال: دراسة فرصة استثمارية مشتركة" },
+    { key: "confidentialityPeriod", label: "مدة السرية بعد الانتهاء", required: true, type: "text", group: "السرية",
+      placeholder: "مثال: 3 سنوات" },
+
+    // ── التواقيع ──
+    { key: "partyASign", label: "اسم موقع الطرف الأول", required: true, type: "text", group: "التواقيع" },
+    { key: "partyBSign", label: "اسم موقع الطرف الثاني", required: true, type: "text", group: "التواقيع" },
+  ],
   html: `
 <h1>اتفاقية عدم إفشاء (NDA)</h1>
 <p class="muted">رقم الاتفاقية {{contractNo}} — التاريخ {{date}} — المكان {{place}}</p>
@@ -87,6 +113,32 @@ export const NDA_EN: ContractTemplate = {
   title: "Non-Disclosure Agreement (NDA)",
   lang: "en",
   group: "PRO",
+  fields: [
+    // ── Agreement Info ──
+    { key: "contractNo", label: "Agreement No.", required: true, type: "text", group: "Agreement Info" },
+    { key: "date", label: "Date", required: true, type: "date", group: "Agreement Info" },
+    { key: "place", label: "Place", required: true, type: "text", group: "Agreement Info" },
+
+    // ── Disclosing Party ──
+    { key: "partyAName", label: "Disclosing Party Name", required: true, type: "text", group: "Disclosing Party" },
+    { key: "partyAAddress", label: "Disclosing Party Address", required: true, type: "text", group: "Disclosing Party" },
+
+    // ── Receiving Party ──
+    { key: "partyBName", label: "Receiving Party Name", required: true, type: "text", group: "Receiving Party" },
+    { key: "partyBAddress", label: "Receiving Party Address", required: true, type: "text", group: "Receiving Party" },
+
+    // ── Confidentiality ──
+    { key: "confidentialInfoDef", label: "Definition of Confidential Information", required: true, type: "textarea", group: "Confidentiality",
+      placeholder: "e.g. Trade secrets, customer data, financial plans" },
+    { key: "purpose", label: "Purpose of Disclosure", required: true, type: "textarea", group: "Confidentiality",
+      placeholder: "e.g. Evaluating a joint investment opportunity" },
+    { key: "confidentialityPeriod", label: "Confidentiality Period After Termination", required: true, type: "text", group: "Confidentiality",
+      placeholder: "e.g. 3 years" },
+
+    // ── Signatures ──
+    { key: "partyASign", label: "Party A Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "partyBSign", label: "Party B Signatory Name", required: true, type: "text", group: "Signatures" },
+  ],
   html: `
 <h1>Non-Disclosure Agreement (NDA)</h1>
 <p class="muted">Agreement No. {{contractNo}} — Date {{date}} — Place {{place}}</p>
@@ -151,4 +203,3 @@ This Agreement is executed in two originals, one for each Party.
 </table>
 `.trim(),
 };
-

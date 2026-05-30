@@ -8,35 +8,43 @@ export const SUPPLY_AR: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "رقم العقد", required: true },
-    { key: "contractDate", label: "تاريخ العقد", required: true },
-    { key: "contractCity", label: "مكان الإبرام", required: true },
+    // ── معلومات العقد ──
+    { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مكان الإبرام", required: true, type: "text", group: "معلومات العقد" },
 
-    { key: "buyerName", label: "اسم المشتري", required: true },
-    { key: "buyerId", label: "هوية/سجل المشتري", required: true },
+    // ── المشتري ──
+    { key: "buyerName", label: "اسم المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerId", label: "هوية/سجل المشتري", required: true, type: "text", group: "المشتري" },
 
-    { key: "supplierName", label: "اسم المورد", required: true },
-    { key: "supplierId", label: "هوية/سجل المورد", required: true },
+    // ── المورد ──
+    { key: "supplierName", label: "اسم المورد", required: true, type: "text", group: "المورد" },
+    { key: "supplierId", label: "هوية/سجل المورد", required: true, type: "text", group: "المورد" },
 
-    { key: "goodsDescription", label: "وصف المواد/المنتجات", required: true },
-    { key: "quantity", label: "الكمية", required: true },
-    { key: "unitPrice", label: "سعر الوحدة", required: true },
-    { key: "totalPrice", label: "القيمة الإجمالية", required: true },
-    { key: "currency", label: "العملة", required: true },
+    // ── المواد ──
+    { key: "goodsDescription", label: "وصف المواد/المنتجات", required: true, type: "textarea", group: "المواد" },
+    { key: "quantity", label: "الكمية", required: true, type: "text", group: "المواد" },
 
-    { key: "deliveryLocation", label: "مكان التسليم", required: true },
-    { key: "deliveryDate", label: "موعد التسليم", required: true },
+    // ── السعر والدفع ──
+    { key: "unitPrice", label: "سعر الوحدة", required: true, type: "number", group: "السعر والدفع" },
+    { key: "totalPrice", label: "القيمة الإجمالية", required: true, type: "number", group: "السعر والدفع" },
+    { key: "currency", label: "العملة", required: true, type: "select", group: "السعر والدفع",
+      options: ["دينار عراقي", "دولار أمريكي", "يورو"] },
+    { key: "paymentTerms", label: "شروط الدفع", required: true, type: "textarea", group: "السعر والدفع" },
 
-    { key: "paymentTerms", label: "شروط الدفع", required: true },
-    { key: "delayPenalty", label: "غرامة التأخير", required: false },
+    // ── التسليم ──
+    { key: "deliveryLocation", label: "مكان التسليم", required: true, type: "text", group: "التسليم" },
+    { key: "deliveryDate", label: "موعد التسليم", required: true, type: "date", group: "التسليم" },
 
-    { key: "inspectionClause", label: "آلية الفحص والاستلام", required: false },
-    { key: "terminationClause", label: "إنهاء العقد", required: false },
-
-    { key: "governingLaw", label: "القانون الحاكم", required: false },
-    { key: "disputeCity", label: "الاختصاص القضائي", required: false },
+    // ── أحكام ──
+    { key: "delayPenalty", label: "غرامة التأخير", required: false, type: "textarea", group: "أحكام" },
+    { key: "inspectionClause", label: "آلية الفحص والاستلام", required: false, type: "textarea", group: "أحكام" },
+    { key: "terminationClause", label: "إنهاء العقد", required: false, type: "textarea", group: "أحكام" },
+    { key: "governingLaw", label: "القانون الحاكم", required: false, type: "text", group: "أحكام",
+      placeholder: "القانون المدني العراقي رقم 40 لسنة 1951" },
+    { key: "disputeCity", label: "الاختصاص القضائي", required: false, type: "text", group: "أحكام",
+      placeholder: "بغداد" },
   ],
-
   html: `
 <div class="doc" dir="rtl" lang="ar">
 
@@ -98,33 +106,42 @@ export const SUPPLY_EN: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "Contract Ref", required: true },
-    { key: "contractDate", label: "Contract Date", required: true },
-    { key: "contractCity", label: "Place of Execution", required: true },
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
 
-    { key: "buyerName", label: "Buyer Name", required: true },
-    { key: "buyerId", label: "Buyer ID/Registration", required: true },
+    // ── Buyer ──
+    { key: "buyerName", label: "Buyer Name", required: true, type: "text", group: "Buyer" },
+    { key: "buyerId", label: "Buyer ID/Registration", required: true, type: "text", group: "Buyer" },
 
-    { key: "supplierName", label: "Supplier Name", required: true },
-    { key: "supplierId", label: "Supplier ID/Registration", required: true },
+    // ── Supplier ──
+    { key: "supplierName", label: "Supplier Name", required: true, type: "text", group: "Supplier" },
+    { key: "supplierId", label: "Supplier ID/Registration", required: true, type: "text", group: "Supplier" },
 
-    { key: "goodsDescription", label: "Description of Goods", required: true },
-    { key: "quantity", label: "Quantity", required: true },
-    { key: "unitPrice", label: "Unit Price", required: true },
-    { key: "totalPrice", label: "Total Price", required: true },
-    { key: "currency", label: "Currency", required: true },
+    // ── Goods ──
+    { key: "goodsDescription", label: "Description of Goods", required: true, type: "textarea", group: "Goods" },
+    { key: "quantity", label: "Quantity", required: true, type: "text", group: "Goods" },
 
-    { key: "deliveryLocation", label: "Delivery Location", required: true },
-    { key: "deliveryDate", label: "Delivery Date", required: true },
+    // ── Price & Payment ──
+    { key: "unitPrice", label: "Unit Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "totalPrice", label: "Total Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "currency", label: "Currency", required: true, type: "select", group: "Price & Payment",
+      options: ["IQD", "USD", "EUR"] },
+    { key: "paymentTerms", label: "Payment Terms", required: true, type: "textarea", group: "Price & Payment" },
 
-    { key: "paymentTerms", label: "Payment Terms", required: true },
-    { key: "delayPenalty", label: "Delay Penalty", required: false },
+    // ── Delivery ──
+    { key: "deliveryLocation", label: "Delivery Location", required: true, type: "text", group: "Delivery" },
+    { key: "deliveryDate", label: "Delivery Date", required: true, type: "date", group: "Delivery" },
 
-    { key: "inspectionClause", label: "Inspection & Acceptance", required: false },
-    { key: "terminationClause", label: "Termination Clause", required: false },
-
-    { key: "governingLaw", label: "Governing Law", required: false },
-    { key: "disputeCity", label: "Jurisdiction/Court", required: false },
+    // ── Provisions ──
+    { key: "delayPenalty", label: "Delay Penalty", required: false, type: "textarea", group: "Provisions" },
+    { key: "inspectionClause", label: "Inspection & Acceptance", required: false, type: "textarea", group: "Provisions" },
+    { key: "terminationClause", label: "Termination Clause", required: false, type: "textarea", group: "Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions",
+      placeholder: "Iraqi Civil Code No. 40 of 1951" },
+    { key: "disputeCity", label: "Jurisdiction/Court", required: false, type: "text", group: "Provisions",
+      placeholder: "Baghdad" },
   ],
 
   html: `

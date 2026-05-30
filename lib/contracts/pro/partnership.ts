@@ -7,31 +7,38 @@ export const PARTNERSHIP_AR: ContractTemplate = {
   lang: "ar",
   group: "PRO",
 
-  fields: [
-    { key: "contractRef", label: "رقم العقد", required: true },
-    { key: "contractDate", label: "تاريخ العقد", required: true },
-    { key: "contractCity", label: "مدينة الإبرام", required: true },
+   fields: [
+    // ── معلومات العقد ──
+    { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
 
-    { key: "partner1Name", label: "اسم الشريك الأول", required: true },
-    { key: "partner2Name", label: "اسم الشريك الثاني", required: true },
+    // ── الشركاء ──
+    { key: "partner1Name", label: "اسم الشريك الأول", required: true, type: "text", group: "الشركاء" },
+    { key: "partner2Name", label: "اسم الشريك الثاني", required: true, type: "text", group: "الشركاء" },
 
-    { key: "businessName", label: "اسم المشروع/النشاط", required: true },
-    { key: "businessActivity", label: "طبيعة النشاط", required: true },
+    // ── المشروع ──
+    { key: "businessName", label: "اسم المشروع/النشاط", required: true, type: "text", group: "المشروع" },
+    { key: "businessActivity", label: "طبيعة النشاط", required: true, type: "textarea", group: "المشروع" },
 
-    { key: "capitalAmount", label: "رأس المال", required: true },
-    { key: "partner1Share", label: "نسبة الشريك الأول (%)", required: true },
-    { key: "partner2Share", label: "نسبة الشريك الثاني (%)", required: true },
+    // ── رأس المال والحصص ──
+    { key: "capitalAmount", label: "رأس المال", required: true, type: "number", group: "رأس المال والحصص" },
+    { key: "partner1Share", label: "نسبة الشريك الأول (%)", required: true, type: "number", group: "رأس المال والحصص" },
+    { key: "partner2Share", label: "نسبة الشريك الثاني (%)", required: true, type: "number", group: "رأس المال والحصص" },
 
-    { key: "profitDistribution", label: "آلية توزيع الأرباح", required: true },
-    { key: "managementStructure", label: "إدارة المشروع", required: true },
+    // ── الإدارة والأرباح ──
+    { key: "profitDistribution", label: "آلية توزيع الأرباح", required: true, type: "textarea", group: "الإدارة والأرباح" },
+    { key: "managementStructure", label: "إدارة المشروع", required: true, type: "textarea", group: "الإدارة والأرباح" },
 
-    { key: "withdrawalClause", label: "آلية خروج الشريك", required: true },
-    { key: "nonCompeteClause", label: "شرط عدم المنافسة", required: false },
-
-    { key: "duration", label: "مدة الشراكة", required: true },
-
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true },
-    { key: "disputeCity", label: "الاختصاص المكاني", required: true },
+    // ── المدة والأحكام ──
+    { key: "duration", label: "مدة الشراكة", required: true, type: "text", group: "المدة والأحكام",
+      placeholder: "مثال: 5 سنوات" },
+    { key: "withdrawalClause", label: "آلية خروج الشريك", required: true, type: "textarea", group: "المدة والأحكام" },
+    { key: "nonCompeteClause", label: "شرط عدم المنافسة", required: false, type: "textarea", group: "المدة والأحكام" },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "المدة والأحكام",
+      placeholder: "القانون المدني العراقي رقم 40 لسنة 1951" },
+    { key: "disputeCity", label: "الاختصاص المكاني", required: true, type: "text", group: "المدة والأحكام",
+      placeholder: "بغداد" },
   ],
 
   html: `
@@ -90,30 +97,37 @@ export const PARTNERSHIP_EN: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "Contract Ref", required: true },
-    { key: "contractDate", label: "Contract Date", required: true },
-    { key: "contractCity", label: "Place of Execution", required: true },
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
 
-    { key: "partner1Name", label: "First Partner Name", required: true },
-    { key: "partner2Name", label: "Second Partner Name", required: true },
+    // ── Partners ──
+    { key: "partner1Name", label: "First Partner Name", required: true, type: "text", group: "Partners" },
+    { key: "partner2Name", label: "Second Partner Name", required: true, type: "text", group: "Partners" },
 
-    { key: "businessName", label: "Business Name", required: true },
-    { key: "businessActivity", label: "Nature of Business", required: true },
+    // ── Business ──
+    { key: "businessName", label: "Business Name", required: true, type: "text", group: "Business" },
+    { key: "businessActivity", label: "Nature of Business", required: true, type: "textarea", group: "Business" },
 
-    { key: "capitalAmount", label: "Capital Contribution", required: true },
-    { key: "partner1Share", label: "Partner 1 Share (%)", required: true },
-    { key: "partner2Share", label: "Partner 2 Share (%)", required: true },
+    // ── Capital & Ownership ──
+    { key: "capitalAmount", label: "Capital Contribution", required: true, type: "number", group: "Capital & Ownership" },
+    { key: "partner1Share", label: "Partner 1 Share (%)", required: true, type: "number", group: "Capital & Ownership" },
+    { key: "partner2Share", label: "Partner 2 Share (%)", required: true, type: "number", group: "Capital & Ownership" },
 
-    { key: "profitDistribution", label: "Profit Distribution Method", required: true },
-    { key: "managementStructure", label: "Management Structure", required: true },
+    // ── Management & Profits ──
+    { key: "profitDistribution", label: "Profit Distribution Method", required: true, type: "textarea", group: "Management & Profits" },
+    { key: "managementStructure", label: "Management Structure", required: true, type: "textarea", group: "Management & Profits" },
 
-    { key: "withdrawalClause", label: "Withdrawal Mechanism", required: true },
-    { key: "nonCompeteClause", label: "Non-Compete Clause", required: false },
-
-    { key: "duration", label: "Duration of Partnership", required: true },
-
-    { key: "governingLaw", label: "Governing Law", required: false },
-    { key: "disputeCity", label: "Jurisdiction/Court", required: false },
+    // ── Term & Provisions ──
+    { key: "duration", label: "Duration of Partnership", required: true, type: "text", group: "Term & Provisions",
+      placeholder: "e.g. 5 years" },
+    { key: "withdrawalClause", label: "Withdrawal Mechanism", required: true, type: "textarea", group: "Term & Provisions" },
+    { key: "nonCompeteClause", label: "Non-Compete Clause", required: false, type: "textarea", group: "Term & Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Term & Provisions",
+      placeholder: "Iraqi Civil Code No. 40 of 1951" },
+    { key: "disputeCity", label: "Jurisdiction/Court", required: false, type: "text", group: "Term & Provisions",
+      placeholder: "Baghdad" },
   ],
 
   html: `

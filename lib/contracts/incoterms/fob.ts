@@ -6,6 +6,70 @@ export const FOB_AR: ContractTemplate = {
   title: "عقد بيع دولي – FOB (Incoterms) – صياغة احترافية",
   lang: "ar",
   group: "INCOTERMS",
+
+  fields: [
+    // ── معلومات العقد ──
+    { key: "contractRef", label: "رقم المرجع", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
+    { key: "incotermsEdition", label: "إصدار Incoterms", required: true, type: "select", group: "معلومات العقد",
+      options: ["2020", "2010"] },
+
+    // ── البائع ──
+    { key: "sellerName", label: "اسم البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerAddress", label: "عنوان البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerReg", label: "السجل/الترخيص", required: false, type: "text", group: "البائع" },
+
+    // ── المشتري ──
+    { key: "buyerName", label: "اسم المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerAddress", label: "عنوان المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerReg", label: "السجل/الترخيص", required: false, type: "text", group: "المشتري" },
+
+    // ── البضاعة ──
+    { key: "goodsDescription", label: "وصف البضاعة", required: true, type: "textarea", group: "البضاعة" },
+    { key: "hsCode", label: "رمز HS (اختياري)", required: false, type: "text", group: "البضاعة" },
+    { key: "quantity", label: "الكمية", required: true, type: "text", group: "البضاعة" },
+    { key: "unit", label: "الوحدة", required: true, type: "text", group: "البضاعة", placeholder: "طن، قطعة، كرتون" },
+    { key: "tolerance", label: "نسبة التسامح", required: false, type: "text", group: "البضاعة", placeholder: "±5%" },
+
+    // ── السعر والدفع ──
+    { key: "unitPrice", label: "سعر الوحدة", required: true, type: "number", group: "السعر والدفع" },
+    { key: "totalPrice", label: "السعر الإجمالي", required: true, type: "number", group: "السعر والدفع" },
+    { key: "currency", label: "العملة", required: true, type: "select", group: "السعر والدفع",
+      options: ["دولار أمريكي", "يورو", "دينار عراقي"] },
+    { key: "paymentTerms", label: "شروط الدفع", required: true, type: "textarea", group: "السعر والدفع",
+      placeholder: "مثال: اعتماد مستندي L/C" },
+
+    // ── التسليم والشحن ──
+    { key: "portOfShipment", label: "ميناء الشحن", required: true, type: "text", group: "التسليم والشحن" },
+    { key: "loadingTerminal", label: "رصيف التحميل", required: false, type: "text", group: "التسليم والشحن" },
+    { key: "deliverySchedule", label: "جدول الشحن", required: true, type: "text", group: "التسليم والشحن" },
+    { key: "vesselNomination", label: "آلية تسمية السفينة", required: false, type: "textarea", group: "التسليم والشحن" },
+    { key: "loadingNoticeDays", label: "مدة الإشعار قبل التحميل", required: false, type: "text", group: "التسليم والشحن",
+      placeholder: "مثال: 7 أيام" },
+
+    // ── المستندات والفحص ──
+    { key: "documentsList", label: "المستندات المطلوبة", required: true, type: "textarea", group: "المستندات والفحص",
+      placeholder: "الفاتورة التجارية، بوليصة الشحن، شهادة المنشأ" },
+    { key: "inspection", label: "الفحص والمعاينة", required: false, type: "textarea", group: "المستندات والفحص" },
+    { key: "packaging", label: "التعبئة والتغليف", required: false, type: "textarea", group: "المستندات والفحص" },
+    { key: "marking", label: "الوسم/العلامات", required: false, type: "text", group: "المستندات والفحص" },
+
+    // ── أحكام قانونية ──
+    { key: "forceMajeure", label: "القوة القاهرة", required: false, type: "textarea", group: "أحكام قانونية" },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام قانونية" },
+    { key: "disputeResolution", label: "آلية فض النزاعات", required: true, type: "textarea", group: "أحكام قانونية",
+      placeholder: "التحكيم وفق قواعد غرفة التجارة الدولية" },
+    { key: "arbitrationSeat", label: "مقر التحكيم (إن وجد)", required: false, type: "text", group: "أحكام قانونية" },
+    { key: "languagePrevails", label: "لغة العقد المعتمدة", required: false, type: "select", group: "أحكام قانونية",
+      options: ["العربية", "الإنجليزية"] },
+
+    // ── التواقيع ──
+    { key: "sellerSignName", label: "اسم موقع البائع", required: true, type: "text", group: "التواقيع" },
+    { key: "sellerSignDate", label: "تاريخ توقيع البائع", required: false, type: "date", group: "التواقيع" },
+    { key: "buyerSignName", label: "اسم موقع المشتري", required: true, type: "text", group: "التواقيع" },
+    { key: "buyerSignDate", label: "تاريخ توقيع المشتري", required: false, type: "date", group: "التواقيع" },
+  ],
   html: `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -196,7 +260,69 @@ export const FOB_EN: ContractTemplate = {
   title: "International Sale Contract – FOB (Incoterms®)",
   lang: "en",
   group: "INCOTERMS",
+  fields: [
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
+    { key: "incotermsEdition", label: "Incoterms Edition", required: true, type: "select", group: "Contract Info",
+      options: ["2020", "2010"] },
 
+    // ── Seller ──
+    { key: "sellerName", label: "Seller Name", required: true, type: "text", group: "Seller" },
+    { key: "sellerAddress", label: "Seller Address", required: true, type: "text", group: "Seller" },
+    { key: "sellerReg", label: "Registration/ID", required: false, type: "text", group: "Seller" },
+
+    // ── Buyer ──
+    { key: "buyerName", label: "Buyer Name", required: true, type: "text", group: "Buyer" },
+    { key: "buyerAddress", label: "Buyer Address", required: true, type: "text", group: "Buyer" },
+    { key: "buyerReg", label: "Registration/ID", required: false, type: "text", group: "Buyer" },
+
+    // ── Goods ──
+    { key: "goodsDescription", label: "Goods Description", required: true, type: "textarea", group: "Goods" },
+    { key: "hsCode", label: "HS Code (optional)", required: false, type: "text", group: "Goods" },
+    { key: "quantity", label: "Quantity", required: true, type: "text", group: "Goods" },
+    { key: "unit", label: "Unit", required: true, type: "text", group: "Goods", placeholder: "ton, piece, carton" },
+    { key: "tolerance", label: "Tolerance", required: false, type: "text", group: "Goods", placeholder: "±5%" },
+
+    // ── Price & Payment ──
+    { key: "unitPrice", label: "Unit Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "totalPrice", label: "Total Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "currency", label: "Currency", required: true, type: "select", group: "Price & Payment",
+      options: ["USD", "EUR", "IQD"] },
+    { key: "paymentTerms", label: "Payment Terms", required: true, type: "textarea", group: "Price & Payment",
+      placeholder: "e.g. Letter of Credit (L/C)" },
+
+    // ── Delivery & Shipment ──
+    { key: "portOfShipment", label: "Port of Shipment", required: true, type: "text", group: "Delivery & Shipment" },
+    { key: "loadingTerminal", label: "Loading Terminal", required: false, type: "text", group: "Delivery & Shipment" },
+    { key: "deliverySchedule", label: "Shipment Schedule", required: true, type: "text", group: "Delivery & Shipment" },
+    { key: "vesselNomination", label: "Vessel Nomination", required: false, type: "textarea", group: "Delivery & Shipment" },
+    { key: "loadingNoticeDays", label: "Advance Notice Before Loading", required: false, type: "text", group: "Delivery & Shipment",
+      placeholder: "e.g. 7 days" },
+
+    // ── Documents & Inspection ──
+    { key: "documentsList", label: "Required Documents", required: true, type: "textarea", group: "Documents & Inspection",
+      placeholder: "Commercial invoice, B/L, Certificate of Origin" },
+    { key: "inspection", label: "Inspection & Claims", required: false, type: "textarea", group: "Documents & Inspection" },
+    { key: "packaging", label: "Packaging", required: false, type: "textarea", group: "Documents & Inspection" },
+    { key: "marking", label: "Marking", required: false, type: "text", group: "Documents & Inspection" },
+
+    // ── Legal Provisions ──
+    { key: "forceMajeure", label: "Force Majeure", required: false, type: "textarea", group: "Legal Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: true, type: "text", group: "Legal Provisions" },
+    { key: "disputeResolution", label: "Dispute Resolution", required: true, type: "textarea", group: "Legal Provisions",
+      placeholder: "Arbitration under ICC Rules" },
+    { key: "arbitrationSeat", label: "Arbitration Seat (if any)", required: false, type: "text", group: "Legal Provisions" },
+    { key: "languagePrevails", label: "Contract Language", required: false, type: "select", group: "Legal Provisions",
+      options: ["English", "Arabic"] },
+
+    // ── Signatures ──
+    { key: "sellerSignName", label: "Seller Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "sellerSignDate", label: "Seller Signature Date", required: false, type: "date", group: "Signatures" },
+    { key: "buyerSignName", label: "Buyer Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "buyerSignDate", label: "Buyer Signature Date", required: false, type: "date", group: "Signatures" },
+  ],
   html: `<!doctype html>
 <html lang="en" dir="ltr">
 <head>

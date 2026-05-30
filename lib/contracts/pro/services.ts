@@ -1,4 +1,4 @@
-// lib/contracts/pro/services.ts
+ // lib/contracts/pro/services.ts
 import { ContractTemplate } from "../engine/types";
 
 /**
@@ -12,6 +12,40 @@ export const SERVICES_AR: ContractTemplate = {
   title: "عقد تقديم خدمات (تجاري / مهني)",
   lang: "ar",
   group: "PRO",
+  fields: [
+    // ── معلومات العقد ──
+    { key: "contractNo", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "date", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "place", label: "مكان الإبرام", required: true, type: "text", group: "معلومات العقد" },
+
+    // ── الطرف الأول (العميل) ──
+    { key: "partyAName", label: "اسم العميل", required: true, type: "text", group: "الطرف الأول (العميل)" },
+    { key: "partyAAddress", label: "عنوان العميل", required: true, type: "text", group: "الطرف الأول (العميل)" },
+
+    // ── الطرف الثاني (مقدم الخدمة) ──
+    { key: "partyBName", label: "اسم مقدم الخدمة", required: true, type: "text", group: "الطرف الثاني (مقدم الخدمة)" },
+    { key: "partyBAddress", label: "عنوان مقدم الخدمة", required: true, type: "text", group: "الطرف الثاني (مقدم الخدمة)" },
+
+    // ── الخدمات ──
+    { key: "servicesScope", label: "نطاق الخدمات", required: true, type: "textarea", group: "الخدمات" },
+
+    // ── المدة ──
+    { key: "startDate", label: "تاريخ البدء", required: true, type: "date", group: "المدة" },
+    { key: "endDate", label: "تاريخ الانتهاء", required: true, type: "date", group: "المدة" },
+
+    // ── الأتعاب ──
+    { key: "fees", label: "قيمة الأتعاب", required: true, type: "text", group: "الأتعاب",
+      placeholder: "مثال: 5,000,000 دينار عراقي" },
+    { key: "paymentTerms", label: "طريقة وجدول الدفع", required: true, type: "textarea", group: "الأتعاب" },
+
+    // ── السرية ──
+    { key: "confidentialityPeriod", label: "مدة السرية بعد انتهاء العقد", required: false, type: "text", group: "السرية",
+      placeholder: "مثال: سنتان" },
+
+    // ── التواقيع ──
+    { key: "partyASign", label: "اسم موقع الطرف الأول", required: true, type: "text", group: "التواقيع" },
+    { key: "partyBSign", label: "اسم موقع الطرف الثاني", required: true, type: "text", group: "التواقيع" },
+  ],
   html: `
 <h1>عقد تقديم خدمات</h1>
 <p class="muted">رقم العقد {{contractNo}} — التاريخ {{date}} — المكان {{place}}</p>
@@ -86,6 +120,40 @@ export const SERVICES_EN: ContractTemplate = {
   title: "Services Agreement (Commercial / Professional)",
   lang: "en",
   group: "PRO",
+  fields: [
+    // ── Contract Info ──
+    { key: "contractNo", label: "Contract No.", required: true, type: "text", group: "Contract Info" },
+    { key: "date", label: "Date", required: true, type: "date", group: "Contract Info" },
+    { key: "place", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
+
+    // ── Party A (Client) ──
+    { key: "partyAName", label: "Client Name", required: true, type: "text", group: "Party A (Client)" },
+    { key: "partyAAddress", label: "Client Address", required: true, type: "text", group: "Party A (Client)" },
+
+    // ── Party B (Service Provider) ──
+    { key: "partyBName", label: "Service Provider Name", required: true, type: "text", group: "Party B (Service Provider)" },
+    { key: "partyBAddress", label: "Service Provider Address", required: true, type: "text", group: "Party B (Service Provider)" },
+
+    // ── Services ──
+    { key: "servicesScope", label: "Scope of Services", required: true, type: "textarea", group: "Services" },
+
+    // ── Term ──
+    { key: "startDate", label: "Start Date", required: true, type: "date", group: "Term" },
+    { key: "endDate", label: "End Date", required: true, type: "date", group: "Term" },
+
+    // ── Fees ──
+    { key: "fees", label: "Agreed Fees", required: true, type: "text", group: "Fees",
+      placeholder: "e.g. USD 5,000" },
+    { key: "paymentTerms", label: "Payment Method & Schedule", required: true, type: "textarea", group: "Fees" },
+
+    // ── Confidentiality ──
+    { key: "confidentialityPeriod", label: "Confidentiality Period After Termination", required: false, type: "text", group: "Confidentiality",
+      placeholder: "e.g. 2 years" },
+
+    // ── Signatures ──
+    { key: "partyASign", label: "Party A Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "partyBSign", label: "Party B Signatory Name", required: true, type: "text", group: "Signatures" },
+  ],
   html: `
 <h1>Services Agreement</h1>
 <p class="muted">Contract No. {{contractNo}} — Date {{date}} — Place {{place}}</p>
@@ -151,4 +219,3 @@ This Agreement is executed in two originals, one for each Party.
 </table>
 `.trim(),
 };
-

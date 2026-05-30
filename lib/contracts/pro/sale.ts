@@ -7,44 +7,54 @@ export const SALE_AR: ContractTemplate = {
   lang: "ar",
   group: "PRO",
   fields: [
-    { key: "contractRef", label: "رقم العقد", required: true },
-    { key: "contractDate", label: "تاريخ العقد (YYYY-MM-DD)", required: true },
-    { key: "contractCity", label: "مدينة الإبرام", required: true },
+    // ── معلومات العقد ──
+    { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
 
-    { key: "sellerName", label: "اسم البائع", required: true },
-    { key: "sellerId", label: "هوية/سجل البائع", required: true },
-    { key: "sellerAddress", label: "عنوان البائع", required: true },
-    { key: "sellerPhone", label: "هاتف البائع", required: false },
+    // ── البائع ──
+    { key: "sellerName", label: "اسم البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerId", label: "هوية/سجل البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerAddress", label: "عنوان البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerPhone", label: "هاتف البائع", required: false, type: "text", group: "البائع" },
 
-    { key: "buyerName", label: "اسم المشتري", required: true },
-    { key: "buyerId", label: "هوية/سجل المشتري", required: true },
-    { key: "buyerAddress", label: "عنوان المشتري", required: true },
-    { key: "buyerPhone", label: "هاتف المشتري", required: false },
+    // ── المشتري ──
+    { key: "buyerName", label: "اسم المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerId", label: "هوية/سجل المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerAddress", label: "عنوان المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerPhone", label: "هاتف المشتري", required: false, type: "text", group: "المشتري" },
 
-    { key: "movableDescription", label: "وصف المنقول وصفًا دقيقًا", required: true },
-    { key: "movableIdentifiers", label: "أرقام/سمات تعريفية (رقم هيكل/سيريال/لوحة…)", required: false },
-    { key: "condition", label: "حالة المنقول عند البيع", required: true },
+    // ── المبيع ──
+    { key: "movableDescription", label: "وصف المنقول وصفاً دقيقاً", required: true, type: "textarea", group: "المبيع" },
+    { key: "movableIdentifiers", label: "أرقام/سمات تعريفية (هيكل/سيريال/لوحة)", required: false, type: "text", group: "المبيع" },
+    { key: "condition", label: "حالة المنقول عند البيع", required: true, type: "text", group: "المبيع" },
 
-    { key: "priceAmount", label: "الثمن رقمًا", required: true },
-    { key: "priceCurrency", label: "العملة", required: true },
-    { key: "priceText", label: "الثمن كتابةً", required: false },
+    // ── الثمن والسداد ──
+    { key: "priceAmount", label: "الثمن رقماً", required: true, type: "number", group: "الثمن والسداد" },
+    { key: "priceCurrency", label: "العملة", required: true, type: "select", group: "الثمن والسداد",
+      options: ["دينار عراقي", "دولار أمريكي", "يورو"] },
+    { key: "priceText", label: "الثمن كتابةً", required: false, type: "text", group: "الثمن والسداد" },
+    { key: "paymentMethod", label: "طريقة السداد", required: true, type: "select", group: "الثمن والسداد",
+      options: ["نقداً", "تحويل بنكي", "صك", "أقساط"] },
+    { key: "paymentSchedule", label: "جدول/تفاصيل السداد (إن وجد)", required: false, type: "textarea", group: "الثمن والسداد" },
 
-    { key: "paymentMethod", label: "طريقة السداد", required: true },
-    { key: "paymentSchedule", label: "جدول/تفاصيل السداد (إن وجد)", required: false },
+    // ── التسليم ──
+    { key: "deliveryPlace", label: "مكان التسليم", required: true, type: "text", group: "التسليم" },
+    { key: "deliveryDate", label: "تاريخ/موعد التسليم", required: true, type: "date", group: "التسليم" },
 
-    { key: "deliveryPlace", label: "مكان التسليم", required: true },
-    { key: "deliveryDate", label: "تاريخ/موعد التسليم", required: true },
+    // ── أحكام ──
+    { key: "warranty", label: "الضمان/الإبراء (إن وجد)", required: false, type: "textarea", group: "أحكام" },
+    { key: "specialTerms", label: "شروط خاصة إضافية", required: false, type: "textarea", group: "أحكام" },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام",
+      placeholder: "القانون المدني العراقي رقم 40 لسنة 1951" },
+    { key: "disputeCity", label: "الاختصاص المكاني (مدينة المحكمة)", required: true, type: "text", group: "أحكام",
+      placeholder: "بغداد" },
 
-    { key: "warranty", label: "الضمان/الإبراء (إن وجد)", required: false },
-    { key: "specialTerms", label: "شروط خاصة إضافية", required: false },
-
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true },
-    { key: "disputeCity", label: "الاختصاص المكاني (مدينة المحكمة)", required: true },
-
-    { key: "sellerSignName", label: "اسم موقع البائع", required: true },
-    { key: "buyerSignName", label: "اسم موقع المشتري", required: true },
-    { key: "witness1", label: "الشاهد الأول (اختياري)", required: false },
-    { key: "witness2", label: "الشاهد الثاني (اختياري)", required: false },
+    // ── التواقيع ──
+    { key: "sellerSignName", label: "اسم موقع البائع", required: true, type: "text", group: "التواقيع" },
+    { key: "buyerSignName", label: "اسم موقع المشتري", required: true, type: "text", group: "التواقيع" },
+    { key: "witness1", label: "الشاهد الأول (اختياري)", required: false, type: "text", group: "التواقيع" },
+    { key: "witness2", label: "الشاهد الثاني (اختياري)", required: false, type: "text", group: "التواقيع" },
   ],
   html: `
 <div class="doc rtl">
@@ -178,7 +188,7 @@ export const SALE_AR: ContractTemplate = {
 
   <style>
     .rtl{direction:rtl;text-align:right}
-    . .doc{
+    .doc{
   font-family: "Noto Naskh Arabic","Amiri",Arial,sans-serif;
   font-size:16px;              /* بدل 13px */
   line-height:1.9;
@@ -236,42 +246,51 @@ export const SALE_EN: ContractTemplate = {
   lang: "en",
   group: "PRO",
   fields: [
-    { key: "contractRef", label: "Contract Ref", required: true },
-    { key: "contractDate", label: "Contract Date (YYYY-MM-DD)", required: true },
-    { key: "contractCity", label: "Place/City of Execution", required: true },
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place/City of Execution", required: true, type: "text", group: "Contract Info" },
 
-    { key: "sellerName", label: "Seller Name", required: true },
-    { key: "sellerId", label: "Seller ID/Registration", required: true },
-    { key: "sellerAddress", label: "Seller Address", required: true },
-    { key: "sellerPhone", label: "Seller Contact", required: false },
+    // ── Seller ──
+    { key: "sellerName", label: "Seller Name", required: true, type: "text", group: "Seller" },
+    { key: "sellerId", label: "Seller ID/Registration", required: true, type: "text", group: "Seller" },
+    { key: "sellerAddress", label: "Seller Address", required: true, type: "text", group: "Seller" },
+    { key: "sellerPhone", label: "Seller Contact", required: false, type: "text", group: "Seller" },
 
-    { key: "buyerName", label: "Buyer Name", required: true },
-    { key: "buyerId", label: "Buyer ID/Registration", required: true },
-    { key: "buyerAddress", label: "Buyer Address", required: true },
-    { key: "buyerPhone", label: "Buyer Contact", required: false },
+    // ── Buyer ──
+    { key: "buyerName", label: "Buyer Name", required: true, type: "text", group: "Buyer" },
+    { key: "buyerId", label: "Buyer ID/Registration", required: true, type: "text", group: "Buyer" },
+    { key: "buyerAddress", label: "Buyer Address", required: true, type: "text", group: "Buyer" },
+    { key: "buyerPhone", label: "Buyer Contact", required: false, type: "text", group: "Buyer" },
 
-    { key: "itemType", label: "Item Type", required: true },
-    { key: "itemDescription", label: "Detailed Description", required: true },
-    { key: "itemSerial", label: "Serial/VIN/Plate (if any)", required: false },
-    { key: "itemCondition", label: "Condition + Known Defects", required: true },
-    { key: "itemAccessories", label: "Accessories/Documents Delivered", required: false },
+    // ── Item ──
+    { key: "itemType", label: "Item Type", required: true, type: "text", group: "Item" },
+    { key: "itemDescription", label: "Detailed Description", required: true, type: "textarea", group: "Item" },
+    { key: "itemSerial", label: "Serial/VIN/Plate (if any)", required: false, type: "text", group: "Item" },
+    { key: "itemCondition", label: "Condition + Known Defects", required: true, type: "text", group: "Item" },
+    { key: "itemAccessories", label: "Accessories/Documents Delivered", required: false, type: "text", group: "Item" },
 
-    { key: "priceAmount", label: "Price (Number)", required: true },
-    { key: "priceCurrency", label: "Currency", required: true },
-    { key: "paymentMethod", label: "Payment Method", required: true },
-    { key: "paymentSchedule", label: "Payment Schedule (if any)", required: false },
+    // ── Price & Payment ──
+    { key: "priceAmount", label: "Price (Number)", required: true, type: "number", group: "Price & Payment" },
+    { key: "priceCurrency", label: "Currency", required: true, type: "select", group: "Price & Payment",
+      options: ["IQD", "USD", "EUR"] },
+    { key: "paymentMethod", label: "Payment Method", required: true, type: "select", group: "Price & Payment",
+      options: ["Cash", "Bank Transfer", "Cheque", "Installments"] },
+    { key: "paymentSchedule", label: "Payment Schedule (if any)", required: false, type: "textarea", group: "Price & Payment" },
 
-    { key: "deliveryPlace", label: "Delivery Place", required: true },
-    { key: "deliveryDate", label: "Delivery Date (YYYY-MM-DD)", required: true },
-    { key: "deliveryProtocol", label: "Delivery/Inspection Report (optional)", required: false },
+    // ── Delivery ──
+    { key: "deliveryPlace", label: "Delivery Place", required: true, type: "text", group: "Delivery" },
+    { key: "deliveryDate", label: "Delivery Date", required: true, type: "date", group: "Delivery" },
+    { key: "deliveryProtocol", label: "Delivery/Inspection Report (optional)", required: false, type: "text", group: "Delivery" },
 
-    { key: "warrantyTerms", label: "Warranty Terms (if any)", required: false },
-    { key: "inspectionPeriod", label: "Inspection/Objection Period (days)", required: false },
-
-    { key: "governingLaw", label: "Governing Law", required: false },
-    { key: "disputeCity", label: "Jurisdiction / Court", required: false },
-
-    { key: "notes", label: "Additional Notes", required: false },
+    // ── Provisions ──
+    { key: "warrantyTerms", label: "Warranty Terms (if any)", required: false, type: "textarea", group: "Provisions" },
+    { key: "inspectionPeriod", label: "Inspection/Objection Period (days)", required: false, type: "number", group: "Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions",
+      placeholder: "Iraqi Civil Code No. 40 of 1951" },
+    { key: "disputeCity", label: "Jurisdiction / Court", required: false, type: "text", group: "Provisions",
+      placeholder: "Baghdad" },
+    { key: "notes", label: "Additional Notes", required: false, type: "textarea", group: "Provisions" },
   ],
   html: `
 <div class="doc" dir="ltr" lang="en">
@@ -344,7 +363,7 @@ export const SALE_EN: ContractTemplate = {
   </div>
 
   <div class="sec">
-    <h3>2. предмет / Subject Matter (Movable Item)</h3>
+     <h3>2. Subject Matter (Movable Item)</h3>
     <table>
       <tr>
         <th style="width:30%">Item</th>

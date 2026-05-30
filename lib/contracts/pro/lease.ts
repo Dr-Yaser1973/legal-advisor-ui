@@ -7,42 +7,52 @@ export const LEASE_AR: ContractTemplate = {
   lang: "ar",
   group: "PRO",
 
-  fields: [
-    { key: "contractRef", label: "رقم العقد", required: true },
-    { key: "contractDate", label: "تاريخ العقد (YYYY-MM-DD)", required: true },
-    { key: "contractCity", label: "مدينة الإبرام", required: true },
+   fields: [
+  // ── معلومات العقد ──
+  { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+  { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+  { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
 
-    { key: "lessorName", label: "اسم المؤجر", required: true },
-    { key: "lessorId", label: "هوية/سجل المؤجر", required: true },
-    { key: "lessorAddress", label: "عنوان المؤجر", required: true },
-    { key: "lessorPhone", label: "هاتف المؤجر", required: false },
+  // ── المؤجر ──
+  { key: "lessorName", label: "اسم المؤجر", required: true, type: "text", group: "المؤجر" },
+  { key: "lessorId", label: "هوية/سجل المؤجر", required: true, type: "text", group: "المؤجر" },
+  { key: "lessorAddress", label: "عنوان المؤجر", required: true, type: "text", group: "المؤجر" },
+  { key: "lessorPhone", label: "هاتف المؤجر", required: false, type: "text", group: "المؤجر" },
 
-    { key: "lesseeName", label: "اسم المستأجر", required: true },
-    { key: "lesseeId", label: "هوية/سجل المستأجر", required: true },
-    { key: "lesseeAddress", label: "عنوان المستأجر", required: true },
-    { key: "lesseePhone", label: "هاتف المستأجر", required: false },
+  // ── المستأجر ──
+  { key: "lesseeName", label: "اسم المستأجر", required: true, type: "text", group: "المستأجر" },
+  { key: "lesseeId", label: "هوية/سجل المستأجر", required: true, type: "text", group: "المستأجر" },
+  { key: "lesseeAddress", label: "عنوان المستأجر", required: true, type: "text", group: "المستأجر" },
+  { key: "lesseePhone", label: "هاتف المستأجر", required: false, type: "text", group: "المستأجر" },
 
-    { key: "propertyDescription", label: "وصف المأجور", required: true },
-    { key: "propertyLocation", label: "موقع المأجور", required: true },
-    { key: "usageType", label: "نوع الاستعمال (سكني/تجاري...)", required: true },
+  // ── محل الإيجار ──
+  { key: "propertyDescription", label: "وصف المأجور", required: true, type: "textarea", group: "محل الإيجار" },
+  { key: "propertyLocation", label: "موقع المأجور", required: true, type: "text", group: "محل الإيجار" },
+  { key: "usageType", label: "نوع الاستعمال", required: true, type: "select", group: "محل الإيجار",
+    options: ["سكني", "تجاري", "صناعي", "زراعي", "مكتبي"] },
 
-    { key: "leaseStart", label: "تاريخ بدء الإيجار", required: true },
-    { key: "leaseEnd", label: "تاريخ انتهاء الإيجار", required: true },
+  // ── المدة ──
+  { key: "leaseStart", label: "تاريخ بدء الإيجار", required: true, type: "date", group: "المدة" },
+  { key: "leaseEnd", label: "تاريخ انتهاء الإيجار", required: true, type: "date", group: "المدة" },
 
-    { key: "rentAmount", label: "بدل الإيجار", required: true },
-    { key: "rentCurrency", label: "العملة", required: true },
-    { key: "rentDueDate", label: "موعد الاستحقاق (شهري/سنوي)", required: true },
+  // ── المالية ──
+  { key: "rentAmount", label: "بدل الإيجار", required: true, type: "number", group: "المالية" },
+  { key: "rentCurrency", label: "العملة", required: true, type: "select", group: "المالية",
+    options: ["دينار عراقي", "دولار أمريكي", "يورو"] },
+  { key: "rentDueDate", label: "موعد الاستحقاق", required: true, type: "select", group: "المالية",
+    options: ["شهري", "ربع سنوي", "نصف سنوي", "سنوي"] },
+  { key: "securityDeposit", label: "مبلغ التأمين", required: false, type: "number", group: "المالية" },
 
-    { key: "securityDeposit", label: "مبلغ التأمين (إن وجد)", required: false },
-
-    { key: "maintenanceTerms", label: "أحكام الصيانة", required: false },
-    { key: "terminationNotice", label: "مدة الإشعار قبل الإنهاء", required: true },
-
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true },
-    { key: "disputeCity", label: "الاختصاص المكاني", required: true },
-
-    { key: "specialTerms", label: "شروط خاصة إضافية", required: false },
-  ],
+  // ── أحكام ──
+  { key: "maintenanceTerms", label: "أحكام الصيانة", required: false, type: "textarea", group: "أحكام إضافية" },
+  { key: "terminationNotice", label: "مدة الإشعار قبل الإنهاء", required: true, type: "text", group: "أحكام إضافية",
+    placeholder: "مثال: 30 يوماً" },
+  { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام إضافية",
+    placeholder: "القانون المدني العراقي رقم 40 لسنة 1951" },
+  { key: "disputeCity", label: "الاختصاص المكاني", required: true, type: "text", group: "أحكام إضافية",
+    placeholder: "بغداد" },
+  { key: "specialTerms", label: "شروط خاصة إضافية", required: false, type: "textarea", group: "أحكام إضافية" },
+],
 
   html: `
 <div class="doc rtl">
@@ -131,7 +141,7 @@ export const LEASE_AR: ContractTemplate = {
 </div>
 `.trim(),
 };
-
+ 
 export const LEASE_EN: ContractTemplate = {
   id: 1202,
   slug: "pro-lease-en",
@@ -140,72 +150,125 @@ export const LEASE_EN: ContractTemplate = {
   group: "PRO",
 
   fields: [
-    { key: "contractRef", label: "Contract Ref", required: true },
-    { key: "contractDate", label: "Date", required: true },
-    { key: "contractCity", label: "Place of Execution", required: true },
+    // ── Contract Info ──
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
 
-    { key: "lessorName", label: "Lessor Name", required: true },
-    { key: "lessorId", label: "Lessor ID", required: true },
-    { key: "lessorAddress", label: "Lessor Address", required: true },
+    // ── Lessor ──
+    { key: "lessorName", label: "Lessor Name", required: true, type: "text", group: "Lessor" },
+    { key: "lessorId", label: "Lessor ID", required: true, type: "text", group: "Lessor" },
+    { key: "lessorAddress", label: "Lessor Address", required: true, type: "text", group: "Lessor" },
+    { key: "lessorPhone", label: "Lessor Phone", required: false, type: "text", group: "Lessor" },
 
-    { key: "lesseeName", label: "Lessee Name", required: true },
-    { key: "lesseeId", label: "Lessee ID", required: true },
-    { key: "lesseeAddress", label: "Lessee Address", required: true },
+    // ── Lessee ──
+    { key: "lesseeName", label: "Lessee Name", required: true, type: "text", group: "Lessee" },
+    { key: "lesseeId", label: "Lessee ID", required: true, type: "text", group: "Lessee" },
+    { key: "lesseeAddress", label: "Lessee Address", required: true, type: "text", group: "Lessee" },
+    { key: "lesseePhone", label: "Lessee Phone", required: false, type: "text", group: "Lessee" },
 
-    { key: "propertyDescription", label: "Property Description", required: true },
-    { key: "propertyLocation", label: "Property Location", required: true },
-    { key: "usageType", label: "Permitted Use", required: true },
+    // ── Property ──
+    { key: "propertyDescription", label: "Property Description", required: true, type: "textarea", group: "Property" },
+    { key: "propertyLocation", label: "Property Location", required: true, type: "text", group: "Property" },
+    { key: "usageType", label: "Permitted Use", required: true, type: "select", group: "Property",
+      options: ["Residential", "Commercial", "Industrial", "Agricultural", "Office"] },
 
-    { key: "leaseStart", label: "Lease Start Date", required: true },
-    { key: "leaseEnd", label: "Lease End Date", required: true },
+    // ── Term ──
+    { key: "leaseStart", label: "Lease Start Date", required: true, type: "date", group: "Term" },
+    { key: "leaseEnd", label: "Lease End Date", required: true, type: "date", group: "Term" },
 
-    { key: "rentAmount", label: "Rent Amount", required: true },
-    { key: "rentCurrency", label: "Currency", required: true },
-    { key: "rentDueDate", label: "Due Date", required: true },
+    // ── Financial ──
+    { key: "rentAmount", label: "Rent Amount", required: true, type: "number", group: "Financial" },
+    { key: "rentCurrency", label: "Currency", required: true, type: "select", group: "Financial",
+      options: ["IQD", "USD", "EUR"] },
+    { key: "rentDueDate", label: "Due Date", required: true, type: "select", group: "Financial",
+      options: ["Monthly", "Quarterly", "Semi-annual", "Annual"] },
+    { key: "securityDeposit", label: "Security Deposit", required: false, type: "number", group: "Financial" },
 
-    { key: "securityDeposit", label: "Security Deposit", required: false },
-    { key: "governingLaw", label: "Governing Law", required: false },
-    { key: "disputeCity", label: "Jurisdiction", required: false },
+    // ── Additional ──
+    { key: "maintenanceTerms", label: "Maintenance Terms", required: false, type: "textarea", group: "Additional" },
+    { key: "terminationNotice", label: "Termination Notice Period", required: true, type: "text", group: "Additional",
+      placeholder: "e.g. 30 days" },
+    { key: "governingLaw", label: "Governing Law", required: true, type: "text", group: "Additional",
+      placeholder: "Iraqi Civil Code No. 40 of 1951" },
+    { key: "disputeCity", label: "Jurisdiction", required: true, type: "text", group: "Additional",
+      placeholder: "Baghdad" },
+    { key: "specialTerms", label: "Special Terms", required: false, type: "textarea", group: "Additional" },
   ],
 
   html: `
 <div class="doc" dir="ltr">
 
-  <h2>Lease Agreement (PRO)</h2>
-
-  <p><b>Ref:</b> {{contractRef}}</p>
-  <p><b>Date:</b> {{contractDate}}</p>
-
-  <h3>1. Parties</h3>
-  <p><b>Lessor:</b> {{lessorName}}</p>
-  <p><b>Lessee:</b> {{lesseeName}}</p>
-
-  <h3>2. Property</h3>
-  <p>{{propertyDescription}}</p>
-  <p>Location: {{propertyLocation}}</p>
-  <p>Permitted Use: {{usageType}}</p>
-
-  <h3>3. Term</h3>
-  <p>From {{leaseStart}} to {{leaseEnd}}</p>
-
-  <h3>4. Rent</h3>
-  <p>{{rentAmount}} {{rentCurrency}}</p>
-  <p>Due: {{rentDueDate}}</p>
-  <p>Security Deposit: {{securityDeposit}}</p>
-
-  <h3>5. Governing Law</h3>
-  <p>{{governingLaw}}</p>
-  <p>Jurisdiction: {{disputeCity}}</p>
-
-  <br/><br/>
-  <div>
-    <b>Lessor Signature:</b> ___________________
+  <div class="header">
+    <div class="title">Lease Agreement</div>
+    <div class="subtitle">Professional Template (PRO)</div>
+    <div class="meta">
+      <div><b>Contract Ref:</b> {{contractRef}}</div>
+      <div><b>Date:</b> {{contractDate}}</div>
+      <div><b>Place of Execution:</b> {{contractCity}}</div>
+    </div>
   </div>
-  <br/>
-  <div>
-    <b>Lessee Signature:</b> ___________________
+
+  <div class="box">
+    <div class="h">1. Parties</div>
+    <p><b>Lessor:</b> {{lessorName}} – {{lessorId}} – {{lessorAddress}} – {{lessorPhone}}</p>
+    <p><b>Lessee:</b> {{lesseeName}} – {{lesseeId}} – {{lesseeAddress}} – {{lesseePhone}}</p>
+    <div class="note">Hereinafter jointly referred to as "the Parties".</div>
+  </div>
+
+  <div class="box">
+    <div class="h">2. Leased Property</div>
+    <p><b>Description:</b> {{propertyDescription}}</p>
+    <p><b>Location:</b> {{propertyLocation}}</p>
+    <p><b>Permitted Use:</b> {{usageType}}</p>
+  </div>
+
+  <div class="box">
+    <div class="h">3. Lease Term</div>
+    <p>The lease term commences on {{leaseStart}} and expires on {{leaseEnd}}.</p>
+    <p>The contract may not be renewed except by written agreement between the Parties.</p>
+  </div>
+
+  <div class="box">
+    <div class="h">4. Rent &amp; Security Deposit</div>
+    <p><b>Rent:</b> {{rentAmount}} {{rentCurrency}}</p>
+    <p><b>Due Date:</b> {{rentDueDate}}</p>
+    <p><b>Security Deposit:</b> {{securityDeposit}}</p>
+    <div class="clause">
+      The Lessee shall pay the rent on its due dates, and the Lessor shall be entitled to claim compensation for delay in accordance with the law.
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="h">5. Maintenance &amp; Liability</div>
+    <p>{{maintenanceTerms}}</p>
+    <ol class="ol">
+      <li>The Lessee shall maintain the property and use it for the agreed purpose.</li>
+      <li>The Lessor shall bear structural maintenance unless otherwise agreed.</li>
+    </ol>
+  </div>
+
+  <div class="box">
+    <div class="h">6. Termination &amp; Eviction</div>
+    <p>Either Party may terminate this contract by written notice of {{terminationNotice}} prior to termination.</p>
+  </div>
+
+  <div class="box">
+    <div class="h">7. Governing Law &amp; Jurisdiction</div>
+    <p>This contract is governed by {{governingLaw}}.</p>
+    <p>The courts of {{disputeCity}} shall have jurisdiction over any dispute.</p>
+  </div>
+
+  <div class="box">
+    <div class="h">8. Special Terms</div>
+    <p>{{specialTerms}}</p>
+  </div>
+
+  <div class="signs">
+    <div class="sig"><b>Lessor</b><br/><br/>{{lessorName}}</div>
+    <div class="sig"><b>Lessee</b><br/><br/>{{lesseeName}}</div>
   </div>
 
 </div>
-`,
+`.trim(),
 };

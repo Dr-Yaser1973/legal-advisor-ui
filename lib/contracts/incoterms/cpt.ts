@@ -1,251 +1,395 @@
- // CPT (AR) - Incoterms 2020
-import type { ContractTemplate } from "@/lib/contracts/engine/types"; // عدّل المسار حسب مشروعك
+ import type { ContractTemplate } from "@/lib/contracts/engine/types";
 
 export const CPT_AR: ContractTemplate = {
-  id: 2408,
-  slug: "incoterms-cpt-ar",
-  title: "عقد بيع دولي – CPT (إنكوتيرمز 2020) (عربي)",
+  id: 2080,
+  slug: "incoterms-cpt-premium-ar",
+  title: "عقد بيع دولي – CPT (Incoterms®)",
   lang: "ar",
   group: "INCOTERMS",
+
+  fields: [
+    { key: "contractRef", label: "رقم المرجع", required: true, type: "text", group: "معلومات العقد" },
+    { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد" },
+    { key: "incotermsEdition", label: "إصدار Incoterms", required: true, type: "select", group: "معلومات العقد",
+      options: ["2020", "2010"] },
+    { key: "sellerName", label: "اسم البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerAddress", label: "عنوان البائع", required: true, type: "text", group: "البائع" },
+    { key: "sellerReg", label: "السجل/الترخيص", required: false, type: "text", group: "البائع" },
+    { key: "buyerName", label: "اسم المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerAddress", label: "عنوان المشتري", required: true, type: "text", group: "المشتري" },
+    { key: "buyerReg", label: "السجل/الترخيص", required: false, type: "text", group: "المشتري" },
+    { key: "goodsDescription", label: "وصف البضاعة", required: true, type: "textarea", group: "البضاعة" },
+    { key: "hsCode", label: "رمز HS (اختياري)", required: false, type: "text", group: "البضاعة" },
+    { key: "quantity", label: "الكمية", required: true, type: "text", group: "البضاعة" },
+    { key: "unit", label: "الوحدة", required: true, type: "text", group: "البضاعة", placeholder: "طن، قطعة، كرتون" },
+    { key: "tolerance", label: "نسبة التسامح", required: false, type: "text", group: "البضاعة", placeholder: "±5%" },
+    { key: "unitPrice", label: "سعر الوحدة", required: true, type: "number", group: "السعر والدفع" },
+    { key: "totalPrice", label: "السعر الإجمالي", required: true, type: "number", group: "السعر والدفع" },
+    { key: "currency", label: "العملة", required: true, type: "select", group: "السعر والدفع",
+      options: ["دولار أمريكي", "يورو", "دينار عراقي"] },
+    { key: "paymentTerms", label: "شروط الدفع", required: true, type: "textarea", group: "السعر والدفع",
+      placeholder: "مثال: اعتماد مستندي L/C" },
+    // CPT-specific
+    { key: "placeOfHandover", label: "مكان تسليم البضاعة للناقل", required: true, type: "text", group: "التسليم والنقل",
+      placeholder: "مستودع البائع، محطة الشحن..." },
+    { key: "namedDestination", label: "مكان الوصول المحدد", required: true, type: "text", group: "التسليم والنقل",
+      placeholder: "المستودع النهائي، المطار، الميناء الجاف..." },
+    { key: "deliverySchedule", label: "جدول التسليم/الشحن", required: true, type: "text", group: "التسليم والنقل" },
+    { key: "modeOfTransport", label: "وسيلة النقل", required: false, type: "select", group: "التسليم والنقل",
+      options: ["بري", "بحري", "جوي", "متعدد الوسائط"] },
+    { key: "carrierDetails", label: "تفاصيل الناقل", required: false, type: "textarea", group: "التسليم والنقل",
+      placeholder: "اسم شركة الشحن، رقم التعاقد" },
+    { key: "freightPaidTo", label: "أجرة النقل مدفوعة حتى", required: true, type: "text", group: "التسليم والنقل",
+      placeholder: "يجب أن يطابق مكان الوصول المحدد" },
+    { key: "documentsList", label: "المستندات المطلوبة", required: true, type: "textarea", group: "المستندات والفحص",
+      placeholder: "الفاتورة التجارية، وثيقة النقل، شهادة المنشأ" },
+    { key: "inspection", label: "الفحص والمعاينة", required: false, type: "textarea", group: "المستندات والفحص" },
+    { key: "packaging", label: "التعبئة والتغليف", required: false, type: "textarea", group: "المستندات والفحص" },
+    { key: "marking", label: "الوسم/العلامات", required: false, type: "text", group: "المستندات والفحص" },
+    { key: "forceMajeure", label: "القوة القاهرة", required: false, type: "textarea", group: "أحكام قانونية" },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام قانونية" },
+    { key: "disputeResolution", label: "آلية فض النزاعات", required: true, type: "textarea", group: "أحكام قانونية",
+      placeholder: "التحكيم وفق قواعد غرفة التجارة الدولية" },
+    { key: "arbitrationSeat", label: "مقر التحكيم (إن وجد)", required: false, type: "text", group: "أحكام قانونية" },
+    { key: "languagePrevails", label: "لغة العقد المعتمدة", required: false, type: "select", group: "أحكام قانونية",
+      options: ["العربية", "الإنجليزية"] },
+    { key: "sellerSignName", label: "اسم موقع البائع", required: true, type: "text", group: "التواقيع" },
+    { key: "sellerSignDate", label: "تاريخ توقيع البائع", required: false, type: "date", group: "التواقيع" },
+    { key: "buyerSignName", label: "اسم موقع المشتري", required: true, type: "text", group: "التواقيع" },
+    { key: "buyerSignDate", label: "تاريخ توقيع المشتري", required: false, type: "date", group: "التواقيع" },
+  ],
+
   html: `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body{font-family: Arial, "Noto Naskh Arabic", "Amiri", sans-serif; padding:28px; line-height:1.9; color:#111}
-    h1{font-size:20px; margin:0 0 10px}
-    h2{font-size:14px; margin:18px 0 8px}
-    .muted{color:#555; font-size:12px}
-    .box{border:1px solid #ddd; border-radius:12px; padding:12px 14px; margin:10px 0}
-    table{width:100%; border-collapse:collapse}
-    td{vertical-align:top; padding:6px 8px; border-bottom:1px solid #eee}
-    .sig td{border-bottom:none}
-    .k{width:28%; color:#333; font-weight:700}
+    body{font-family:Arial,"Noto Naskh Arabic","Amiri",sans-serif;padding:28px;line-height:1.9;color:#111;font-size:13.5px;}
+    h1{font-size:20px;margin:0 0 10px;text-align:center;}
+    h2{font-size:14px;margin:18px 0 8px;}
+    .meta{font-size:12px;color:#444;margin:6px 0 14px;text-align:right;}
+    .box{border:1px solid #ddd;border-radius:12px;padding:12px 14px;margin:10px 0;}
+    table{width:100%;border-collapse:collapse;margin-top:6px;}
+    td,th{border:1px solid #e2e2e2;padding:8px;font-size:12px;vertical-align:top;text-align:right;}
+    th{background:#f6f6f6;}
+    .muted{color:#666;font-size:12px;}
+    .small{font-size:11px;color:#555;}
+    .sign td{height:90px;}
+    ul{margin:6px 18px;}li{margin:4px 0;}
   </style>
 </head>
 <body>
 
-  <h1>عقد بيع دولي – CPT (إنكوتيرمز® {{incotermsEdition}})</h1>
-  <div class="muted">
-    رقم المرجع: <b>{{contractRef}}</b> • التاريخ: <b>{{contractDate}}</b> • مدينة الإبرام: <b>{{contractCity}}</b>
-  </div>
+<h1>عقد بيع دولي وفق شرط CPT (Incoterms® {{incotermsEdition}})</h1>
+<div class="meta">
+  رقم المرجع: <b>{{contractRef}}</b> &nbsp;|&nbsp;
+  تاريخ العقد: <b>{{contractDate}}</b> &nbsp;|&nbsp;
+  مدينة الإبرام: <b>{{contractCity}}</b>
+</div>
 
-  <div class="box">
-    <table>
-      <tr><td class="k">البائع</td><td>
-        <b>{{sellerName}}</b><br/>{{sellerAddress}}<br/><span class="muted">السجل/الترخيص:</span> {{sellerReg}}
-      </td></tr>
-      <tr><td class="k">المشتري</td><td>
-        <b>{{buyerName}}</b><br/>{{buyerAddress}}<br/><span class="muted">السجل/الترخيص:</span> {{buyerReg}}
-      </td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>أولاً: أطراف العقد</h2>
+  <table>
+    <tr>
+      <th style="width:20%">البائع</th>
+      <td>{{sellerName}}<br/><span class="muted">العنوان:</span> {{sellerAddress}}<br/><span class="muted">السجل:</span> {{sellerReg}}</td>
+    </tr>
+    <tr>
+      <th>المشتري</th>
+      <td>{{buyerName}}<br/><span class="muted">العنوان:</span> {{buyerAddress}}<br/><span class="muted">السجل:</span> {{buyerReg}}</td>
+    </tr>
+  </table>
+</div>
 
-  <h2>1) البضاعة</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">الوصف</td><td>{{goodsDescription}}</td></tr>
-      <tr><td class="k">رمز HS (اختياري)</td><td>{{hsCode}}</td></tr>
-      <tr><td class="k">الكمية</td><td>{{quantity}} {{unit}} (التسامح: {{tolerance}})</td></tr>
-      <tr><td class="k">التعبئة/الوسم</td><td>{{packaging}}<br/>{{marking}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>ثانياً: التعاريف والمرجعية</h2>
+  <p>يُقصد بشرط <b>CPT (النقل مدفوع حتى)</b> ما ورد تعريفه في <b>قواعد Incoterms® {{incotermsEdition}}</b> الصادرة عن ICC.</p>
+  <p class="small">
+    CPT = FCA + البائع يدفع أجرة النقل حتى مكان الوصول المحدد. لكن الخطر ينتقل إلى المشتري
+    عند تسليم البضاعة للناقل الأول — لا عند الوصول. التأمين مسؤولية المشتري.
+    مناسب لجميع وسائط النقل بما فيها الحاويات.
+  </p>
+</div>
 
-  <h2>2) السعر والدفع</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">سعر الوحدة</td><td>{{unitPrice}}</td></tr>
-      <tr><td class="k">السعر الإجمالي</td><td><b>{{totalPrice}}</b> {{currency}}</td></tr>
-      <tr><td class="k">شروط الدفع</td><td>{{paymentTerms}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>ثالثاً: البضاعة والكمية والسعر</h2>
+  <table>
+    <tr><th>وصف البضاعة</th><th>رمز HS</th><th>الكمية</th><th>الوحدة</th><th>نسبة التسامح</th></tr>
+    <tr><td>{{goodsDescription}}</td><td>{{hsCode}}</td><td>{{quantity}}</td><td>{{unit}}</td><td>{{tolerance}}</td></tr>
+  </table>
+  <table>
+    <tr><th>سعر الوحدة</th><th>السعر الإجمالي</th><th>العملة</th><th>شروط الدفع</th></tr>
+    <tr><td>{{unitPrice}}</td><td>{{totalPrice}}</td><td>{{currency}}</td><td>{{paymentTerms}}</td></tr>
+  </table>
+</div>
 
-  <h2>3) شرط التسليم (CPT)</h2>
-  <div class="box">
-    <p>
-      اتفق الطرفان على أن يكون التسليم وفق شرط <b>CPT – أجور النقل مدفوعة إلى</b>، إنكوتيرمز® {{incotermsEdition}}،
-      إلى مكان الوصول المسمّى: <b>{{placeOfDestination}}</b>.
-    </p>
-    <table>
-      <tr><td class="k">مكان الوصول المسمّى</td><td>{{placeOfDestination}}</td></tr>
-      <tr><td class="k">مكان التسليم (تسليم للناقل)</td><td>{{placeOfDelivery}}</td></tr>
-      <tr><td class="k">موعد/جدول الشحن</td><td>{{deliverySchedule}}</td></tr>
-      <tr><td class="k">الناقل/وسيلة النقل</td><td>{{carrierDetails}}</td></tr>
-    </table>
+<div class="box">
+  <h2>رابعاً: التسليم والنقل وفق CPT</h2>
+  <table>
+    <tr><th style="width:35%">مكان تسليم البضاعة للناقل</th><td><b>{{placeOfHandover}}</b></td></tr>
+    <tr><th>مكان الوصول المحدد</th><td><b>{{namedDestination}}</b></td></tr>
+    <tr><th>جدول التسليم/الشحن</th><td>{{deliverySchedule}}</td></tr>
+    <tr><th>وسيلة النقل</th><td>{{modeOfTransport}}</td></tr>
+    <tr><th>تفاصيل الناقل</th><td>{{carrierDetails}}</td></tr>
+    <tr><th>أجرة النقل مدفوعة حتى</th><td>{{freightPaidTo}}</td></tr>
+  </table>
+  <ul>
+    <li>يلتزم البائع بإبرام عقد نقل حتى مكان الوصول المحدد ودفع أجرة النقل.</li>
+    <li>تنتقل المخاطر إلى المشتري عند تسليم البضاعة للناقل الأول في <b>{{placeOfHandover}}</b>.</li>
+    <li>يلتزم البائع بإنهاء إجراءات التصدير الجمركي.</li>
+    <li>في حالة النقل المتعدد الوسائط: ينتقل الخطر عند التسليم للناقل الأول وليس عند تغيير وسيلة النقل.</li>
+  </ul>
+</div>
 
-    <p class="muted">
-      بموجب CPT: يلتزم البائع بالتعاقد على النقل ودفع أجور النقل إلى مكان الوصول المسمّى، بينما تنتقل المخاطر إلى المشتري
-      عند تسليم البضاعة إلى أول ناقل في مكان التسليم.
-    </p>
-  </div>
+<div class="box">
+  <h2>خامساً: انتقال المخاطر والتأمين</h2>
+  <ul>
+    <li>تنتقل مخاطر الهلاك أو التلف عند تسليم البضاعة للناقل في <b>{{placeOfHandover}}</b> — لا عند الوصول إلى <b>{{namedDestination}}</b>.</li>
+    <li>لا يلتزم البائع بالتأمين في CPT — المشتري مسؤول وحده عن تأمين البضاعة.</li>
+    <li>يُنصح المشتري بإبرام وثيقة تأمين تغطي الرحلة من مكان التسليم للناقل حتى الوجهة النهائية.</li>
+  </ul>
+</div>
 
-  <h2>4) المستندات والفحص</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">قائمة المستندات</td><td>{{documentsList}}</td></tr>
-      <tr><td class="k">الفحص/الاعتراض</td><td>{{inspection}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>سادساً: المستندات والفحص</h2>
+  <p>يلتزم البائع بتقديم: <b>{{documentsList}}</b>.</p>
+  <p>الفحص والاستلام: <b>{{inspection}}</b>.</p>
+  <p>التعبئة والتغليف: <b>{{packaging}}</b> — الوسم: <b>{{marking}}</b>.</p>
+</div>
 
-  <h2>5) القوة القاهرة</h2>
-  <div class="box">{{forceMajeure}}</div>
+<div class="box">
+  <h2>سابعاً: القوة القاهرة</h2>
+  <p>{{forceMajeure}}</p>
+</div>
 
-  <h2>6) القانون الواجب التطبيق وفض النزاعات</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">القانون الواجب التطبيق</td><td>{{governingLaw}}</td></tr>
-      <tr><td class="k">فض النزاعات</td><td>{{disputeResolution}}</td></tr>
-      <tr><td class="k">مقر التحكيم (إن وجد)</td><td>{{arbitrationSeat}}</td></tr>
-      <tr><td class="k">لغة العقد المعتمدة</td><td>{{languagePrevails}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>ثامناً: القانون الواجب التطبيق وتسوية النزاعات</h2>
+  <table>
+    <tr><th style="width:30%">القانون الواجب التطبيق</th><td>{{governingLaw}}</td></tr>
+    <tr><th>آلية فض النزاعات</th><td>{{disputeResolution}}</td></tr>
+    <tr><th>مقر التحكيم</th><td>{{arbitrationSeat}}</td></tr>
+    <tr><th>لغة العقد</th><td>{{languagePrevails}}</td></tr>
+  </table>
+</div>
 
-  <h2>7) التواقيع</h2>
-  <div class="box">
-    <table class="sig">
-      <tr>
-        <td style="width:50%">
-          <b>توقيع البائع</b><br/>
-          الاسم/الصفة: {{sellerSignName}}<br/>
-          التاريخ: {{sellerSignDate}}<br/><br/>
-          التوقيع: ____________________
-        </td>
-        <td style="width:50%">
-          <b>توقيع المشتري</b><br/>
-          الاسم/الصفة: {{buyerSignName}}<br/>
-          التاريخ: {{buyerSignDate}}<br/><br/>
-          التوقيع: ____________________
-        </td>
-      </tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>تاسعاً: أحكام عامة</h2>
+  <ul>
+    <li>يمثل هذا العقد كامل الاتفاق بين الطرفين.</li>
+    <li>لا يكون أي تعديل نافذاً إلا إذا كان مكتوباً وموقعاً من الطرفين.</li>
+    <li>في حال بطلان أي بند، يبقى باقي العقد صحيحاً ونافذاً.</li>
+  </ul>
+</div>
+
+<h2>التواقيع</h2>
+<table class="sign">
+  <tr><th style="width:50%">عن البائع</th><th style="width:50%">عن المشتري</th></tr>
+  <tr>
+    <td>الاسم/الصفة: {{sellerSignName}}<br/>التاريخ: {{sellerSignDate}}<br/>التوقيع والختم:</td>
+    <td>الاسم/الصفة: {{buyerSignName}}<br/>التاريخ: {{buyerSignDate}}<br/>التوقيع والختم:</td>
+  </tr>
+</table>
+<p class="small">تم تحرير هذا العقد من نسختين أصليتين.</p>
 
 </body>
 </html>`,
 };
-// CPT (EN) - Incoterms 2020
- // عدّل المسار حسب مشروعك
+
 
 export const CPT_EN: ContractTemplate = {
-  id: 2407,
-  slug: "incoterms-cpt-en",
-  title: "CPT (Incoterms 2020) – International Sale Contract (English)",
+  id: 2081,
+  slug: "incoterms-cpt-premium-en",
+  title: "International Sale Contract – CPT (Incoterms®)",
   lang: "en",
   group: "INCOTERMS",
+
+  fields: [
+    { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
+    { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
+    { key: "incotermsEdition", label: "Incoterms Edition", required: true, type: "select", group: "Contract Info",
+      options: ["2020", "2010"] },
+    { key: "sellerName", label: "Seller Name", required: true, type: "text", group: "Seller" },
+    { key: "sellerAddress", label: "Seller Address", required: true, type: "text", group: "Seller" },
+    { key: "sellerReg", label: "Registration/ID", required: false, type: "text", group: "Seller" },
+    { key: "buyerName", label: "Buyer Name", required: true, type: "text", group: "Buyer" },
+    { key: "buyerAddress", label: "Buyer Address", required: true, type: "text", group: "Buyer" },
+    { key: "buyerReg", label: "Registration/ID", required: false, type: "text", group: "Buyer" },
+    { key: "goodsDescription", label: "Goods Description", required: true, type: "textarea", group: "Goods" },
+    { key: "hsCode", label: "HS Code (optional)", required: false, type: "text", group: "Goods" },
+    { key: "quantity", label: "Quantity", required: true, type: "text", group: "Goods" },
+    { key: "unit", label: "Unit", required: true, type: "text", group: "Goods", placeholder: "ton, piece, carton" },
+    { key: "tolerance", label: "Tolerance", required: false, type: "text", group: "Goods", placeholder: "±5%" },
+    { key: "unitPrice", label: "Unit Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "totalPrice", label: "Total Price", required: true, type: "number", group: "Price & Payment" },
+    { key: "currency", label: "Currency", required: true, type: "select", group: "Price & Payment",
+      options: ["USD", "EUR", "IQD"] },
+    { key: "paymentTerms", label: "Payment Terms", required: true, type: "textarea", group: "Price & Payment",
+      placeholder: "e.g. Letter of Credit (L/C)" },
+    { key: "placeOfHandover", label: "Place of Handover to Carrier", required: true, type: "text", group: "Delivery & Transport",
+      placeholder: "Seller's warehouse, freight terminal..." },
+    { key: "namedDestination", label: "Named Place of Destination", required: true, type: "text", group: "Delivery & Transport",
+      placeholder: "Final warehouse, dry port, airport..." },
+    { key: "deliverySchedule", label: "Delivery/Shipment Schedule", required: true, type: "text", group: "Delivery & Transport" },
+    { key: "modeOfTransport", label: "Mode of Transport", required: false, type: "select", group: "Delivery & Transport",
+      options: ["Road", "Sea", "Air", "Multimodal"] },
+    { key: "carrierDetails", label: "Carrier Details", required: false, type: "textarea", group: "Delivery & Transport",
+      placeholder: "Carrier name, contract reference" },
+    { key: "freightPaidTo", label: "Freight Paid To", required: true, type: "text", group: "Delivery & Transport",
+      placeholder: "Must match the named place of destination" },
+    { key: "documentsList", label: "Required Documents", required: true, type: "textarea", group: "Documents & Inspection",
+      placeholder: "Commercial invoice, transport document, certificate of origin" },
+    { key: "inspection", label: "Inspection & Claims", required: false, type: "textarea", group: "Documents & Inspection" },
+    { key: "packaging", label: "Packaging", required: false, type: "textarea", group: "Documents & Inspection" },
+    { key: "marking", label: "Marking", required: false, type: "text", group: "Documents & Inspection" },
+    { key: "forceMajeure", label: "Force Majeure", required: false, type: "textarea", group: "Legal Provisions" },
+    { key: "governingLaw", label: "Governing Law", required: true, type: "text", group: "Legal Provisions" },
+    { key: "disputeResolution", label: "Dispute Resolution", required: true, type: "textarea", group: "Legal Provisions",
+      placeholder: "Arbitration under ICC Rules" },
+    { key: "arbitrationSeat", label: "Arbitration Seat (if any)", required: false, type: "text", group: "Legal Provisions" },
+    { key: "languagePrevails", label: "Contract Language", required: false, type: "select", group: "Legal Provisions",
+      options: ["English", "Arabic"] },
+    { key: "sellerSignName", label: "Seller Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "sellerSignDate", label: "Seller Signature Date", required: false, type: "date", group: "Signatures" },
+    { key: "buyerSignName", label: "Buyer Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "buyerSignDate", label: "Buyer Signature Date", required: false, type: "date", group: "Signatures" },
+  ],
+
   html: `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CPT Contract</title>
   <style>
-    body{font-family: Arial, sans-serif; padding:28px; line-height:1.65; color:#111}
-    h1{font-size:20px; margin:0 0 10px}
-    h2{font-size:14px; margin:18px 0 8px}
-    .muted{color:#555; font-size:12px}
-    .box{border:1px solid #ddd; border-radius:12px; padding:12px 14px; margin:10px 0}
-    table{width:100%; border-collapse:collapse}
-    td{vertical-align:top; padding:6px 8px; border-bottom:1px solid #eee}
-    .sig td{border-bottom:none}
-    .k{width:26%; color:#333}
+    body{font-family:"Times New Roman",Arial,serif;padding:28px;line-height:1.7;color:#111;font-size:13.5px;}
+    h1{font-size:20px;margin:0 0 10px;text-align:center;}
+    h2{font-size:15px;margin:18px 0 8px;}
+    .meta{font-size:12px;color:#444;margin:6px 0 14px;}
+    .box{border:1px solid #ddd;border-radius:10px;padding:12px 14px;margin:10px 0;}
+    table{width:100%;border-collapse:collapse;margin-top:6px;}
+    td,th{border:1px solid #e2e2e2;padding:8px;font-size:12.5px;vertical-align:top;}
+    th{background:#f6f6f6;text-align:left;}
+    .muted{color:#666;font-size:12px;}
+    .small{font-size:11.5px;color:#555;}
+    .sign td{height:90px;}
+    ul{margin:6px 18px;}li{margin:4px 0;}
   </style>
 </head>
 <body>
 
-  <h1>International Sale Contract – CPT (Incoterms® {{incotermsEdition}})</h1>
-  <div class="muted">
-    Contract Ref: <b>{{contractRef}}</b> • Date: <b>{{contractDate}}</b> • City: <b>{{contractCity}}</b>
-  </div>
+<h1>International Sale Contract (CPT – Incoterms® {{incotermsEdition}})</h1>
+<div class="meta">
+  Contract Ref: <b>{{contractRef}}</b> &nbsp;|&nbsp;
+  Contract Date: <b>{{contractDate}}</b> &nbsp;|&nbsp;
+  Place of Execution: <b>{{contractCity}}</b>
+</div>
 
-  <div class="box">
-    <table>
-      <tr><td class="k"><b>Seller</b></td><td>
-        <b>{{sellerName}}</b><br/>{{sellerAddress}}<br/><span class="muted">Registration/License:</span> {{sellerReg}}
-      </td></tr>
-      <tr><td class="k"><b>Buyer</b></td><td>
-        <b>{{buyerName}}</b><br/>{{buyerAddress}}<br/><span class="muted">Registration/License:</span> {{buyerReg}}
-      </td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>1. Parties</h2>
+  <table>
+    <tr>
+      <th style="width:20%">Seller</th>
+      <td>{{sellerName}}<br/><span class="muted">Address:</span> {{sellerAddress}}<br/><span class="muted">Reg/ID:</span> {{sellerReg}}</td>
+    </tr>
+    <tr>
+      <th>Buyer</th>
+      <td>{{buyerName}}<br/><span class="muted">Address:</span> {{buyerAddress}}<br/><span class="muted">Reg/ID:</span> {{buyerReg}}</td>
+    </tr>
+  </table>
+</div>
 
-  <h2>1) Goods</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">Description</td><td>{{goodsDescription}}</td></tr>
-      <tr><td class="k">HS Code (optional)</td><td>{{hsCode}}</td></tr>
-      <tr><td class="k">Quantity</td><td>{{quantity}} {{unit}} (Tolerance: {{tolerance}})</td></tr>
-      <tr><td class="k">Packaging / Marking</td><td>{{packaging}}<br/>{{marking}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>2. Definitions and Reference</h2>
+  <p>The term <b>CPT (Carriage Paid To)</b> shall be interpreted in accordance with <b>Incoterms® {{incotermsEdition}}</b> issued by the ICC.</p>
+  <p class="small">
+    CPT = FCA + Seller pays freight to the named destination. Risk transfers to Buyer when Goods are
+    handed to the first carrier — NOT upon arrival. Insurance is Buyer's responsibility.
+    Suitable for all modes of transport including containerised shipments.
+  </p>
+</div>
 
-  <h2>2) Price & Payment</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">Unit Price</td><td>{{unitPrice}}</td></tr>
-      <tr><td class="k">Total Price</td><td><b>{{totalPrice}}</b> {{currency}}</td></tr>
-      <tr><td class="k">Payment Terms</td><td>{{paymentTerms}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>3. Goods, Quantity and Price</h2>
+  <table>
+    <tr><th>Goods Description</th><th>HS Code</th><th>Quantity</th><th>Unit</th><th>Tolerance</th></tr>
+    <tr><td>{{goodsDescription}}</td><td>{{hsCode}}</td><td>{{quantity}}</td><td>{{unit}}</td><td>{{tolerance}}</td></tr>
+  </table>
+  <table>
+    <tr><th>Unit Price</th><th>Total Price</th><th>Currency</th><th>Payment Terms</th></tr>
+    <tr><td>{{unitPrice}}</td><td>{{totalPrice}}</td><td>{{currency}}</td><td>{{paymentTerms}}</td></tr>
+  </table>
+</div>
 
-  <h2>3) Delivery Term (CPT)</h2>
-  <div class="box">
-    <p>
-      The Parties agree that delivery shall be made under <b>CPT – Carriage Paid To</b>, Incoterms® {{incotermsEdition}},
-      at the named place of destination: <b>{{placeOfDestination}}</b>.
-    </p>
-    <table>
-      <tr><td class="k">Named Place of Destination</td><td>{{placeOfDestination}}</td></tr>
-      <tr><td class="k">Place of Delivery (handover to carrier)</td><td>{{placeOfDelivery}}</td></tr>
-      <tr><td class="k">Delivery / Dispatch Schedule</td><td>{{deliverySchedule}}</td></tr>
-      <tr><td class="k">Carrier / Transport Mode</td><td>{{carrierDetails}}</td></tr>
-    </table>
+<div class="box">
+  <h2>4. Delivery and Transport – CPT</h2>
+  <table>
+    <tr><th style="width:35%">Place of Handover to Carrier</th><td><b>{{placeOfHandover}}</b></td></tr>
+    <tr><th>Named Place of Destination</th><td><b>{{namedDestination}}</b></td></tr>
+    <tr><th>Delivery/Shipment Schedule</th><td>{{deliverySchedule}}</td></tr>
+    <tr><th>Mode of Transport</th><td>{{modeOfTransport}}</td></tr>
+    <tr><th>Carrier Details</th><td>{{carrierDetails}}</td></tr>
+    <tr><th>Freight Paid To</th><td>{{freightPaidTo}}</td></tr>
+  </table>
+  <ul>
+    <li>Seller shall contract for carriage to the named place of destination and pay freight.</li>
+    <li>Risk transfers to Buyer when Goods are handed to the first carrier at <b>{{placeOfHandover}}</b>.</li>
+    <li>Seller shall complete all export customs formalities.</li>
+    <li>For multimodal transport: risk transfers at handover to the first carrier, not at each transshipment point.</li>
+  </ul>
+</div>
 
-    <p class="muted">
-      Note: Under CPT, the Seller contracts and pays for carriage to the named destination, while risk transfers to the Buyer
-      when the goods are handed over to the first carrier at the place of delivery.
-    </p>
-  </div>
+<div class="box">
+  <h2>5. Risk Transfer and Insurance</h2>
+  <ul>
+    <li>Risk passes at <b>{{placeOfHandover}}</b> upon handover to the first carrier — NOT upon arrival at <b>{{namedDestination}}</b>.</li>
+    <li>Seller has no obligation to procure insurance under CPT. Buyer is solely responsible.</li>
+    <li>Buyer is strongly advised to obtain cargo insurance covering the entire transit.</li>
+  </ul>
+</div>
 
-  <h2>4) Documents</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">Documents List</td><td>{{documentsList}}</td></tr>
-      <tr><td class="k">Inspection / Claims</td><td>{{inspection}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>6. Documents and Inspection</h2>
+  <p>Seller shall provide: <b>{{documentsList}}</b>.</p>
+  <p>Inspection, acceptance and claims: <b>{{inspection}}</b>.</p>
+  <p>Packaging: <b>{{packaging}}</b> — Marking: <b>{{marking}}</b>.</p>
+</div>
 
-  <h2>5) Force Majeure</h2>
-  <div class="box">{{forceMajeure}}</div>
+<div class="box">
+  <h2>7. Force Majeure</h2>
+  <p>{{forceMajeure}}</p>
+</div>
 
-  <h2>6) Governing Law & Dispute Resolution</h2>
-  <div class="box">
-    <table>
-      <tr><td class="k">Governing Law</td><td>{{governingLaw}}</td></tr>
-      <tr><td class="k">Dispute Resolution</td><td>{{disputeResolution}}</td></tr>
-      <tr><td class="k">Arbitration Seat (if any)</td><td>{{arbitrationSeat}}</td></tr>
-      <tr><td class="k">Language Prevails</td><td>{{languagePrevails}}</td></tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>8. Governing Law and Dispute Resolution</h2>
+  <table>
+    <tr><th style="width:30%">Governing Law</th><td>{{governingLaw}}</td></tr>
+    <tr><th>Dispute Resolution</th><td>{{disputeResolution}}</td></tr>
+    <tr><th>Arbitration Seat (if any)</th><td>{{arbitrationSeat}}</td></tr>
+    <tr><th>Contract Language</th><td>{{languagePrevails}}</td></tr>
+  </table>
+</div>
 
-  <h2>7) Signatures</h2>
-  <div class="box">
-    <table class="sig">
-      <tr>
-        <td style="width:50%">
-          <b>Seller</b><br/>
-          Name/Title: {{sellerSignName}}<br/>
-          Date: {{sellerSignDate}}<br/><br/>
-          Signature: ____________________
-        </td>
-        <td style="width:50%">
-          <b>Buyer</b><br/>
-          Name/Title: {{buyerSignName}}<br/>
-          Date: {{buyerSignDate}}<br/><br/>
-          Signature: ____________________
-        </td>
-      </tr>
-    </table>
-  </div>
+<div class="box">
+  <h2>9. Final Provisions</h2>
+  <ul>
+    <li>This Contract constitutes the entire agreement between the Parties.</li>
+    <li>No amendment shall be valid unless made in writing and signed by both Parties.</li>
+    <li>If any provision is held invalid, the remainder shall remain in full force.</li>
+  </ul>
+</div>
+
+<h2>Signatures</h2>
+<table class="sign">
+  <tr><th style="width:50%">For the Seller</th><th style="width:50%">For the Buyer</th></tr>
+  <tr>
+    <td>Name/Title: {{sellerSignName}}<br/>Date: {{sellerSignDate}}<br/>Signature &amp; Seal:</td>
+    <td>Name/Title: {{buyerSignName}}<br/>Date: {{buyerSignDate}}<br/>Signature &amp; Seal:</td>
+  </tr>
+</table>
+<p class="small">This Contract is executed in two originals, each Party receiving one copy.</p>
 
 </body>
 </html>`,

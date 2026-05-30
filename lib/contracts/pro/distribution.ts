@@ -1,4 +1,4 @@
-// lib/contracts/pro/distribution.ts
+ // lib/contracts/pro/distribution.ts
 import { ContractTemplate } from "../engine/types";
 
 /**
@@ -12,6 +12,40 @@ export const DISTRIBUTION_AR: ContractTemplate = {
   title: "عقد توزيع / وكالة تجارية",
   lang: "ar",
   group: "PRO",
+  fields: [
+    // ── معلومات العقد ──
+    { key: "contractNo", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
+    { key: "date", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
+    { key: "place", label: "مكان الإبرام", required: true, type: "text", group: "معلومات العقد" },
+
+    // ── الطرف الأول (المورد) ──
+    { key: "partyAName", label: "اسم المنتج/المورد", required: true, type: "text", group: "الطرف الأول (المورد)" },
+    { key: "partyAAddress", label: "عنوان المنتج/المورد", required: true, type: "text", group: "الطرف الأول (المورد)" },
+
+    // ── الطرف الثاني (الموزع) ──
+    { key: "partyBName", label: "اسم الموزع/الوكيل", required: true, type: "text", group: "الطرف الثاني (الموزع)" },
+    { key: "partyBAddress", label: "عنوان الموزع/الوكيل", required: true, type: "text", group: "الطرف الثاني (الموزع)" },
+
+    // ── نطاق التوزيع ──
+    { key: "products", label: "المنتجات", required: true, type: "textarea", group: "نطاق التوزيع" },
+    { key: "territory", label: "النطاق الجغرافي", required: true, type: "text", group: "نطاق التوزيع",
+      placeholder: "مثال: محافظة بغداد" },
+    { key: "commissionRate", label: "العمولة/الخصم", required: true, type: "text", group: "نطاق التوزيع",
+      placeholder: "مثال: 10%" },
+    { key: "exclusivityClause", label: "بند الحصرية (إن وجد)", required: false, type: "textarea", group: "نطاق التوزيع" },
+
+    // ── المدة ──
+    { key: "startDate", label: "تاريخ البدء", required: true, type: "date", group: "المدة" },
+    { key: "endDate", label: "تاريخ الانتهاء", required: true, type: "date", group: "المدة" },
+
+    // ── السرية ──
+    { key: "confidentialityPeriod", label: "مدة السرية بعد الانتهاء", required: false, type: "text", group: "السرية",
+      placeholder: "مثال: سنتان" },
+
+    // ── التواقيع ──
+    { key: "partyASign", label: "اسم موقع الطرف الأول", required: true, type: "text", group: "التواقيع" },
+    { key: "partyBSign", label: "اسم موقع الطرف الثاني", required: true, type: "text", group: "التواقيع" },
+  ],
   html: `
 <h1>عقد توزيع / وكالة تجارية</h1>
 <p class="muted">رقم العقد {{contractNo}} — التاريخ {{date}} — المكان {{place}}</p>
@@ -103,6 +137,40 @@ export const DISTRIBUTION_EN: ContractTemplate = {
   title: "Distribution / Commercial Agency Agreement",
   lang: "en",
   group: "PRO",
+  fields: [
+    // ── Contract Info ──
+    { key: "contractNo", label: "Contract No.", required: true, type: "text", group: "Contract Info" },
+    { key: "date", label: "Date", required: true, type: "date", group: "Contract Info" },
+    { key: "place", label: "Place of Execution", required: true, type: "text", group: "Contract Info" },
+
+    // ── Party A (Principal) ──
+    { key: "partyAName", label: "Principal/Supplier Name", required: true, type: "text", group: "Party A (Principal)" },
+    { key: "partyAAddress", label: "Principal/Supplier Address", required: true, type: "text", group: "Party A (Principal)" },
+
+    // ── Party B (Distributor) ──
+    { key: "partyBName", label: "Distributor/Agent Name", required: true, type: "text", group: "Party B (Distributor)" },
+    { key: "partyBAddress", label: "Distributor/Agent Address", required: true, type: "text", group: "Party B (Distributor)" },
+
+    // ── Distribution Scope ──
+    { key: "products", label: "Products", required: true, type: "textarea", group: "Distribution Scope" },
+    { key: "territory", label: "Territory", required: true, type: "text", group: "Distribution Scope",
+      placeholder: "e.g. Baghdad Governorate" },
+    { key: "commissionRate", label: "Commission/Discount", required: true, type: "text", group: "Distribution Scope",
+      placeholder: "e.g. 10%" },
+    { key: "exclusivityClause", label: "Exclusivity Clause (if any)", required: false, type: "textarea", group: "Distribution Scope" },
+
+    // ── Term ──
+    { key: "startDate", label: "Start Date", required: true, type: "date", group: "Term" },
+    { key: "endDate", label: "End Date", required: true, type: "date", group: "Term" },
+
+    // ── Confidentiality ──
+    { key: "confidentialityPeriod", label: "Confidentiality Period After Termination", required: false, type: "text", group: "Confidentiality",
+      placeholder: "e.g. 2 years" },
+
+    // ── Signatures ──
+    { key: "partyASign", label: "Party A Signatory Name", required: true, type: "text", group: "Signatures" },
+    { key: "partyBSign", label: "Party B Signatory Name", required: true, type: "text", group: "Signatures" },
+  ],
   html: `
 <h1>Distribution / Commercial Agency Agreement</h1>
 <p class="muted">Contract No. {{contractNo}} — Date {{date}} — Place {{place}}</p>
@@ -182,4 +250,3 @@ This Agreement is executed in two originals, one for each Party.
 </table>
 `.trim(),
 };
-
