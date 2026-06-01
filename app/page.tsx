@@ -327,10 +327,10 @@ export default function HomeGovPortal() {
             >
               {t.heroTertiary}
             </Link>
-            <Link
-              href="/register-smart"
-              className="inline-flex rounded-xl bg-amber-400 text-zinc-900 px-4 py-2 text-sm font-bold hover:bg-amber-300 transition"
-            >
+             <Link
+  href="/register"     // ← صحيح
+  className="inline-flex rounded-xl bg-amber-400 ..."
+>
               {t.heroSecondary}
             </Link>
           </div>
@@ -370,9 +370,9 @@ export default function HomeGovPortal() {
                 </Link>
 
                 <Link
-                  href="/register-smart"
-                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/40 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
-                >
+  href="/register"     // ← صحيح
+  className="inline-flex items-center ..."
+>
                   {t.heroSecondary}
                   <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
