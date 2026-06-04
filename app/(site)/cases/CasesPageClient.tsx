@@ -1,6 +1,5 @@
-
  "use client";
-
+// app/(site)/cases/CasesPageClient.tsx
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -10,8 +9,9 @@ type CaseItem = {
   type: string;
   court: string;
   status: string;
-  filingDate: string; // ISO string from API
+  filingDate: string;
   closingDate?: string | null;
+  assigned?: { id: number; name: string | null } | null;
 };
 
 type CasesResponse = {
@@ -21,21 +21,8 @@ type CasesResponse = {
   pageSize: number;
 };
 
-// يمكنك تعديل هذه القيم كما يناسبك
-const STATUS_OPTIONS = [
-  "مفتوحة",
-  "قيد المتابعة",
-  "محجوزة للحكم",
-  "مغلقة",
-];
-
-const TYPE_OPTIONS = [
-  "مدنية",
-  "جزائية",
-  "تجارية",
-  "إدارية",
-  "أحوال شخصية",
-];
+const STATUS_OPTIONS = ["مفتوحة", "قيد المتابعة", "محجوزة للحكم", "مغلقة"];
+const TYPE_OPTIONS = ["مدنية", "جزائية", "تجارية", "إدارية", "أحوال شخصية"];
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -48,7 +35,7 @@ function formatDate(value?: string | null) {
   });
 }
 
-export default function CasesPage() {
+export default function CasesPageClient() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
@@ -64,18 +51,6 @@ export default function CasesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // حقول إنشاء قضية جديدة
-  const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newType, setNewType] = useState("");
-  const [newCourt, setNewCourt] = useState("");
-  const [newStatus, setNewStatus] = useState("مفتوحة");
-  const [newFilingDate, setNewFilingDate] = useState(
-    new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  );
-  const [newNotes, setNewNotes] = useState("");
-
   async function fetchCases(pageArg = 1) {
     try {
       setLoading(true);
@@ -84,15 +59,14 @@ export default function CasesPage() {
       const params = new URLSearchParams();
       params.set("page", String(pageArg));
       params.set("pageSize", String(data.pageSize || 10));
-
       if (q.trim()) params.set("q", q.trim());
       if (status) params.set("status", status);
       if (type) params.set("type", type);
 
       const res = await fetch(`/api/cases?${params.toString()}`);
       if (!res.ok) {
-        console.error("failed to fetch cases");
-        setError("فشل في جلب القضايا من الخادم.");
+        const errJson = await res.json().catch(() => null);
+        setError(errJson?.error || "فشل في جلب القضايا من الخادم.");
         setLoading(false);
         return;
       }
@@ -108,74 +82,17 @@ export default function CasesPage() {
     }
   }
 
-  // جلب القضايا عند تغيير الفلاتر أو الصفحة
   useEffect(() => {
-    fetchCases(page);
+    setPage(1);
+    fetchCases(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, status, type]);
 
-  // لتغيير الصفحة من أزرار السابق/التالي
   async function handlePageChange(nextPage: number) {
     if (nextPage < 1) return;
     const maxPage = Math.max(1, Math.ceil(data.total / data.pageSize));
     if (nextPage > maxPage) return;
     await fetchCases(nextPage);
-  }
-
-  async function handleCreateCase(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!newTitle.trim() || !newDescription.trim() || !newType || !newCourt) {
-      alert("يرجى تعبئة عنوان القضية، نوعها، المحكمة، ووصف مختصر.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const body = {
-        title: newTitle.trim(),
-        description: newDescription.trim(),
-        type: newType,
-        court: newCourt.trim(),
-        status: newStatus,
-        filingDate: new Date(newFilingDate),
-        closingDate: null,
-        parties: [], // يمكنك لاحقًا جعلها قائمة بأطراف القضية الحقيقية
-        notes: newNotes.trim() || null,
-      };
-
-      const res = await fetch("/api/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => null);
-        console.error("failed to create case", errJson);
-        setError("فشل في إنشاء القضية الجديدة.");
-        return;
-      }
-
-      // إعادة تحميل الصفحة الأولى بعد الإضافة
-      setCreating(false);
-      setNewTitle("");
-      setNewDescription("");
-      setNewType("");
-      setNewCourt("");
-      setNewStatus("مفتوحة");
-      setNewFilingDate(new Date().toISOString().slice(0, 10));
-      setNewNotes("");
-
-      await fetchCases(1);
-    } catch (e) {
-      console.error(e);
-      setError("حدث خطأ غير متوقع أثناء إنشاء القضية.");
-    } finally {
-      setLoading(false);
-    }
   }
 
   const maxPage = Math.max(1, Math.ceil(data.total / data.pageSize));
@@ -186,123 +103,16 @@ export default function CasesPage() {
         <div>
           <h1 className="text-2xl font-bold mb-1">إدارة القضايا</h1>
           <p className="text-sm text-zinc-400">
-            هذه الصفحة مخصصة لمكاتب المحاماة والشركات لإدارة القضايا ومتابعة سيرها.
+            متابعة القضايا التي تعمل عليها أو المكلّف بها.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreating((v) => !v)}
+        <Link
+          href="/cases/new"
           className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500 transition"
         >
-          {creating ? "إلغاء" : "إضافة قضية جديدة"}
-        </button>
+          إضافة قضية جديدة
+        </Link>
       </header>
-
-      {/* فورم إنشاء قضية جديدة */}
-      {creating && (
-        <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 md:p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2">قضية جديدة</h2>
-          <form onSubmit={handleCreateCase} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">عنوان القضية</label>
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                  placeholder="مثال: دعوى تعويض عن أضرار عقدية"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">المحكمة</label>
-                <input
-                  type="text"
-                  value={newCourt}
-                  onChange={(e) => setNewCourt(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                  placeholder="مثال: محكمة بداءة الكرخ"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">نوع القضية</label>
-                <select
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                >
-                  <option value="">— اختر نوع القضية —</option>
-                  {TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">حالة القضية</label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">تاريخ تسجيل القضية</label>
-                <input
-                  type="date"
-                  value={newFilingDate}
-                  onChange={(e) => setNewFilingDate(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">ملاحظات داخلية (اختياري)</label>
-                <input
-                  type="text"
-                  value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                  placeholder="ملاحظات لا تظهر للمستفيدين"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">وصف مختصر للقضية</label>
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                className="w-full min-h-[90px] rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
-                placeholder="وصف موجز لوقائع القضية والطلبات الأساسية..."
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setCreating(false)}
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-zinc-800/70 transition"
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500 disabled:opacity-60 transition"
-              >
-                حفظ القضية
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
 
       {/* فلاتر البحث */}
       <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4 md:p-5 space-y-3">
@@ -313,10 +123,7 @@ export default function CasesPage() {
             <input
               type="text"
               value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setQ(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
               placeholder="اكتب كلمة مفتاحية..."
             />
@@ -325,17 +132,12 @@ export default function CasesPage() {
             <label className="text-xs text-zinc-400">حالة القضية</label>
             <select
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setStatus(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
             >
               <option value="">الكل</option>
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
@@ -343,17 +145,12 @@ export default function CasesPage() {
             <label className="text-xs text-zinc-400">نوع القضية</label>
             <select
               value={type}
-              onChange={(e) => {
-                setType(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setType(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-emerald-500/60"
             >
               <option value="">الكل</option>
               {TYPE_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
@@ -374,9 +171,7 @@ export default function CasesPage() {
             عدد القضايا:{" "}
             <span className="font-semibold text-zinc-100">{data.total}</span>
           </span>
-          <span>
-            صفحة {page} من {maxPage}
-          </span>
+          <span>صفحة {page} من {maxPage}</span>
         </div>
 
         {loading && data.items.length === 0 ? (
@@ -385,7 +180,7 @@ export default function CasesPage() {
           </div>
         ) : data.items.length === 0 ? (
           <div className="py-10 text-center text-sm text-zinc-400">
-            لا توجد قضايا مطابقة لمعايير البحث الحالية.
+            لا توجد قضايا مطابقة لمعايير البحث.
           </div>
         ) : (
           <div className="grid gap-3">
@@ -407,9 +202,7 @@ export default function CasesPage() {
                   <span>المحكمة: {c.court || "-"}</span>
                   <span>الحالة: {c.status}</span>
                   <span>تاريخ التسجيل: {formatDate(c.filingDate)}</span>
-                  {c.closingDate && (
-                    <span>تاريخ الإغلاق: {formatDate(c.closingDate)}</span>
-                  )}
+                  {c.assigned && <span>المحامي الرئيسي: {c.assigned.name}</span>}
                 </div>
               </Link>
             ))}
@@ -427,9 +220,7 @@ export default function CasesPage() {
             >
               السابق
             </button>
-            <span className="text-xs text-zinc-400">
-              صفحة {page} من {maxPage}
-            </span>
+            <span className="text-xs text-zinc-400">صفحة {page} من {maxPage}</span>
             <button
               type="button"
               onClick={() => handlePageChange(page + 1)}

@@ -128,7 +128,7 @@ export async function POST(req: Request) {
         : role === "TRANSLATION_OFFICE" ? "مكتب ترجمة"
         : "شركة";
 
-      await prisma.$transaction(async (tx) => {
+             await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
             name: fullName || orgName,
@@ -138,6 +138,7 @@ export async function POST(req: Request) {
             role: orgType,
             status: "PENDING",
             isApproved: false,
+            isManager: true,   // ← المدير العام للمؤسسة
           },
         });
 

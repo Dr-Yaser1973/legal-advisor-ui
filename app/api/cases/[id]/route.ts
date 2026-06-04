@@ -1,11 +1,12 @@
- import { NextResponse } from "next/server";
+ // app/api/cases/[id]/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+ import { getCaseAccess, canDeleteCase } from "@/lib/caseAccess";
 
 export const runtime = "nodejs";
 
-// دالة مساعدة بسيطة لجلب المستخدم من الجلسة مع فحص الدور
 async function getAuthorizedUser() {
   const session: any = await getServerSession(authOptions as any);
   const user = session?.user as any;
@@ -14,40 +15,30 @@ async function getAuthorizedUser() {
     return { error: NextResponse.json({ error: "غير مصرح. يرجى تسجيل الدخول." }, { status: 401 }) };
   }
 
-  // نسمح فقط للشركة + المحامي + الأدمن
-  if (
-    user.role !== "COMPANY" &&
-    user.role !== "LAWYER" &&
-    user.role !== "ADMIN"
-  ) {
+  // نسمح للشركة + المحامي + الأدمن (كما هو)
+  if (user.role !== "COMPANY" && user.role !== "LAWYER" && user.role !== "ADMIN") {
     return { error: NextResponse.json({ error: "ليست لديك صلاحية الوصول إلى القضايا." }, { status: 403 }) };
   }
 
   return { user };
 }
 
-// GET /api/cases/[id] → عرض تفاصيل قضية واحدة
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+// GET /api/cases/[id]
+ // GET
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAuthorizedUser();
   if ("error" in auth) return auth.error;
   const user = auth.user;
 
-  const id = Number(params.id);
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  // ... الباقي كما هو
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
   }
 
-  // حماية على مستوى السجل
-  const where: any = { id };
-
-  // الشركة أو المحامي لا يرون إلا قضاياهم
-  if (user.role === "COMPANY" || user.role === "LAWYER") {
-    where.userId = Number(user.id);
-  }
-  // الأدمن لا نضيف له userId → يرى أي قضية
-
-  const item = await prisma.case.findFirst({
-    where,
+  const item = await prisma.case.findUnique({
+    where: { id },
     include: {
       events: { orderBy: { date: "desc" } },
       documents: { include: { document: true } },
@@ -58,10 +49,21 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "غير موجود." }, { status: 404 });
   }
 
-  return NextResponse.json({ item });
+  // التحقق المركزي من الصلاحية
+  const access = await getCaseAccess(
+    Number(user.id),
+    user.role === "ADMIN",
+    item
+  );
+  if (access === "NONE") {
+    return NextResponse.json({ error: "لا تملك صلاحية الوصول لهذه القضية." }, { status: 403 });
+  }
+
+  // نمرّر access للواجهة لإخفاء أزرار التعديل عن READ
+  return NextResponse.json({ item, access });
 }
 
-// PATCH /api/cases/[id] → تعديل بيانات القضية
+// PATCH /api/cases/[id]
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const auth = await getAuthorizedUser();
@@ -73,22 +75,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
     }
 
-    const data = await req.json();
+    // نجلب القضية أولاً للتحقق من الصلاحية
+    const existing = await prisma.case.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "غير موجود." }, { status: 404 });
+    }
 
+    const access = await getCaseAccess(Number(user.id), user.role === "ADMIN", existing);
+    if (access !== "WRITE") {
+      return NextResponse.json({ error: "لا تملك صلاحية تعديل هذه القضية." }, { status: 403 });
+    }
+
+    const data = await req.json();
     if (data.filingDate) data.filingDate = new Date(data.filingDate);
     if (data.closingDate) data.closingDate = new Date(data.closingDate);
 
-    // نبني شرط where حسب الدور
-    const where: any = { id };
-
-    // الشركة أو المحامي لا يستطيعان تعديل إلا قضاياهما
-    if (user.role === "COMPANY" || user.role === "LAWYER") {
-      where.userId = Number(user.id);
-    }
-    // الأدمن يستطيع تعديل أي قضية
+    // حماية: نمنع تعديل حقول الملكية والربط عبر هذا المسار
+    delete data.userId;
+    delete data.orgId;
+    delete data.branchId;
 
     const updated = await prisma.case.update({
-      where,
+      where: { id },
       data,
     });
 
@@ -99,7 +107,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-// DELETE /api/cases/[id] → حذف قضية
+// DELETE /api/cases/[id]
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
     const auth = await getAuthorizedUser();
@@ -111,24 +119,21 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
     }
 
-    // نحاول الحذف مع احترام قيود الدور
-    const where: any = { id };
-
-    if (user.role === "COMPANY" || user.role === "LAWYER") {
-      where.userId = Number(user.id);
+    const existing = await prisma.case.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "غير موجود." }, { status: 404 });
     }
-    // الأدمن يستطيع الحذف لأي قضية
 
-    await prisma.case.delete({ where });
+    // الحذف يتطلب WRITE — وغالباً نريد قصره على OWNER/ADMIN ومالك القضية
+      const allowed = await canDeleteCase(Number(user.id), user.role === "ADMIN", existing);
+    if (!allowed) {
+      return NextResponse.json({ error: "صلاحية الحذف مقصورة على مالك المنظمة أو الإدارة." }, { status: 403 });
+    }
 
+    await prisma.case.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error(e);
-
-    // إذا كانت المشكلة أن القضية غير موجودة أو لا تخص هذا المستخدم
-    return NextResponse.json(
-      { error: e.message || "تعذر حذف القضية." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: e.message || "تعذر حذف القضية." }, { status: 500 });
   }
 }

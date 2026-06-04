@@ -30,42 +30,71 @@ model User {
   authProvider               AuthProvider          @default(CREDENTIALS)
   providerId                 String?               @unique
   branchId                   Int?
+  isManager  Boolean  @default(false)
+  
+  // Auth
   accounts                   Account[]
-  AnalysisJob                AnalysisJob[]
-  auditLogs                  AuditLog[]
-  cases                      Case[]
+  sessions                   Session[]
+
+  // Core
+  cases                      Case[]                @relation("UserOwnedCases")
+  assignedCases              Case[]                @relation("AssignedCases")
+  caseNotes                  CaseNote[]
+  caseEventCreations         CaseEvent[]           @relation("CaseEventCreator")
+  caseAssignments CaseAssignment[] @relation("CaseAssignments")
+  orgMembers                 OrgMember[]
+
+  // Profiles
+  clientProfile              ClientProfile?
+  lawyerProfile              LawyerProfile?
+
+  // Chat
   ClientChatRooms            ChatRoom[]            @relation("ClientChatRooms")
   LawyerChatRooms            ChatRoom[]            @relation("LawyerChatRooms")
-  clientProfile              ClientProfile?
+  messages                   Message[]
+
+  // Consultations
   consultations              Consultation[]
   LawyerConsultationRequests ConsultationRequest[] @relation("LawyerConsultationRequests")
   ClientConsultationRequests ConsultationRequest[] @relation("ClientConsultationRequests")
-  ContractTemplate           ContractTemplate[]
-  GeneratedContract          GeneratedContract[]
   LawyerConsultOffers        HumanConsultOffer[]
   ClientHumanConsults        HumanConsultRequest[] @relation("ClientHumanConsults")
   LawyerHumanConsults        HumanConsultRequest[] @relation("LawyerHumanConsults")
-  LawDocs                    LawDoc[]
-  lawyerProfile              LawyerProfile?
+  ClientFirmConsults         FirmConsultRequest[]  @relation("ClientFirmConsults")
+
+  // Contracts & Docs
+  ContractTemplate           ContractTemplate[]
+  GeneratedContract          GeneratedContract[]
   LegalDocuments             LegalDocument[]
+  LawDocs                    LawDoc[]
   LegalQuestion              LegalQuestion[]       @relation("UserQuestions")
-  messages                   Message[]
-  notifications              Notification[]
-  sessions                   Session[]
+
+  // Translation
   TranslationOffers          TranslationOffer[]
   ClientTranslationRequests  TranslationRequest[]  @relation("ClientTranslationRequests")
   OfficeTranslationRequests  TranslationRequest[]  @relation("OfficeTranslationRequests")
+
+
+  // Library
   libraryItems               LibraryItem[]
   libraryRatings             LibraryRating[]
   libraryFavorites           LibraryFavorite[]
   libraryNotes               LibraryNote[]
+
+  // Blog
+  blogPosts                  BlogPost[]
+  blogComments               BlogComment[]
+
+  // System
+  AnalysisJob                AnalysisJob[]
+  auditLogs                  AuditLog[]
+  notifications              Notification[]
+  aiUsageLogs                AiUsageLog[]
   pointsTransactions         PointsTransaction[]
+
+  // Branch
   branch                     Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  ClientFirmConsults         FirmConsultRequest[]  @relation("ClientFirmConsults")
-  aiUsageLogs        AiUsageLog[] 
-   blogPosts    BlogPost[]    // ← أضف
-  blogComments BlogComment[] // ← أضف
-}
+} 
 
 model PointsTransaction {
   id        Int      @id @default(autoincrement())
@@ -323,47 +352,7 @@ model Consultation {
   legalRefs     LegalQuestion[]       @relation("ConsultationToLegalQuestion")
 }
 
-model Case {
-  id          Int            @id @default(autoincrement())
-  title       String
-  description String
-  type        String
-  court       String
-  status      String
-  filingDate  DateTime
-  closingDate DateTime?
-  parties     Json
-  notes       String?
-  aiAnalysis  Json?
-  userId      Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents   CaseDocument[]
-  events      CaseEvent[]
-
-  @@index([status])
-  @@index([type])
-  @@index([filingDate])
-}
-
-model CaseEvent {
-  id     Int      @id @default(autoincrement())
-  caseId Int
-  title  String
-  date   DateTime
-  note   String?
-  case   Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-}
-
-model CaseDocument {
-  caseId     Int
-  documentId Int
-  case       Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  document   LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@id([caseId, documentId])
-}
+ 
 
 model ContractTemplate {
   id          Int                 @id @default(autoincrement())
@@ -737,26 +726,49 @@ model ExternalSourceItem {
 
 // ─── نماذج المؤسسات (مكاتب المحاماة والشركات) ───────────────────────────────
 
+ // ─── نماذج المؤسسات ──────────────────────────────────────────
+
 model Organization {
-  id          Int                  @id @default(autoincrement())
-  name        String
-  type        OrgType              @default(LAW_FIRM)
-  logo        String?
-  website     String?
-  description String?
-  email       String?              @unique
-  phone       String?
-  isApproved  Boolean              @default(false)
-  isActive    Boolean              @default(true)
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  type               OrgType              @default(LAW_FIRM)
+  logo               String?
+  website            String?
+  description        String?
+  email              String?              @unique
+  phone              String?
+  isApproved         Boolean              @default(false)
+  isActive           Boolean              @default(true)
+  maxUsers           Int                  @default(5)
   subscriptionEndsAt DateTime?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  branches    Branch[]
-  requests    FirmConsultRequest[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  branches           Branch[]
+  members            OrgMember[]
+  cases              Case[]
+  requests           FirmConsultRequest[]
 
   @@index([type])
   @@index([isApproved])
-  maxUsers    Int     @default(5)   // ← جديد
+}
+
+model OrgMember {
+  id       Int          @id @default(autoincrement())
+  orgId    Int
+  userId   Int
+  branchId Int?
+  role     OrgRole
+  isActive Boolean      @default(true)
+  joinedAt DateTime     @default(now())
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+  @@index([userId])
 }
 
 model Branch {
@@ -771,13 +783,120 @@ model Branch {
   isActive  Boolean              @default(true)
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
+
   org       Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
   users     User[]
+  members   OrgMember[]
+  cases     Case[]
   requests  FirmConsultRequest[]
 
   @@index([orgId])
   @@index([city])
 }
+
+// ─── نماذج القضايا ───────────────────────────────────────────
+
+model Case {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String
+  type        String
+  court       String
+  status      String
+  filingDate  DateTime
+  closingDate DateTime?
+  parties     Json
+  notes       String?
+  aiAnalysis  Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // مالك القضية — فردي أو مؤسسي
+  userId      Int
+  orgId       Int?
+  branchId    Int?
+  assignedTo  Int?
+  visibility  CaseVisibility @default(PRIVATE)
+
+   user     User          @relation("UserOwnedCases", fields: [userId], references: [id], onDelete: Cascade)
+  org         Organization?  @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  branch      Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assigned    User?          @relation("AssignedCases", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  documents   CaseDocument[]
+  events      CaseEvent[]
+  caseNotes   CaseNote[]
+  assignments CaseAssignment[]
+
+  @@index([userId])
+  @@index([orgId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([type])
+  @@index([filingDate])
+}
+
+model CaseEvent {
+  id        Int           @id @default(autoincrement())
+  caseId    Int
+  title     String
+  date      DateTime
+  note      String?
+  type      CaseEventType @default(OTHER)
+  location  String?
+  createdBy Int?
+  notifyAt  DateTime?
+  notified  Boolean       @default(false)
+
+  case      Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  creator   User?         @relation("CaseEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([date])
+  @@index([notifyAt, notified])
+}
+
+model CaseNote {
+  id        Int      @id @default(autoincrement())
+  caseId    Int
+  userId    Int
+  content   String   @db.Text
+  isPrivate Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([userId])
+}
+
+model CaseDocument {
+  caseId     Int
+  documentId Int
+  case       Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  document   LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, documentId])
+}
+
+model CaseAssignment {
+  id         Int            @id @default(autoincrement())
+  caseId     Int
+  userId     Int                              // المحامي/المتابع المكلّف (موظف في الشركة)
+  role       CaseAssignRole @default(ASSISTANT)
+  assignedBy Int?                             // المالك الذي كلّفه
+  createdAt  DateTime       @default(now())
+
+  case       Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user       User  @relation("CaseAssignments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId])
+  @@index([caseId])
+  @@index([userId])
+}
+
+
 
 model FirmConsultRequest {
   id          Int                   @id @default(autoincrement())
@@ -1119,4 +1238,34 @@ enum CommentStatus {
   PENDING   // بانتظار المراجعة
   APPROVED  // معتمد
   REJECTED  // مرفوض
+}
+
+enum CaseVisibility {
+  PRIVATE    // قضية فردية
+  ORG        // مرئية لكل المنظمة
+  BRANCH     // مرئية لفرع محدد
+}
+
+enum OrgRole {
+  OWNER         // صاحب المكتب / المدير العام
+  ADMIN         // مدير تقني
+  LAWYER        // محامٍ — يرى قضاياه فقط
+  SENIOR_LAWYER // محامٍ أول — يرى قضايا فريقه
+  LEGAL_COUNSEL // مستشار قانوني (للشركات)
+  VIEWER        // مطّلع فقط (للحكومة / الإدارة)
+}
+
+enum CaseEventType {
+  HEARING      // جلسة
+  DEADLINE     // موعد نهائي
+  MEETING      // اجتماع موكل
+  TASK         // مهمة داخلية
+  VERDICT      // حكم
+  APPEAL       // طعن
+  OTHER
+}
+
+enum CaseAssignRole {
+  LEAD
+  ASSISTANT
 }

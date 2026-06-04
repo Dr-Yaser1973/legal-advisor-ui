@@ -9,6 +9,8 @@ import { GenerateMemoButton } from "./GenerateMemoButton";
 import { GenerateMemoText } from "./GenerateMemoText";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getCaseAccess } from "@/lib/caseAccess";
+import CaseAssignments from "./CaseAssignments";
 
 export const dynamic = "force-dynamic";
 
@@ -73,17 +75,9 @@ export default async function CasePage({ params }: PageProps) {
   const id = Number(idStr);
   if (Number.isNaN(id)) notFound();
 
-  // 🔐 حماية على مستوى السجل (Record-Level)
-  // نفترض أن الـ Case فيه حقل userId يشير لصاحب القضية (شركة أو محامي)
-  const where: any = { id };
-
-  if (user.role === "COMPANY" || user.role === "LAWYER") {
-    where.userId = Number(user.id);
-  }
-  // أما الأدمن فيُترك where.id فقط → يرى أي قضية
-
-  const caseItem = await prisma.case.findFirst({
-    where,
+  // جلب القضية أولاً (بدون فلتر ملكية)
+  const caseItem = await prisma.case.findUnique({
+    where: { id },
     include: {
       user: {
         select: {
@@ -104,9 +98,37 @@ export default async function CasePage({ params }: PageProps) {
   });
 
   if (!caseItem) {
-    // إما القضية غير موجودة أو ليست من قضايا هذا المستخدم
     notFound();
   }
+
+  // 🔐 التحقق المركزي من الصلاحية حسب الدور والإسناد والفرع
+  const access = await getCaseAccess(
+    Number(user.id),
+    user.role === "ADMIN",
+    caseItem
+  );
+
+  if (access === "NONE") {
+    redirect("/unauthorized");
+  }
+
+  // canWrite يحدد إظهار أزرار التعديل والإجراءات
+  const canWrite = access === "WRITE";
+  // هل يستطيع إدارة التكليف؟ (منشئ القضية أو المدير العام أو الأدمن)
+  const meRecord = await prisma.user.findUnique({
+    where: { id: Number(user.id) },
+    select: { isManager: true, branch: { select: { orgId: true } } },
+  });
+  const ownerOrg = await prisma.user.findUnique({
+    where: { id: caseItem.userId },
+    select: { branch: { select: { orgId: true } } },
+  });
+  const canManageTeam =
+    user.role === "ADMIN" ||
+    caseItem.userId === Number(user.id) ||
+    (!!meRecord?.isManager &&
+      !!meRecord.branch?.orgId &&
+      meRecord.branch.orgId === ownerOrg?.branch?.orgId);
 
   let aiText: string | null = null;
   if (caseItem.aiAnalysis != null) {
@@ -154,6 +176,11 @@ export default async function CasePage({ params }: PageProps) {
               <span className="text-zinc-100">
                 {caseItem.user.name || caseItem.user.email}
               </span>
+            </span>
+          )}
+          {!canWrite && (
+            <span className="inline-flex items-center rounded-full border border-zinc-400/40 bg-zinc-500/10 px-3 py-1 text-[11px] text-zinc-300">
+              اطّلاع فقط
             </span>
           )}
         </div>
@@ -205,16 +232,29 @@ export default async function CasePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* إجراءات على القضية */}
-      <section className="space-y-4">
-        <h2 className="font-semibold text-sm">الإجراءات على القضية</h2>
-        <div className="grid gap-4 md:grid-cols-4">
-          <AddCaseEvent caseId={caseItem.id} />
-          <AttachDocument caseId={caseItem.id} />
-          <AnalyzeCase caseId={caseItem.id} />
-          <GenerateMemoText caseId={caseItem.id} />
-        </div>
-      </section>
+      {/* إجراءات على القضية — للمحررين فقط */}
+      {canWrite ? (
+        <section className="space-y-4">
+          <h2 className="font-semibold text-sm">الإجراءات على القضية</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            <AddCaseEvent caseId={caseItem.id} />
+            <AttachDocument caseId={caseItem.id} />
+            <AnalyzeCase caseId={caseItem.id} />
+            <GenerateMemoText caseId={caseItem.id} />
+          </div>
+          {/* فريق القضية */}
+      {canWrite && (
+        <CaseAssignments caseId={caseItem.id} canManage={canManageTeam} />
+      )}
+        </section>
+
+      ) : (
+        <section>
+          <p className="text-xs text-zinc-500 rounded-2xl border border-white/10 bg-zinc-900/40 p-3">
+            لديك صلاحية الاطّلاع فقط على هذه القضية — لا يمكنك إجراء تعديلات.
+          </p>
+        </section>
+      )}
 
       {/* التحليل بالذكاء الاصطناعي */}
       <section className="space-y-3">

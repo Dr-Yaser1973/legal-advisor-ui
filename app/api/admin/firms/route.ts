@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
           status: "ACTIVE",
           password: null,
           branchId: org.branches[0].id,
+           isManager: true, 
         },
       });
     });

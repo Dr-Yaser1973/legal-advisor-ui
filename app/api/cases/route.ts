@@ -3,180 +3,119 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { hasPermission, getUserPlanData } from "@/lib/plans";
+import { buildCaseListFilter } from "@/lib/caseAccess";
 
 export const runtime = "nodejs";
 
-// GET /api/cases
-export async function GET(req: Request) {
+async function getAuthorizedUser() {
   const session: any = await getServerSession(authOptions as any);
   const user = session?.user as any;
 
   if (!user) {
-    return NextResponse.json(
-      { error: "غير مصرح: يرجى تسجيل الدخول" },
-      { status: 401 }
-    );
+    return { error: NextResponse.json({ error: "غير مصرح. يرجى تسجيل الدخول." }, { status: 401 }) };
   }
-
-  // نسمح فقط للأدمن + المحامي + الشركة
-  if (!["ADMIN", "LAWYER", "COMPANY"].includes(user.role)) {
-    return NextResponse.json(
-      { error: "غير مصرح: لا يمكنك عرض القضايا" },
-      { status: 403 }
-    );
+  if (user.role !== "COMPANY" && user.role !== "LAWYER" && user.role !== "ADMIN") {
+    return { error: NextResponse.json({ error: "ليست لديك صلاحية الوصول إلى القضايا." }, { status: 403 }) };
   }
-
-  const url = new URL(req.url);
-  const searchParams = url.searchParams;
-
-  const page = Number(searchParams.get("page") || "1");
-  const pageSize = Number(searchParams.get("pageSize") || "10");
-  const q = searchParams.get("q")?.trim() || "";
-  const status = searchParams.get("status") || "";
-  const type = searchParams.get("type") || "";
-
-  const where: any = {};
-
-  if (user.role === "ADMIN") {
-    // الأدمن يرى الكل
-  } else {
-    where.userId = Number(user.id);
-  }
-
-  if (status) where.status = status;
-  if (type) where.type = type;
-
-  if (q) {
-    where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
-      { court: { contains: q, mode: "insensitive" } },
-      { type: { contains: q, mode: "insensitive" } },
-    ];
-  }
-
-  const [items, total] = await Promise.all([
-    prisma.case.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        court: true,
-        status: true,
-        filingDate: true,
-        closingDate: true,
-      },
-    }),
-    prisma.case.count({ where }),
-  ]);
-
-  const jsonItems = items.map((c) => ({
-    ...c,
-    filingDate: c.filingDate.toISOString(),
-    closingDate: c.closingDate ? c.closingDate.toISOString() : null,
-  }));
-
-  return NextResponse.json({ items: jsonItems, total, page, pageSize });
+  return { user };
 }
 
-// POST /api/cases
-export async function POST(req: Request) {
-  const session: any = await getServerSession(authOptions as any);
-  const user = session?.user as any;
+// GET /api/cases → قائمة القضايا (مالك + مكلّف)
+export async function GET(req: Request) {
+  try {
+    const auth = await getAuthorizedUser();
+    if ("error" in auth) return auth.error;
+    const user = auth.user;
 
-  if (!user) {
-    return NextResponse.json(
-      { error: "غير مصرح: يرجى تسجيل الدخول" },
-      { status: 401 }
-    );
-  }
+    const userId = Number(user.id);
+    const isPlatformAdmin = user.role === "ADMIN";
 
-  // التحقق من الدور
-  if (!["ADMIN", "LAWYER", "COMPANY"].includes(user.role)) {
-    return NextResponse.json(
-      { error: "غير مصرح: لا يمكنك إنشاء قضايا" },
-      { status: 403 }
-    );
-  }
+    const { searchParams } = new URL(req.url);
+    const q        = (searchParams.get("q") || "").trim();
+    const status   = (searchParams.get("status") || "").trim();
+    const type     = (searchParams.get("type") || "").trim();
+    const page     = Math.max(1, Number(searchParams.get("page") || "1"));
+    const pageSize = Math.min(50, Math.max(6, Number(searchParams.get("pageSize") || "12")));
 
-  // ===============================
-  // التحقق من الباقة
-  // ===============================
-  const userId = Number(user.id);
-  const planData = await getUserPlanData(userId);
+    // فلتر الصلاحيات — استدعاء واحد (قضاياه كمالك + المكلّف بها)
+    const accessFilter = await buildCaseListFilter(userId, isPlatformAdmin);
 
-  if (!planData) {
-    return NextResponse.json(
-      { error: "تعذر التحقق من بيانات الاشتراك." },
-      { status: 500 }
-    );
-  }
+    const where: any = { ...accessFilter };
+    if (status) where.status = status;
+    if (type)   where.type = type;
+    if (q) {
+      // ندمج البحث مع فلتر الصلاحيات عبر AND حتى لا يتجاوزه
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+            { court: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      ];
+    }
 
-  if (!hasPermission(planData.effectivePlan, "caseManagement")) {
-    return NextResponse.json(
-      {
-        error: "إدارة القضايا غير متاحة في باقتك الحالية. يرجى الترقية إلى باقة المحامين أو الشركات.",
-        upgradeRequired: true,
+    const total = await prisma.case.count({ where });
+
+    const items = await prisma.case.findMany({
+      where,
+      include: {
+        assigned: { select: { id: true, name: true, image: true } },
+        _count:   { select: { events: true, documents: true, assignments: true } },
       },
-      { status: 403 }
-    );
+      orderBy: { filingDate: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return NextResponse.json({ items, total, page, pageSize });
+  } catch (e: any) {
+    console.error("GET /api/cases error:", e);
+    return NextResponse.json({ error: "حدث خطأ أثناء جلب القضايا." }, { status: 500 });
   }
+}
 
-  // ===============================
-  // التحقق من البيانات
-  // ===============================
-  const body = await req.json();
+// POST /api/cases → إنشاء قضية
+export async function POST(req: Request) {
+  try {
+    const auth = await getAuthorizedUser();
+    if ("error" in auth) return auth.error;
+    const user = auth.user;
 
-  const title = String(body.title || "").trim();
-  const description = String(body.description || "").trim();
-  const type = String(body.type || "").trim();
-  const court = String(body.court || "").trim();
-  const status = String(body.status || "مفتوحة").trim();
+    const userId = Number(user.id);
 
-  if (!title || !description || !type || !court) {
-    return NextResponse.json(
-      { error: "عنوان القضية، نوعها، المحكمة والوصف حقول إلزامية." },
-      { status: 400 }
-    );
+    const body = await req.json();
+    const {
+      title, description, type, court, status,
+      filingDate, closingDate, parties, notes,
+    } = body || {};
+
+    if (!title || !type || !court || !status || !filingDate) {
+      return NextResponse.json(
+        { error: "العنوان والنوع والمحكمة والحالة وتاريخ القيد مطلوبة." },
+        { status: 400 }
+      );
+    }
+
+    const created = await prisma.case.create({
+      data: {
+        title,
+        description: description || "",
+        type,
+        court,
+        status,
+        filingDate: new Date(filingDate),
+        closingDate: closingDate ? new Date(closingDate) : null,
+        parties: parties ?? {},
+        notes: notes || null,
+        userId, // المنشئ = مالك القضية
+      },
+    });
+
+    return NextResponse.json({ ok: true, case: created });
+  } catch (e: any) {
+    console.error("POST /api/cases error:", e);
+    return NextResponse.json({ error: e.message || "حدث خطأ أثناء إنشاء القضية." }, { status: 500 });
   }
-
-  const filingDateRaw = body.filingDate ? new Date(body.filingDate) : new Date();
-
-  if (Number.isNaN(filingDateRaw.getTime())) {
-    return NextResponse.json(
-      { error: "تاريخ تسجيل القضية غير صالح." },
-      { status: 400 }
-    );
-  }
-
-  const notes =
-    body.notes && String(body.notes).trim().length > 0
-      ? String(body.notes).trim()
-      : null;
-
-  const parties = body.parties ?? [];
-
-  const created = await prisma.case.create({
-    data: {
-      title,
-      description,
-      type,
-      court,
-      status,
-      filingDate: filingDateRaw,
-      closingDate: null,
-      parties,
-      notes,
-      userId,
-    },
-  });
-
-  return NextResponse.json(
-    { id: created.id, message: "تم إنشاء القضية بنجاح." },
-    { status: 201 }
-  );
 }

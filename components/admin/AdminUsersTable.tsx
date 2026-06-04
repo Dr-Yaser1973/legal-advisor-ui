@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, Building2, Briefcase, User2 } from "lucide-react";
 
 type UserStatusValue = "ACTIVE" | "PENDING" | "SUSPENDED" | "EXPIRED";
-type UserRoleValue = "ADMIN" | "CLIENT" | "LAWYER" | "COMPANY" | "TRANSLATION_OFFICE";
+ type UserRoleValue = "ADMIN" | "CLIENT" | "LAWYER" | "LAW_FIRM" | "COMPANY" | "TRANSLATION_OFFICE";
 type UserPlanValue = "FREE" | "INDIVIDUAL" | "LAWYER" | "TRANSLATION" | "BUSINESS";
 
 type LawyerProfile = {
@@ -335,18 +335,19 @@ export default function AdminUsersTable({ initialUsers }: { initialUsers: AdminU
                   </td>
                   <td className="p-2 text-xs">{u.email ?? "-"}</td>
                   <td className="p-2">
-                    <select
-                      className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs"
-                      value={u.role}
-                      disabled={isLoading}
-                      onChange={(e) => updateUser(u.id, { role: e.target.value as UserRoleValue })}
-                    >
-                      <option value="CLIENT">CLIENT</option>
-                      <option value="LAWYER">LAWYER</option>
-                      <option value="COMPANY">COMPANY</option>
-                      <option value="TRANSLATION_OFFICE">TRANSLATION_OFFICE</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
+                      <select
+  className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs"
+  value={u.role}
+  disabled={isLoading}
+  onChange={(e) => updateUser(u.id, { role: e.target.value as UserRoleValue })}
+>
+  <option value="CLIENT">CLIENT</option>
+  <option value="LAWYER">LAWYER</option>
+  <option value="LAW_FIRM">LAW_FIRM</option>
+  <option value="COMPANY">COMPANY</option>
+  <option value="TRANSLATION_OFFICE">TRANSLATION_OFFICE</option>
+  <option value="ADMIN">ADMIN</option>
+</select>
                   </td>
                   <td className="p-2">
                     <select

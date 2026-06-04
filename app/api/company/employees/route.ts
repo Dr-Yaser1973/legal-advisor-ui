@@ -105,6 +105,7 @@ export async function POST(req: Request) {
         isApproved: true,
         branchId,
         plan: "BUSINESS", // يرث باقة الشركة
+        isManager: false,   // ← الموظف المُضاف ليس مديراً
       },
       select: { id: true, name: true, email: true, status: true },
     });
