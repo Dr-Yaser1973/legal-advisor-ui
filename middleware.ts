@@ -44,14 +44,16 @@ export async function middleware(request: NextRequest) {
   // =========================
   // استثناءات النظام
   // =========================
-    if (
-    pathname === "/manifest.webmanifest" ||
-    pathname === "/manifest.json" ||
-    pathname.startsWith("/icons/") ||
-    pathname === "/favicon.ico"
-  ) {
-    return NextResponse.next();
-  }
+   if (
+  pathname === "/manifest.webmanifest" ||
+  pathname === "/manifest.json" ||
+  pathname.startsWith("/icons/") ||
+  pathname === "/favicon.ico" ||
+  pathname === "/sitemap.xml" ||   // ← أضف هذا
+  pathname === "/robots.txt"        // ← وهذا احترازياً
+) {
+  return NextResponse.next();
+}
 
   // =========================
   // استثناءات API
@@ -207,8 +209,8 @@ if (pathname.startsWith("/blog/new")) {
 // matcher
 // =========================
  
-export const config = {
+ export const config = {
   matcher: [
-    "/((?!_next|favicon.ico|public|api/auth|api/ocr/worker/callback).*)",
+    "/((?!_next|favicon.ico|sitemap.xml|robots.txt|public|api/auth|api/ocr/worker/callback).*)",
   ],
 };
