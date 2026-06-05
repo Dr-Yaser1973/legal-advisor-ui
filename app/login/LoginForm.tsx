@@ -100,12 +100,11 @@ export default function LoginForm() {
     <div className="h-px flex-1 bg-zinc-700" />
   </div>
 
-   <button
+  <button
   type="button"
   onClick={() => {
-    const PROD = "https://legal-advisor-ui.vercel.app";
     signIn("google", {
-      callbackUrl: `${PROD}/`,
+      callbackUrl: "/",
     });
   }}
   className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
