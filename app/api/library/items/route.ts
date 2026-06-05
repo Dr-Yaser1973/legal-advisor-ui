@@ -169,8 +169,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     const newItem = await prisma.libraryItem.create({
-      data: {
-        titleAr: body.titleAr,
+  data: {
+    titleAr: body.titleAr,
+    slug: body.titleAr
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, ''),
+
         titleEn: body.titleEn || null,
         basicExplanation: body.basicExplanation || null,
         professionalExplanation: body.professionalExplanation || null,

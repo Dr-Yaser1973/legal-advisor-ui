@@ -58,12 +58,13 @@ export async function GET(
     }
 
     // زيادة عدد المشاهدات (غير متزامن)
-    prisma.libraryItem
-      .update({
-        where: { id },
-        data: { views: { increment: 1 } },
-      })
-      .catch(console.error);
+     // زيادة عدد المشاهدات (غير متزامن)
+prisma.libraryItem
+  .update({
+    where: { id, isPublished: true },
+    data: { views: { increment: 1 } },
+  })
+  .catch(() => {}); // تجاهل الخطأ بصمت
 
     // جلب المادة مع جميع العلاقات
     const item = await prisma.libraryItem.findUnique({
