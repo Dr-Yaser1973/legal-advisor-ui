@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import FirmRequestCard from "./FirmRequestCard";
 import Link from "next/link";
+import EmployeeManager from "@/components/EmployeeManager";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +171,8 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
             </Link>
           ))}
         </div>
+          {/* ── إدارة الموظفين (المكوّن المشترك) ── */}
+        <EmployeeManager currentEmail={user.email} />
 
         {/* ── الطلبات الجديدة ── */}
         <section>

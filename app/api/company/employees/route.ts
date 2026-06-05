@@ -1,4 +1,4 @@
-// app/api/company/employees/route.ts
+ // app/api/company/employees/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -7,29 +7,39 @@ import bcrypt from "bcryptjs";
 
 export const runtime = "nodejs";
 
-// GET: جلب موظفي الشركة
-export async function GET(req: Request) {
+// مساعد: يتحقق أن المستخدم مدير عام له فرع، ويعيد بياناته
+async function getManager(email: string) {
+  const dbUser = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      isManager: true,
+      branchId: true,
+      branch: { include: { org: true } },
+    },
+  });
+  if (!dbUser?.isManager || !dbUser.branch) return null;
+  return dbUser;
+}
+
+// GET: جلب موظفي المؤسسة
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
     const user = session.user as any;
-    if (user.role !== "COMPANY") return NextResponse.json({ error: "غير مصرح." }, { status: 403 });
+    const manager = await getManager(user.email);
+    if (!manager) {
+      return NextResponse.json({ error: "هذه الصلاحية للمدير العام فقط." }, { status: 403 });
+    }
 
-    // جلب المؤسسة عبر الفرع
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      include: { branch: { include: { org: true } } },
-    });
+    const orgId = manager.branch!.orgId;
+    const org = manager.branch!.org;
 
-    if (!dbUser?.branch) return NextResponse.json({ error: "لا توجد مؤسسة مرتبطة." }, { status: 404 });
-
-    const orgId = dbUser.branch.orgId;
-    const org   = dbUser.branch.org;
-
-    // جلب كل موظفي المؤسسة
+    // كل موظفي المؤسسة عدا المدير نفسه
     const employees = await prisma.user.findMany({
-      where: { branch: { orgId }, role: "COMPANY" },
+      where: { branch: { orgId }, isManager: false },
       select: {
         id: true, name: true, email: true, phone: true,
         status: true, isApproved: true, createdAt: true,
@@ -57,22 +67,18 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
     const user = session.user as any;
-    if (user.role !== "COMPANY") return NextResponse.json({ error: "غير مصرح." }, { status: 403 });
+    const manager = await getManager(user.email);
+    if (!manager) {
+      return NextResponse.json({ error: "هذه الصلاحية للمدير العام فقط." }, { status: 403 });
+    }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { email: user.email },
-      include: { branch: { include: { org: true } } },
-    });
+    const org = manager.branch!.org;
+    const orgId = org.id;
+    const branchId = manager.branchId!;
 
-    if (!dbUser?.branch) return NextResponse.json({ error: "لا توجد مؤسسة مرتبطة." }, { status: 404 });
-
-    const org     = dbUser.branch.org;
-    const orgId   = org.id;
-    const branchId = dbUser.branchId!;
-
-    // التحقق من الحد الأقصى
+    // التحقق من الحد الأقصى (الموظفون فقط، لا المدير)
     const currentCount = await prisma.user.count({
-      where: { branch: { orgId }, role: "COMPANY" },
+      where: { branch: { orgId }, isManager: false },
     });
 
     if (currentCount >= org.maxUsers) {
@@ -100,12 +106,12 @@ export async function POST(req: Request) {
         email: email.toLowerCase(),
         phone: phone || null,
         password: hashed,
-        role: "COMPANY",
+        role: "COMPANY",     // موظف المؤسسة (شركة أو مكتب) يُعامل كـ COMPANY
         status: "ACTIVE",
         isApproved: true,
         branchId,
-        plan: "BUSINESS", // يرث باقة الشركة
-        isManager: false,   // ← الموظف المُضاف ليس مديراً
+        plan: "BUSINESS",
+        isManager: false,
       },
       select: { id: true, name: true, email: true, status: true },
     });
@@ -116,4 +122,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message || "حدث خطأ." }, { status: 500 });
   }
 }
-
