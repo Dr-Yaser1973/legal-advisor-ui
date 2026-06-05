@@ -1,33 +1,19 @@
-// app/(site)/cases/new/NewCaseForm.tsx
+ // app/(site)/cases/new/NewCaseForm.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-type OrgMembership = {
-  orgId: number;
-  orgName: string;
-  role: string;
-  branches: { id: number; name: string; city: string }[];
-  members: { id: number; name: string | null; email: string | null }[];
-};
 
 const CASE_TYPES = ["مدني", "تجاري", "جنائي", "عمالي", "أحوال شخصية", "إداري", "أخرى"];
 const CASE_STATUSES = ["مفتوحة", "قيد المتابعة", "محجوزة للحكم", "مغلقة"];
 
-export default function NewCaseForm({ memberships }: { memberships: OrgMembership[] }) {
+export default function NewCaseForm() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // نوع القضية: فردية أم مؤسسية
-  const [scope, setScope] = useState<"PRIVATE" | "ORG">("PRIVATE");
-  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
-  const [visibility, setVisibility] = useState<"ORG" | "BRANCH">("ORG");
-
-  // الحقول الأساسية
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -37,19 +23,7 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
     filingDate: "",
     closingDate: "",
     notes: "",
-    branchId: "",
-    assignedTo: "",
   });
-
-  // المنظمة المختارة حالياً
-  const currentOrg = memberships.find((m) => m.orgId === selectedOrgId) || null;
-
-  // عند اختيار "مؤسسية" لأول مرة، نحدد أول منظمة تلقائياً
-  useEffect(() => {
-    if (scope === "ORG" && !selectedOrgId && memberships.length > 0) {
-      setSelectedOrgId(memberships[0].orgId);
-    }
-  }, [scope, selectedOrgId, memberships]);
 
   function update(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -58,23 +32,14 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
   async function handleSubmit() {
     setError(null);
 
-    // تحقق أساسي
     if (!form.title.trim() || !form.court.trim() || !form.filingDate) {
       setError("العنوان والمحكمة وتاريخ القيد حقول مطلوبة.");
-      return;
-    }
-    if (scope === "ORG" && !selectedOrgId) {
-      setError("اختر المنظمة للقضية المؤسسية.");
-      return;
-    }
-    if (scope === "ORG" && visibility === "BRANCH" && !form.branchId) {
-      setError("حدد الفرع للقضية على مستوى الفرع.");
       return;
     }
 
     setLoading(true);
     try {
-      const payload: any = {
+      const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
         type: form.type,
@@ -85,13 +50,6 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
         notes: form.notes.trim() || null,
         parties: {},
       };
-
-      if (scope === "ORG" && selectedOrgId) {
-        payload.orgId = selectedOrgId;
-        payload.visibility = visibility;
-        if (visibility === "BRANCH") payload.branchId = Number(form.branchId);
-        if (form.assignedTo) payload.assignedTo = Number(form.assignedTo);
-      }
 
       const res = await fetch("/api/cases", {
         method: "POST",
@@ -105,7 +63,6 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
         return;
       }
 
-      // نجاح → ننتقل لصفحة القضية
       router.push(`/cases/${data.case.id}`);
     } catch (e: any) {
       setError(e.message || "حدث خطأ غير متوقع.");
@@ -126,6 +83,9 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
           ← الرجوع إلى قائمة القضايا
         </Link>
         <h1 className="text-2xl font-bold">إضافة قضية جديدة</h1>
+        <p className="text-sm text-zinc-400">
+          بعد الحفظ يمكنك تكليف موظفيك بالقضية من صفحتها.
+        </p>
       </div>
 
       {error && (
@@ -134,114 +94,6 @@ export default function NewCaseForm({ memberships }: { memberships: OrgMembershi
         </div>
       )}
 
-      {/* نوع القضية: فردية / مؤسسية */}
-      <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 space-y-3">
-        <h2 className="text-sm font-semibold">نطاق القضية</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setScope("PRIVATE")}
-            className={
-              "rounded-xl border px-3 py-3 text-sm text-right transition " +
-              (scope === "PRIVATE"
-                ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-200"
-                : "border-white/10 bg-zinc-900/40 text-zinc-300 hover:border-white/20")
-            }
-          >
-            <div className="font-semibold">قضية فردية</div>
-            <div className="text-[11px] text-zinc-400 mt-1">خاصة بك وحدك</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setScope("ORG")}
-            disabled={memberships.length === 0}
-            className={
-              "rounded-xl border px-3 py-3 text-sm text-right transition disabled:opacity-40 disabled:cursor-not-allowed " +
-              (scope === "ORG"
-                ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-200"
-                : "border-white/10 bg-zinc-900/40 text-zinc-300 hover:border-white/20")
-            }
-          >
-            <div className="font-semibold">قضية مؤسسية</div>
-            <div className="text-[11px] text-zinc-400 mt-1">
-              {memberships.length === 0 ? "لست عضواً في منظمة" : "تابعة لمكتب أو شركة"}
-            </div>
-          </button>
-        </div>
-
-        {/* حقول المنظمة — تظهر فقط للقضية المؤسسية */}
-        {scope === "ORG" && memberships.length > 0 && (
-          <div className="space-y-3 border-t border-white/5 pt-3">
-            <div>
-              <label className={labelClass}>المنظمة</label>
-              <select
-                className={inputClass}
-                value={selectedOrgId ?? ""}
-                onChange={(e) => {
-                  setSelectedOrgId(Number(e.target.value));
-                  update("branchId", "");
-                  update("assignedTo", "");
-                }}
-              >
-                {memberships.map((m) => (
-                  <option key={m.orgId} value={m.orgId}>
-                    {m.orgName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>مستوى الرؤية</label>
-              <select
-                className={inputClass}
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as "ORG" | "BRANCH")}
-              >
-                <option value="ORG">كل المنظمة</option>
-                <option value="BRANCH">فرع محدد</option>
-              </select>
-            </div>
-
-            {visibility === "BRANCH" && (
-              <div>
-                <label className={labelClass}>الفرع</label>
-                <select
-                  className={inputClass}
-                  value={form.branchId}
-                  onChange={(e) => update("branchId", e.target.value)}
-                >
-                  <option value="">— اختر الفرع —</option>
-                  {currentOrg?.branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name} ({b.city})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className={labelClass}>إسناد إلى محامٍ (اختياري)</label>
-              <select
-                className={inputClass}
-                value={form.assignedTo}
-                onChange={(e) => update("assignedTo", e.target.value)}
-              >
-                <option value="">— بدون إسناد —</option>
-                {currentOrg?.members.map((mem) => (
-                  <option key={mem.id} value={mem.id}>
-                    {mem.name || mem.email}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* الحقول الأساسية */}
       <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 space-y-3">
         <h2 className="text-sm font-semibold">بيانات القضية</h2>
 
