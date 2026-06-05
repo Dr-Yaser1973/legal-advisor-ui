@@ -7,7 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const runtime = "nodejs";
 
-async function getAuthorizedUser() {
+ async function getAuthorizedUser() {
   const session: any = await getServerSession(authOptions as any);
   const user = session?.user as any;
 
@@ -15,8 +15,12 @@ async function getAuthorizedUser() {
     return { error: NextResponse.json({ error: "غير مصرح. يرجى تسجيل الدخول." }, { status: 401 }) };
   }
 
-  // نسمح للشركة + المحامي + الأدمن (كما هو)
-  if (user.role !== "COMPANY" && user.role !== "LAWYER" && user.role !== "ADMIN") {
+  if (
+    user.role !== "COMPANY" &&
+    user.role !== "LAWYER" &&
+    user.role !== "LAW_FIRM" &&
+    user.role !== "ADMIN"
+  ) {
     return { error: NextResponse.json({ error: "ليست لديك صلاحية الوصول إلى القضايا." }, { status: 403 }) };
   }
 

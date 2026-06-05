@@ -14,9 +14,15 @@ async function getAuthorizedUser() {
   if (!user) {
     return { error: NextResponse.json({ error: "غير مصرح. يرجى تسجيل الدخول." }, { status: 401 }) };
   }
-  if (user.role !== "COMPANY" && user.role !== "LAWYER" && user.role !== "ADMIN") {
-    return { error: NextResponse.json({ error: "ليست لديك صلاحية الوصول إلى القضايا." }, { status: 403 }) };
-  }
+   if (
+  user.role !== "COMPANY" &&
+  user.role !== "LAWYER" &&
+  user.role !== "LAW_FIRM" &&
+  user.role !== "ADMIN"
+) {
+  return { error: NextResponse.json({ error: "ليست لديك صلاحية الوصول إلى القضايا." }, { status: 403 }) };
+}
+  
   return { user };
 }
 
