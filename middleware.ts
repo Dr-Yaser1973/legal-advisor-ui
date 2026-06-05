@@ -63,6 +63,7 @@ export async function middleware(request: NextRequest) {
 // =========================
 if (
   pathname.startsWith("/api/auth") ||
+  pathname.startsWith("/api/register") ||
   pathname.startsWith("/api/mobile") || 
   pathname.startsWith("/api/debug/prisma") ||
    pathname.startsWith("/api/blog") ||
