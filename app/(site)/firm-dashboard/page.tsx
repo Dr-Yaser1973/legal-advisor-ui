@@ -7,6 +7,7 @@ import FirmRequestCard from "./FirmRequestCard";
 import Link from "next/link";
 import EmployeeManager from "@/components/EmployeeManager";
 import MyAssignments from "@/components/MyAssignments";
+import TeamWorkload from "@/components/TeamWorkload";
 
 export const dynamic = "force-dynamic";
 
@@ -202,6 +203,9 @@ export default async function FirmDashboardPage() {
 
         {/* إدارة الموظفين */}
         <EmployeeManager currentEmail={user.email} />
+
+           {/* توزيع المهام على الفريق */}
+        <TeamWorkload />
 
         {/* الطلبات الجديدة */}
         <section>
