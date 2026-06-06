@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import FirmRequestCard from "./FirmRequestCard";
 import Link from "next/link";
 import EmployeeManager from "@/components/EmployeeManager";
+import MyAssignments from "@/components/MyAssignments";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +34,16 @@ function statusColor(status: string) {
   }
 }
 
+const QUICK_LINKS = [
+  { href: "/consultations", emoji: "⚖️", label: "الاستشارات" },
+  { href: "/contracts",     emoji: "📄", label: "العقود" },
+  { href: "/cases",         emoji: "📁", label: "القضايا" },
+  { href: "/library",       emoji: "📚", label: "المكتبة" },
+];
+
 export default async function FirmDashboardPage() {
   const session = (await getServerSession(authOptions as any)) as any;
   const user = session?.user as any;
-console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branchId, email: user?.email }));
   if (!user || !user.email) redirect("/login");
 
   const dbUser = await prisma.user.findUnique({
@@ -45,6 +52,7 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
       id: true,
       role: true,
       isApproved: true,
+      isManager: true,
       branchId: true,
       branch: {
         include: {
@@ -62,11 +70,37 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
   if (!dbUser) redirect("/login");
   if (!dbUser.branchId || !dbUser.branch) redirect("/dashboard");
 
-  const orgId   = dbUser.branch.orgId;
-  const branchId = dbUser.branchId;
-  const org     = dbUser.branch.org;
+  const org = dbUser.branch.org;
 
-  // ── جلب الطلبات ─────────────────────────────────────────────
+  // ── الموظف (غير مدير): يرى مهامه + الخدمات فقط ──
+  if (!dbUser.isManager) {
+    return (
+      <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
+        <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+          <div>
+            <h1 className="text-2xl font-bold">{org.name}</h1>
+            <p className="text-sm text-zinc-400 mt-1">لوحة الموظف — متابعة مهامك</p>
+          </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+            {QUICK_LINKS.map((l) => (
+              <Link key={l.href} href={l.href} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-amber-500/40 transition">
+                <div className="text-lg mb-1">{l.emoji}</div>
+                <div className="text-xs text-zinc-300">{l.label}</div>
+              </Link>
+            ))}
+          </div>
+
+          <MyAssignments />
+        </div>
+      </main>
+    );
+  }
+
+  // ── المدير: كل الطلبات + إدارة الموظفين ──
+  const orgId = dbUser.branch.orgId;
+  const branchId = dbUser.branchId;
+
   const [pending, offered, active, completed] = await Promise.all([
     prisma.firmConsultRequest.findMany({
       where: { orgId, branchId, status: "PENDING" },
@@ -108,7 +142,6 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
     }),
   ]);
 
-  // ── الأرباح ──────────────────────────────────────────────────
   const totalEarnings = completed.reduce((sum, r) => sum + (r.offer?.fee ?? 0), 0);
   const earningsCurrency = completed[0]?.offer?.currency || "USD";
 
@@ -116,7 +149,7 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
     <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
-        {/* ── الهيدر ── */}
+        {/* الهيدر */}
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -140,14 +173,14 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
           </div>
         </div>
 
-        {/* ── الإحصاءات ── */}
+        {/* الإحصاءات */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: "جديد",       value: pending.length,   color: "text-amber-400",  border: "border-amber-500/20",  bg: "bg-amber-500/5" },
             { label: "عرض مُرسل",  value: offered.length,   color: "text-blue-400",   border: "border-blue-500/20",   bg: "bg-blue-500/5" },
             { label: "نشط",        value: active.length,    color: "text-emerald-400",border: "border-emerald-500/20",bg: "bg-emerald-500/5" },
             { label: "منجز",       value: completed.length, color: "text-zinc-300",   border: "border-zinc-700",      bg: "bg-zinc-900/60" },
-            { label: `الأرباح`,    value: `${totalEarnings.toLocaleString()}`, color: "text-emerald-300", border: "border-emerald-500/20", bg: "bg-emerald-500/5", sub: earningsCurrency },
+            { label: "الأرباح",    value: totalEarnings.toLocaleString(), color: "text-emerald-300", border: "border-emerald-500/20", bg: "bg-emerald-500/5", sub: earningsCurrency },
           ].map((s, i) => (
             <div key={i} className={`rounded-xl border ${s.border} ${s.bg} p-3 text-center`}>
               <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
@@ -157,24 +190,20 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
           ))}
         </div>
 
-        {/* ── الروابط السريعة ── */}
+        {/* الروابط السريعة */}
         <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-          {[
-            { href: "/consultations", emoji: "⚖️", label: "الاستشارات" },
-            { href: "/contracts",     emoji: "📄", label: "العقود" },
-            { href: "/cases",         emoji: "📁", label: "القضايا" },
-            { href: "/library",       emoji: "📚", label: "المكتبة" },
-          ].map((l) => (
+          {QUICK_LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center hover:border-amber-500/40 transition">
               <div className="text-lg mb-1">{l.emoji}</div>
               <div className="text-xs text-zinc-300">{l.label}</div>
             </Link>
           ))}
         </div>
-          {/* ── إدارة الموظفين (المكوّن المشترك) ── */}
+
+        {/* إدارة الموظفين */}
         <EmployeeManager currentEmail={user.email} />
 
-        {/* ── الطلبات الجديدة ── */}
+        {/* الطلبات الجديدة */}
         <section>
           <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse"></span>
@@ -211,7 +240,7 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
           )}
         </section>
 
-        {/* ── العروض المُرسلة ── */}
+        {/* العروض المُرسلة */}
         <section>
           <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
@@ -242,7 +271,7 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
           )}
         </section>
 
-        {/* ── النشطة ── */}
+        {/* النشطة */}
         <section>
           <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
@@ -277,7 +306,7 @@ console.log("SESSION:", JSON.stringify({ role: user?.role, branchId: user?.branc
           )}
         </section>
 
-        {/* ── المكتملة ── */}
+        {/* المكتملة */}
         <section>
           <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block"></span>

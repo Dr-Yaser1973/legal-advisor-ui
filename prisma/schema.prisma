@@ -61,6 +61,7 @@ model User {
   ClientHumanConsults        HumanConsultRequest[] @relation("ClientHumanConsults")
   LawyerHumanConsults        HumanConsultRequest[] @relation("LawyerHumanConsults")
   ClientFirmConsults         FirmConsultRequest[]  @relation("ClientFirmConsults")
+   AssignedFirmConsults       FirmConsultRequest[]  @relation("AssignedFirmConsults")
 
   // Contracts & Docs
   ContractTemplate           ContractTemplate[]
@@ -898,7 +899,7 @@ model CaseAssignment {
 
 
 
-model FirmConsultRequest {
+ model FirmConsultRequest {
   id          Int                   @id @default(autoincrement())
   clientId    Int
   orgId       Int
@@ -906,11 +907,13 @@ model FirmConsultRequest {
   subject     String
   details     String                @db.Text
   status      FirmConsultStatus     @default(PENDING)
+  assignedTo  Int?
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
   acceptedAt  DateTime?
   completedAt DateTime?
   client      User                  @relation("ClientFirmConsults", fields: [clientId], references: [id], onDelete: Cascade)
+  assignee    User?                 @relation("AssignedFirmConsults", fields: [assignedTo], references: [id], onDelete: SetNull)
   org         Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
   branch      Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
   documents   FirmConsultDocument[]
@@ -920,6 +923,7 @@ model FirmConsultRequest {
   @@index([clientId])
   @@index([orgId])
   @@index([branchId])
+  @@index([assignedTo])
   @@index([status, createdAt])
 }
 

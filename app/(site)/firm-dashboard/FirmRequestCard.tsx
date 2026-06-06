@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { FileText, User2, Mail, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import ConsultAssignButton from "@/components/ConsultAssignButton";
 
 interface Document {
   id: number;
@@ -79,6 +80,7 @@ export default function FirmRequestCard({
         </div>
 
         <div className="text-xs text-zinc-500">{new Date(createdAt).toLocaleString("ar-IQ")}</div>
+        <ConsultAssignButton requestId={requestId} />
 
         <button
           onClick={() => setExpanded(!expanded)}
