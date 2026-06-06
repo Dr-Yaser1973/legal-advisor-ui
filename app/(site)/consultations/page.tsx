@@ -182,7 +182,7 @@ export default function ConsultationsPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
 
-  // ── المحامي البشري ────────────────────────────────────────────
+  // ── المحامي المعتمد ────────────────────────────────────────────
   const [humanTopic, setHumanTopic] = useState("");
   const [humanDetails, setHumanDetails] = useState("");
   const [humanLoading, setHumanLoading] = useState(false);
@@ -350,7 +350,7 @@ export default function ConsultationsPage() {
         <header className="mb-6 text-right">
           <h1 className="text-2xl font-bold mb-1">صفحة الاستشارات القانونية</h1>
           <p className="text-sm text-zinc-400">
-            يمكنك هنا طلب استشارة فورية بالذكاء الاصطناعي، أو إرسال طلب استشارة إلى محامٍ بشري أو مكتب معتمد.
+            يمكنك هنا طلب استشارة فورية بالذكاء الاصطناعي، أو إرسال طلب استشارة إلى محامٍ معتمد أو مكتب معتمد.
           </p>
         </header>
 
@@ -360,7 +360,7 @@ export default function ConsultationsPage() {
             🤖 استشارة فورية بالذكاء الاصطناعي
           </button>
           <button onClick={() => setActiveTab("human")} className={`rounded-xl px-4 py-2 text-sm border transition ${activeTab === "human" ? "border-sky-500 bg-sky-500/10 text-sky-200" : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"}`}>
-            👨‍⚖️ طلب استشارة من محامٍ بشري
+            👨‍⚖️ طلب استشارة من محامي معتمد
           </button>
           <button onClick={() => setActiveTab("firm")} className={`rounded-xl px-4 py-2 text-sm border transition ${activeTab === "firm" ? "border-amber-500 bg-amber-500/10 text-amber-200" : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"}`}>
             🏛️ استشارة من مكتب معتمد
@@ -393,7 +393,7 @@ export default function ConsultationsPage() {
           </section>
         )}
 
-        {/* ── تبويب المحامي البشري ── */}
+        {/* ── تبويب المحامي المعتمد ── */}
         {activeTab === "human" && (
           <section className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6 space-y-4">
             <h2 className="text-lg font-semibold text-white mb-2 text-right">👨‍⚖️ طلب استشارة من محامٍ بشري</h2>
@@ -590,9 +590,9 @@ export default function ConsultationsPage() {
                   )}
                 </div>
 
-                {/* طلبات المحامين البشريين */}
+                {/*   طلبات الاستشارة من المحامين المعتمدين*/}
                 <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-sky-300 text-right">👨‍⚖️ طلبات الاستشارة من المحامين البشريين</h3>
+                  <h3 className="text-sm font-semibold text-sky-300 text-right">👨‍⚖️ طلبات الاستشارة من المحامين</h3>
                   {humanRequests.length === 0 ? (
                     <div className="text-sm text-zinc-500 text-right">لا توجد طلبات استشارة بشرية حتى الآن.</div>
                   ) : (

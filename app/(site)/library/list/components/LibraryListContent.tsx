@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import LibraryCard from "../../_components/LibraryCard";
@@ -15,29 +15,28 @@ export default function LibraryListContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   // ✅ قراءة اللغة من URL
   const urlLang = searchParams.get('lang');
   const { locale, setLocale, dir } = useLocale();
-  
+
   // ✅ تحديث اللغة إذا تغيرت في URL
   useEffect(() => {
     if (urlLang && urlLang !== locale) {
       setLocale(urlLang as 'ar' | 'en');
     }
   }, [urlLang, locale, setLocale]);
-  
+
   const t = getLibraryTranslations(locale);
-  
-  // قراءة category من URL
+
+  // ✅ قراءة جميع القيم من URL مباشرة كمصدر الحقيقة الوحيد
   const urlCategory = searchParams.get('category') as MainCategory | null;
-  
-  // حالة التصنيف المختار
+  const urlPage = Number(searchParams.get('page')) || 1;
+
+  // حالات الفلاتر المحلية فقط (لا تؤثر على URL مباشرة هنا)
   const [selectedCategory, setSelectedCategory] = useState<MainCategory | "ALL">(
     urlCategory || "ALL"
   );
-  
-  // باقي حالات الفلاتر
   const [items, setItems] = useState<LibraryCardItem[]>([]);
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
@@ -46,23 +45,26 @@ export default function LibraryListContent() {
   const [hasWord, setHasWord] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>("newest");
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(urlPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // تحديث selectedCategory عندما يتغير URL
+  // ✅ مزامنة state مع URL — searchParams هو مصدر الحقيقة
   useEffect(() => {
     const newCategory = searchParams.get('category') as MainCategory | null;
-    if (newCategory) {
-      setSelectedCategory(newCategory);
-      setCurrentPage(1);
-    }
+    const newPage = Number(searchParams.get('page')) || 1;
+
+    // تحديث التصنيف فقط إذا تغيّر فعلاً
+    setSelectedCategory(newCategory || "ALL");
+
+    // ✅ تحديث الصفحة من URL دائماً — هذا هو الإصلاح الأساسي
+    setCurrentPage(newPage);
   }, [searchParams]);
 
-  // دالة تحديث URL مع الحفاظ على اللغة
-  const updateUrl = (params: Record<string, string | null>) => {
+  // ✅ دالة تحديث URL موحّدة — replace بدلاً من push + scroll: false
+  const updateUrl = useCallback((params: Record<string, string | null>) => {
     const newParams = new URLSearchParams(searchParams.toString());
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value === null || value === 'ALL') {
         newParams.delete(key);
@@ -70,26 +72,44 @@ export default function LibraryListContent() {
         newParams.set(key, value);
       }
     });
-    
+
     // التأكد من بقاء اللغة
     if (!newParams.has('lang')) {
       newParams.set('lang', locale);
     }
-    
-    router.push(`${pathname}?${newParams.toString()}`);
-  };
+
+    // ✅ replace بدلاً من push — يمنع full navigation ومشكلة الداون لود
+    // scroll: false — يمنع القفز لأعلى الصفحة عند تغيير الصفحة
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+  }, [searchParams, pathname, router, locale]);
+
+  // ✅ دالة الانتقال للصفحة — مباشرة بدون updateUrl لتجنب أي تأخير
+  const goToPage = useCallback((page: number) => {
+    if (page < 1 || page > totalPages) return;
+
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('page', page.toString());
+
+    if (!newParams.has('lang')) {
+      newParams.set('lang', locale);
+    }
+
+    // ✅ تحديث state محلياً فوراً لاستجابة UI سريعة
+    setCurrentPage(page);
+
+    // ✅ تحديث URL بدون إعادة تحميل
+    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+  }, [searchParams, pathname, router, locale, totalPages]);
 
   // دالة إعادة ضبط الفلاتر
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setSelectedType("ALL");
     setSelectedYear("ALL");
     setShowExplanations("ALL");
     setHasPDF(false);
     setHasWord(false);
     setSortBy("newest");
-    setCurrentPage(1);
-    
-    // تحديث URL مع الحفاظ على اللغة والتصنيف
+
     updateUrl({
       type: null,
       year: null,
@@ -99,39 +119,35 @@ export default function LibraryListContent() {
       sort: 'newest',
       page: '1'
     });
-  };
+  }, [updateUrl]);
 
   // جلب البيانات
   useEffect(() => {
     async function loadItems() {
       if (typeof window === 'undefined') return;
-      
+
       setLoading(true);
       try {
         const params = new URLSearchParams();
-        
-        // إضافة التصنيف
+
         if (selectedCategory !== "ALL") {
           params.append("category", selectedCategory);
         }
-        
-        // إضافة باقي الفلاتر
+
         if (selectedType !== "ALL") params.append("type", selectedType);
         if (selectedYear !== "ALL") params.append("year", selectedYear);
         if (showExplanations !== "ALL") params.append("explanation", showExplanations);
         if (hasPDF) params.append("hasPDF", "true");
         if (hasWord) params.append("hasWord", "true");
-        
+
         params.append("sort", sortBy);
         params.append("page", currentPage.toString());
         params.append("limit", "12");
-        
-        // ✅ إضافة اللغة إلى الطلب (اختياري)
         params.append("lang", locale);
-        
+
         const res = await fetch(`/api/library/items?${params.toString()}`);
         const json = await res.json();
-        
+
         if (json.success) {
           setItems(json.data.items || []);
           setTotalPages(json.data.pagination?.pages || 1);
@@ -166,8 +182,8 @@ export default function LibraryListContent() {
             <h1 className="text-2xl font-bold text-gray-900">
               {t.title}
             </h1>
-            <Link 
-              href={`/library?lang=${locale}`} 
+            <Link
+              href={`/library?lang=${locale}`}
               className="text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
             >
               {dir === 'rtl' ? '←' : '→'} {t.backToHome}
@@ -181,18 +197,17 @@ export default function LibraryListContent() {
               return (
                 <button
                   key={tab.key}
+                  type="button"
                   onClick={() => {
-                    setSelectedCategory(tab.key as any);
-                    setCurrentPage(1);
-                    // ✅ تحديث URL مع الحفاظ على اللغة
+                    setSelectedCategory(tab.key as MainCategory | "ALL");
                     updateUrl({
                       category: tab.key === "ALL" ? null : tab.key,
                       page: '1'
                     });
                   }}
                   className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all whitespace-nowrap
-                    ${active 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                    ${active
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
@@ -214,37 +229,31 @@ export default function LibraryListContent() {
               selectedType={selectedType}
               setSelectedType={(value) => {
                 setSelectedType(value);
-                setCurrentPage(1);
                 updateUrl({ type: value === "ALL" ? null : value, page: '1' });
               }}
               selectedYear={selectedYear}
               setSelectedYear={(value) => {
                 setSelectedYear(value);
-                setCurrentPage(1);
                 updateUrl({ year: value === "ALL" ? null : value, page: '1' });
               }}
               showExplanations={showExplanations}
               setShowExplanations={(value) => {
                 setShowExplanations(value);
-                setCurrentPage(1);
                 updateUrl({ explanation: value === "ALL" ? null : value, page: '1' });
               }}
               hasPDF={hasPDF}
               setHasPDF={(value) => {
                 setHasPDF(value);
-                setCurrentPage(1);
                 updateUrl({ hasPDF: value ? 'true' : null, page: '1' });
               }}
               hasWord={hasWord}
               setHasWord={(value) => {
                 setHasWord(value);
-                setCurrentPage(1);
                 updateUrl({ hasWord: value ? 'true' : null, page: '1' });
               }}
               sortBy={sortBy}
               setSortBy={(value) => {
                 setSortBy(value);
-                setCurrentPage(1);
                 updateUrl({ sort: value, page: '1' });
               }}
               onReset={resetFilters}
@@ -255,15 +264,16 @@ export default function LibraryListContent() {
           <main className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
-                {loading ? t.loading : `عرض ${items.length} من أصل ${totalItems} نتيجة`}
+                {loading
+                  ? t.loading
+                  : `عرض ${items.length} من أصل ${totalItems} نتيجة`}
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">{t.sortBy}:</span>
-                <select 
+                <select
                   value={sortBy}
                   onChange={(e) => {
                     setSortBy(e.target.value);
-                    setCurrentPage(1);
                     updateUrl({ sort: e.target.value, page: '1' });
                   }}
                   className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -279,7 +289,10 @@ export default function LibraryListContent() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse"
+                  >
                     <div className="h-12 w-12 bg-gray-200 rounded-2xl mb-4" />
                     <div className="h-6 bg-gray-200 rounded w-3/4 mb-3" />
                     <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
@@ -294,8 +307,8 @@ export default function LibraryListContent() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {items.map((item) => (
-                    <LibraryCard 
-                      key={item.id} 
+                    <LibraryCard
+                      key={item.id}
                       item={item}
                       locale={locale}
                       dir={dir}
@@ -303,32 +316,72 @@ export default function LibraryListContent() {
                   ))}
                 </div>
 
+                {/* ✅ Pagination المُصلَح */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center gap-2 mt-12">
+                  <div className="flex justify-center items-center gap-2 mt-12">
+
+                    {/* زر السابق */}
                     <button
-                      onClick={() => {
-                        const newPage = Math.max(1, currentPage - 1);
-                        setCurrentPage(newPage);
-                        updateUrl({ page: newPage.toString() });
-                      }}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                      type="button"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage <= 1}
+                      className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                     >
                       {dir === 'rtl' ? '→' : '←'} {t.previous}
                     </button>
-                    
-                    <span className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-                      {currentPage} / {totalPages}
-                    </span>
-                    
+
+                    {/* أرقام الصفحات */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        // عرض الصفحة الأولى والأخيرة دائماً
+                        // وعرض 2 صفحات حول الصفحة الحالية
+                        return (
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1
+                        );
+                      })
+                      .reduce<(number | '...')[]>((acc, page, idx, arr) => {
+                        // إضافة "..." بين الأرقام المتباعدة
+                        if (idx > 0) {
+                          const prev = arr[idx - 1];
+                          if (page - prev > 1) {
+                            acc.push('...');
+                          }
+                        }
+                        acc.push(page);
+                        return acc;
+                      }, [])
+                      .map((page, idx) =>
+                        page === '...' ? (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="px-2 py-2 text-gray-400 select-none"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => goToPage(page as number)}
+                            className={`min-w-[40px] px-3 py-2 rounded-lg border transition-colors font-medium ${
+                              page === currentPage
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+
+                    {/* زر التالي */}
                     <button
-                      onClick={() => {
-                        const newPage = Math.min(totalPages, currentPage + 1);
-                        setCurrentPage(newPage);
-                        updateUrl({ page: newPage.toString() });
-                      }}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                      type="button"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage >= totalPages}
+                      className="px-4 py-2 border border-gray-200 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                     >
                       {t.next} {dir === 'rtl' ? '←' : '→'}
                     </button>
@@ -341,9 +394,7 @@ export default function LibraryListContent() {
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {t.noItems}
                 </h3>
-                <p className="text-gray-500">
-                  {t.tryDifferentFilters}
-                </p>
+                <p className="text-gray-500">{t.tryDifferentFilters}</p>
               </div>
             )}
           </main>
