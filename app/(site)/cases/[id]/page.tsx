@@ -65,6 +65,7 @@ export default async function CasePage({ params }: PageProps) {
   if (
     user.role !== "COMPANY" &&
     user.role !== "LAWYER" &&
+    user.role !== "LAW_FIRM" &&
     user.role !== "ADMIN"
   ) {
     redirect("/unauthorized");
