@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
 import { HumanConsultStatus } from "@prisma/client";
+import { hasPermission, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -14,10 +15,24 @@ export async function POST(req: NextRequest) {
     }
     const payload: any = await verifyUserToken(authHeader.split(" ")[1]);
     const userId = Number(payload.sub);
+     
 
+    // التحقق من الباقة
+    const planData = await getUserPlanData(userId);
+    if (!planData) {
+      return NextResponse.json({ error: "تعذر التحقق من الاشتراك." }, { status: 500 });
+    }
+    if (!hasPermission(planData.effectivePlan, "humanConsult")) {
+      return NextResponse.json(
+        { error: "التواصل مع محامٍ معتمد غير متاح في باقتك الحالية.", upgradeRequired: true },
+        { status: 403 }
+      );
+    }
     const body = await req.json();
     const topic = (body?.topic || "").trim();
     const details = (body?.details || "").trim();
+    
+    
 
     if (!topic || !details) {
       return NextResponse.json(

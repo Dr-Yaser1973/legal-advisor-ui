@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
+import { hasPermission, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,19 @@ export async function POST(req: NextRequest) {
     }
     const payload: any = await verifyUserToken(authHeader.split(" ")[1]);
      const clientId = Number(payload.sub); 
+     
 
+    // التحقق من الباقة
+    const planData = await getUserPlanData(clientId);
+    if (!planData) {
+      return NextResponse.json({ ok: false, error: "تعذر التحقق من الاشتراك." }, { status: 500 });
+    }
+    if (!hasPermission(planData.effectivePlan, "humanTranslation")) {
+      return NextResponse.json(
+        { ok: false, error: "الترجمة الرسمية المعتمدة غير متاحة في باقتك الحالية.", upgradeRequired: true },
+        { status: 403 }
+      );
+    }
     const body = await req.json();
     const officeId = Number(body.officeId);
     const sourceDocId = Number(body.documentId);
