@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { chatCompletion } from "@/lib/ai";
 import { requireCaseAccess } from "@/lib/auth/guards";
-import { canPerformAction, consumePoints } from "@/lib/plans";
+ import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
+
 
 export const runtime = "nodejs";
 
@@ -90,7 +91,8 @@ export async function POST(req: Request, context: RouteContext) {
     // ===============================
     // استهلاك النقاط بعد النجاح
     // ===============================
-    try {
+      try {
+      await logAiUsage(userId, "AI_CONSULT");
       await consumePoints(userId, "AI_CONSULT");
     } catch (err) {
       console.error("Points consumption error:", err);

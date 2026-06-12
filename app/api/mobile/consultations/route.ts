@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
 import { chatCompletion } from "@/lib/ai";
@@ -46,33 +46,40 @@ export async function POST(req: NextRequest) {
 
     // استدعاء GPT
     let answerText = "عذراً، تعذر الحصول على إجابة. يرجى المحاولة لاحقًا.";
+    let aiSucceeded = false;
 
     try {
-      const completion = await chatCompletion([
-        {
-          role: "system",
-          content: `أنت مستشار قانوني عراقي متخصص. أجب على الأسئلة القانونية بأسلوب عربي واضح ومبسط. استند للقانون العراقي. لا تتجاوز 300 كلمة. أوضح دائماً أن هذه الاستشارة لا تغني عن محامٍ متخصص.`,
-        },
-        {
-          role: "user",
-          content: `${question}\n\nأجب بشكل مباشر:\n1. الإجابة القانونية\n2. الأساس القانوني\n3. التوصية العملية`,
-        },
-      ]);
+      const completion = await chatCompletion(
+        [
+          {
+            role: "system",
+            content: `أنت مستشار قانوني عراقي متخصص. أجب على الأسئلة القانونية بأسلوب عربي واضح ومبسط. استند للقانون العراقي. لا تتجاوز 300 كلمة. أوضح دائماً أن هذه الاستشارة لا تغني عن محامٍ متخصص.`,
+          },
+          {
+            role: "user",
+            content: `${question}\n\nأجب بشكل مباشر:\n1. الإجابة القانونية\n2. الأساس القانوني\n3. التوصية العملية`,
+          },
+        ],
+        { dialect: "auto" }
+      );
 
       const content = completion?.choices?.[0]?.message?.content;
       if (content && typeof content === "string") {
         answerText = content.trim();
+        aiSucceeded = true;
       }
     } catch (err) {
       console.error("AI error:", err);
     }
 
-    // استهلاك النقاط
-    try {
-      await logAiUsage(userId, "AI_CONSULT");
-      await consumePoints(userId, "AI_CONSULT");
-    } catch (err) {
-      console.error("Points error:", err);
+    // استهلاك النقاط — فقط عند نجاح فعلي للإجابة
+    if (aiSucceeded) {
+      try {
+        await logAiUsage(userId, "AI_CONSULT");
+        await consumePoints(userId, "AI_CONSULT");
+      } catch (err) {
+        console.error("Points error:", err);
+      }
     }
 
     // حفظ الإجابة
