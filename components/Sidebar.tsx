@@ -1,13 +1,14 @@
 "use client";
+//components/sidbar.tsx
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
+ import {
   Scale, BookOpen, Newspaper, MessageSquare, FileText,
   Gavel, Languages, Users, DollarSign, Briefcase,
   Building2, PenTool, Settings, ChevronLeft, ChevronRight,
-  LayoutDashboard, FileEdit, Shield, Globe
+  LayoutDashboard, FileEdit, Shield, Globe, HelpCircle
 } from "lucide-react";
 
 interface NavItem {
@@ -56,6 +57,7 @@ export default function Sidebar() {
   const commonLinks: NavItem[] = [
     { href: "/library",  label: "المكتبة القانونية", icon: <BookOpen className="w-5 h-5" /> },
     { href: "/blog",     label: "المدونة",            icon: <Newspaper className="w-5 h-5" /> },
+        { href: "/how-to-use", label: "كيف تستخدم المنصة", icon: <HelpCircle className="w-5 h-5" /> },
   ];
 
   const clientLinks: NavItem[] = [

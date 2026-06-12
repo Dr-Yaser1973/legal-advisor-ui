@@ -12,9 +12,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ============================================
   // 1. الصفحات الثابتة
   // ============================================
-  const staticPages: MetadataRoute.Sitemap = [
+   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl,                        priority: 1.0, changeFrequency: "daily",   lastModified: new Date() },
     { url: `${baseUrl}/library`,           priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
+    {
+      url: `${baseUrl}/how-to-use`,
+      priority: 0.8,
+      changeFrequency: "monthly",
+      lastModified: new Date(),
+      alternates: {
+        languages: {
+          ar: `${baseUrl}/how-to-use?lang=ar`,
+          en: `${baseUrl}/how-to-use?lang=en`,
+        },
+      },
+    },
     { url: `${baseUrl}/consultations`,     priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
     { url: `${baseUrl}/contracts`,         priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
     { url: `${baseUrl}/translation`,       priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
