@@ -1,4 +1,4 @@
-//app/api/mobile/translation/offices/route.ts
+ // app/api/mobile/translation/offices/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
@@ -16,7 +16,14 @@ export async function GET(req: NextRequest) {
 
     const offices = await prisma.user.findMany({
       where: { role: "TRANSLATION_OFFICE", isApproved: true },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        location: true,
+        image: true,
+      },
       orderBy: { id: "asc" },
     });
 
