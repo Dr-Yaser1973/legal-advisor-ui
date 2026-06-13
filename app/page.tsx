@@ -1,5 +1,5 @@
  "use client";
-
+//app/page.tsx
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -25,6 +25,9 @@ type Service = {
   desc: string;
   href: string;
   icon: React.ElementType;
+  badge?: string;
+  badgeColor?: "emerald" | "amber" | "blue" | "purple";
+  highlight?: boolean;
 };
 
 const CONTENT = {
@@ -49,6 +52,11 @@ const CONTENT = {
     servicesTitle: "دليل الخدمات",
     servicesSubtitle:
       "خدمات قانونية رقمية مصممة لتناسب المستخدم العادي والمهني والمؤسسات.",
+
+    guideBannerTitle: "لست متأكداً من أين تبدأ؟",
+    guideBannerDesc:
+      "دليل مبسّط خطوة بخطوة لكل دور — المستخدم، المحامي، المكتب، الشركة.",
+    guideBannerBtn: "كيف تستخدم المنصة",
 
     audiencesTitle: "الفئات المستفيدة",
     audiencesSubtitle:
@@ -126,6 +134,11 @@ const CONTENT = {
     servicesSubtitle:
       "Digital legal services designed for individuals, professionals, and organizations.",
 
+    guideBannerTitle: "Not sure where to start?",
+    guideBannerDesc:
+      "A simple step-by-step guide for every role — user, lawyer, office, company.",
+    guideBannerBtn: "How to Use the Platform",
+
     audiencesTitle: "Who Is It For?",
     audiencesSubtitle:
       "A unified portal serving individuals, lawyers, companies, and translation offices.",
@@ -156,7 +169,11 @@ const CONTENT = {
       },
       {
         title: "Lawyers",
-        points: ["Professional presence", "Requests & consultations", "Powerful research library"],
+        points: [
+          "Professional presence",
+          "Requests & consultations",
+          "Powerful research library",
+        ],
       },
       {
         title: "Companies",
@@ -164,7 +181,11 @@ const CONTENT = {
       },
       {
         title: "Translation Offices",
-        points: ["Organized requests", "Image/scan upload", "Official translation flow"],
+        points: [
+          "Organized requests",
+          "Image/scan upload",
+          "Official translation flow",
+        ],
       },
     ],
 
@@ -195,51 +216,64 @@ export default function HomeGovPortal() {
             : "Search, read, original PDFs, and layered explanations.",
         href: "/library",
         icon: BookOpen,
-      },
-      {
-        title: lang === "ar" ? "العقود الذكية" : "Smart Contracts",
-        desc:
-          lang === "ar"
-            ? "نماذج احترافية + توليد PDF سريع."
-            : "Professional templates + fast PDF generation.",
-        href: "/contracts",
-        icon: FileText,
-      },
-      {
-        title: lang === "ar" ? "الترجمة القانونية" : "Legal Translation",
-        desc:
-          lang === "ar"
-            ? "طلبات منظمة + دعم صور/مسح من الموبايل."
-            : "Organized requests + mobile image/scan support.",
-        href: "/translate",
-        icon: Languages,
+        badge: lang === "ar" ? "متاح للعامة" : "Public",
+        badgeColor: "emerald",
       },
       {
         title: lang === "ar" ? "الاستشارات" : "Consultations",
         desc:
           lang === "ar"
-            ? "طلبات واضحة ومحادثات منظمة."
-            : "Clear requests and organized conversations.",
+            ? "ثلاثة مسارات: ذكية فورية، محامٍ معتمد، أو مكتب محاماة."
+            : "Three paths: instant AI, certified lawyer, or law firm.",
         href: "/consultations",
         icon: MessageSquare,
+        badge: lang === "ar" ? "يتطلب حساب" : "Account required",
+        badgeColor: "amber",
+      },
+      {
+        title: lang === "ar" ? "الترجمة القانونية" : "Legal Translation",
+        desc:
+          lang === "ar"
+            ? "ذكية فورية بخمس لغات، أو رسمية معتمدة من المكاتب."
+            : "Instant AI in five languages, or official certified by offices.",
+        href: "/translate",
+        icon: Languages,
+        badge: lang === "ar" ? "يتطلب حساب" : "Account required",
+        badgeColor: "amber",
+      },
+      {
+        title: lang === "ar" ? "توليد العقود" : "Contract Generation",
+        desc:
+          lang === "ar"
+            ? "عقود اعتيادية ودولية بنماذج موثوقة + توليد PDF."
+            : "Standard and international contracts with trusted templates + PDF.",
+        href: "/contracts",
+        icon: FileText,
+        badge: lang === "ar" ? "بلا ذكاء اصطناعي" : "No AI",
+        badgeColor: "blue",
+        highlight: true,
       },
       {
         title: lang === "ar" ? "إدارة القضايا" : "Case Management",
         desc:
           lang === "ar"
-            ? "للشركات: متابعة القضايا والملفات والمهام."
-            : "For companies: track cases, files, and tasks.",
+            ? "متابعة القضايا والملفات والمهام والمواعيد."
+            : "Track cases, files, tasks, and dates.",
         href: "/cases",
         icon: Briefcase,
+        badge: lang === "ar" ? "للشركات والمكاتب" : "Firms & companies",
+        badgeColor: "purple",
       },
       {
         title: lang === "ar" ? "المحامي الذكي" : "Smart Lawyer",
         desc:
           lang === "ar"
-            ? "مساند بحثي وتحليل أولي مدعوم بالذكاء."
-            : "AI-assisted research and preliminary legal analysis.",
+            ? "تحليل المخاطر القانونية وتوليد المذكرات للقضايا."
+            : "Legal risk analysis and memo generation for cases.",
         href: "/smart-lawyer",
         icon: Sparkles,
+        badge: lang === "ar" ? "للشركات والمكاتب" : "Firms & companies",
+        badgeColor: "purple",
       },
     ],
     [lang],
@@ -315,9 +349,12 @@ export default function HomeGovPortal() {
             <Link className="hover:text-white transition" href="/consultations">
               {lang === "ar" ? "الاستشارات" : "Consultations"}
             </Link>
+            <Link className="hover:text-white transition" href="/how-to-use">
+              {lang === "ar" ? "كيف تستخدم المنصة" : "How to Use"}
+            </Link>
             <Link className="hover:text-white transition" href="/pricing">
-  {lang === "ar" ? "الأسعار" : "Pricing"}
-</Link>
+              {lang === "ar" ? "الأسعار" : "Pricing"}
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -327,10 +364,10 @@ export default function HomeGovPortal() {
             >
               {t.heroTertiary}
             </Link>
-             <Link
-  href="/register"     // ← صحيح
-  className="inline-flex rounded-xl bg-amber-400 ..."
->
+            <Link
+              href="/register"
+              className="inline-flex rounded-xl bg-amber-400 text-zinc-900 px-4 py-2 text-sm font-bold hover:bg-amber-300 transition"
+            >
               {t.heroSecondary}
             </Link>
           </div>
@@ -370,9 +407,9 @@ export default function HomeGovPortal() {
                 </Link>
 
                 <Link
-  href="/register"     // ← صحيح
-  className="inline-flex items-center ..."
->
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
+                >
                   {t.heroSecondary}
                   <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
@@ -388,9 +425,18 @@ export default function HomeGovPortal() {
 
               {/* Official Trust strip */}
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3">
-                <TrustPill text={t.trust[0].title} icon={<ShieldCheck className="h-4 w-4" />} />
-                <TrustPill text={t.trust[1].title} icon={<BadgeCheck className="h-4 w-4" />} />
-                <TrustPill text={t.trust[2].title} icon={<Sparkles className="h-4 w-4" />} />
+                <TrustPill
+                  text={t.trust[0].title}
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                />
+                <TrustPill
+                  text={t.trust[1].title}
+                  icon={<BadgeCheck className="h-4 w-4" />}
+                />
+                <TrustPill
+                  text={t.trust[2].title}
+                  icon={<Sparkles className="h-4 w-4" />}
+                />
               </div>
             </div>
 
@@ -407,7 +453,13 @@ export default function HomeGovPortal() {
 
               <div className="mt-4 grid gap-3">
                 {services.slice(0, 3).map((s) => (
-                  <QuickRow key={s.title} title={s.title} desc={s.desc} Icon={s.icon} href={s.href} />
+                  <QuickRow
+                    key={s.title}
+                    title={s.title}
+                    desc={s.desc}
+                    Icon={s.icon}
+                    href={s.href}
+                  />
                 ))}
               </div>
 
@@ -430,7 +482,9 @@ export default function HomeGovPortal() {
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <div className={lang === "ar" ? "text-right" : "text-left"}>
           <h2 className="text-xl md:text-2xl font-extrabold">{t.servicesTitle}</h2>
-          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.servicesSubtitle}</p>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">
+            {t.servicesSubtitle}
+          </p>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -442,16 +496,49 @@ export default function HomeGovPortal() {
               href={s.href}
               Icon={s.icon}
               lang={lang}
+              badge={s.badge}
+              badgeColor={s.badgeColor}
+              highlight={s.highlight}
             />
           ))}
         </div>
+      </section>
+
+      {/* GUIDE BANNER */}
+      <section className="mx-auto max-w-6xl px-4 pb-2">
+        <Link
+          href="/how-to-use"
+          className="block rounded-3xl border border-amber-400/30 bg-gradient-to-bl from-amber-400/10 to-zinc-900/40 p-6 hover:from-amber-400/15 transition"
+        >
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl border border-amber-400/30 bg-zinc-950/40 p-3">
+                <BadgeCheck className="h-6 w-6 text-amber-300" />
+              </div>
+              <div className={lang === "ar" ? "text-right" : "text-left"}>
+                <div className="text-base md:text-lg font-extrabold">
+                  {t.guideBannerTitle}
+                </div>
+                <div className="mt-1 text-sm text-zinc-300">
+                  {t.guideBannerDesc}
+                </div>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-xl bg-amber-400 text-zinc-900 px-5 py-3 text-sm font-extrabold whitespace-nowrap">
+              {t.guideBannerBtn}
+              <ChevronLeft className="h-4 w-4" />
+            </span>
+          </div>
+        </Link>
       </section>
 
       {/* TRUST / RELIABILITY */}
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <div className={lang === "ar" ? "text-right" : "text-left"}>
           <h2 className="text-xl md:text-2xl font-extrabold">{t.trustTitle}</h2>
-          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.trustSubtitle}</p>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">
+            {t.trustSubtitle}
+          </p>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -464,8 +551,12 @@ export default function HomeGovPortal() {
       {/* AUDIENCES */}
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <div className={lang === "ar" ? "text-right" : "text-left"}>
-          <h2 className="text-xl md:text-2xl font-extrabold">{t.audiencesTitle}</h2>
-          <p className="mt-2 text-sm md:text-base text-zinc-300">{t.audiencesSubtitle}</p>
+          <h2 className="text-xl md:text-2xl font-extrabold">
+            {t.audiencesTitle}
+          </h2>
+          <p className="mt-2 text-sm md:text-base text-zinc-300">
+            {t.audiencesSubtitle}
+          </p>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-4">
@@ -489,9 +580,11 @@ export default function HomeGovPortal() {
             <Link className="hover:text-zinc-200 transition" href="/about">
               {t.footer.about}
             </Link>
-    
             <span className="opacity-30">•</span>
-            <span className="opacity-30">•</span>  {/* ← أضف هذا */}
+            <Link className="hover:text-zinc-200 transition" href="/how-to-use">
+              {lang === "ar" ? "كيف تستخدم المنصة" : "How to Use"}
+            </Link>
+            <span className="opacity-30">•</span>
             <Link className="hover:text-zinc-200 transition" href="/privacy">
               {t.footer.privacy}
             </Link>
@@ -583,25 +676,48 @@ function ServiceCard({
   href,
   Icon,
   lang,
+  badge,
+  badgeColor = "amber",
+  highlight = false,
 }: {
   title: string;
   desc: string;
   href: string;
   Icon: React.ElementType;
   lang: Lang;
+  badge?: string;
+  badgeColor?: "emerald" | "amber" | "blue" | "purple";
+  highlight?: boolean;
 }) {
+  const badgeStyles: Record<string, string> = {
+    emerald: "text-emerald-300 bg-emerald-500/12",
+    amber: "text-amber-300 bg-amber-400/12",
+    blue: "text-blue-300 bg-blue-500/12",
+    purple: "text-purple-300 bg-purple-500/12",
+  };
+
   return (
     <Link
       href={href}
-      className="group rounded-3xl border border-white/10 bg-zinc-900/40 p-5 hover:bg-zinc-900/60 transition"
+      className={`group rounded-3xl border bg-zinc-900/40 p-5 hover:bg-zinc-900/60 transition ${
+        highlight ? "border-amber-400/30" : "border-white/10"
+      }`}
     >
       <div className="flex items-center justify-between">
         <div className="rounded-2xl border border-white/10 bg-zinc-950/50 p-2">
           <Icon className="h-5 w-5 text-amber-300" />
         </div>
-        <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition">
-          {lang === "ar" ? "استكشف" : "Explore"}
-        </span>
+        {badge ? (
+          <span
+            className={`text-[10px] px-2 py-1 rounded-full ${badgeStyles[badgeColor]}`}
+          >
+            {badge}
+          </span>
+        ) : (
+          <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition">
+            {lang === "ar" ? "استكشف" : "Explore"}
+          </span>
+        )}
       </div>
 
       <div className="mt-3 text-base font-extrabold">{title}</div>
