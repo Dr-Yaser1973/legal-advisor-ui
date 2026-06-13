@@ -1,4 +1,4 @@
-//sitemap.ts
+ //sitemap.ts
 import { prisma } from "@/lib/prisma";
 import { MetadataRoute } from "next";
 
@@ -12,9 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ============================================
   // 1. الصفحات الثابتة
   // ============================================
-   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl,                        priority: 1.0, changeFrequency: "daily",   lastModified: new Date() },
-    { url: `${baseUrl}/library`,           priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: baseUrl,                          priority: 1.0, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/library`,             priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
     {
       url: `${baseUrl}/how-to-use`,
       priority: 0.8,
@@ -27,15 +27,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
       },
     },
-    { url: `${baseUrl}/consultations`,     priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
-    { url: `${baseUrl}/contracts`,         priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
-    { url: `${baseUrl}/translation`,       priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
-    { url: `${baseUrl}/smart-lawyer`,      priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
-    { url: `${baseUrl}/lawyers`,           priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
-    { url: `${baseUrl}/pricing`,           priority: 0.7, changeFrequency: "weekly",  lastModified: new Date() },
-    { url: `${baseUrl}/about`,             priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
-    { url: `${baseUrl}/privacy`,           priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
-    { url: `${baseUrl}/terms`,             priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
+    { url: `${baseUrl}/consultations`,       priority: 0.9, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/contracts`,           priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/translate`,         priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/translation-offices`, priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/smart-lawyer`,        priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/lawyers`,             priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/pricing`,             priority: 0.7, changeFrequency: "weekly",  lastModified: new Date() },
+    { url: `${baseUrl}/about`,               priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
+    { url: `${baseUrl}/privacy`,             priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
+    { url: `${baseUrl}/terms`,               priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
   ];
 
   // ============================================
@@ -75,9 +76,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // ============================================
+  // 4. صفحات مكاتب الترجمة المعتمدة
+  // ============================================
+  const translationOffices = await prisma.user.findMany({
+    where: { role: "TRANSLATION_OFFICE", isApproved: true },
+    select: { id: true, updatedAt: true },
+  });
+
+  const translationOfficePages: MetadataRoute.Sitemap = translationOffices.map((office) => ({
+    url: `${baseUrl}/translation-offices/${office.id}`,
+    lastModified: office.updatedAt,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
   return [
     ...staticPages,
     ...libraryPages,
     ...lawyerPages,
+    ...translationOfficePages,
   ];
 }
