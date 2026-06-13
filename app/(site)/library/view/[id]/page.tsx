@@ -1,4 +1,5 @@
- import { notFound } from "next/navigation";
+ //app/(site)/view/[id]/page.tsx
+import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { Metadata } from "next";
@@ -25,16 +26,28 @@ type LibraryItemWithSlug = {
   updatedAt?: Date;
 };
 
+// فك ترميز المعرّف بأمان (الروابط العربية تصل مُرمّزة %D9%82...)
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 // جلب البيانات من API
 async function fetchLibraryItem(identifier: string) {
-  const baseUrl = process.env.VERCEL_URL 
+  const baseUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    
-  const res = await fetch(`${baseUrl}/api/library/items/${identifier}`, { 
+
+  // نعيد ترميز المعرّف بعد فكه لضمان رابط API صحيح حتى لو احتوى أحرفًا عربية
+  const encoded = encodeURIComponent(safeDecode(identifier));
+
+  const res = await fetch(`${baseUrl}/api/library/items/${encoded}`, {
     cache: "no-store",
   });
-  
+
   if (!res.ok) return null;
   const data = await res.json();
   return data;
@@ -42,12 +55,15 @@ async function fetchLibraryItem(identifier: string) {
 
 // جلب المادة مباشرة من قاعدة البيانات لـ generateMetadata
 async function getLibraryItemByIdentifier(identifier: string) {
+  // فك الترميز أولًا حتى يطابق slug العربي المخزّن في القاعدة
+  const decoded = safeDecode(identifier);
+
   // يمكن البحث إما بالـ id أو بالـ slug
   const item = await prisma.libraryItem.findFirst({
     where: {
       OR: [
-        { id: identifier },
-        { slug: identifier }
+        { id: decoded },
+        { slug: decoded }
       ],
       isPublished: true
     },
@@ -67,7 +83,7 @@ async function getLibraryItemByIdentifier(identifier: string) {
       updatedAt: true,
     }
   });
-  
+
   return item;
 }
 
@@ -92,27 +108,18 @@ const itemTypeNames = {
   COURT_RULING: { ar: "حكم قضائي", en: "Court Ruling" }
 };
 
-// دالة لتوليد slug من العنوان (للاستخدام في حالة عدم وجود slug)
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0600-\u06FF\s]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
-
 // ============================================
 // generateMetadata المحسن
 // ============================================
- export async function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params;
-  
+
   const item = await getLibraryItemByIdentifier(id);
-  
+
   if (!item) {
     return {
       title: "المادة غير موجودة - المكتبة القانونية",
@@ -122,20 +129,19 @@ function generateSlug(title: string): string {
 
   const category = categoryNames[item.mainCategory as keyof typeof categoryNames] || { ar: "", en: "" };
   const itemType = itemTypeNames[item.itemType as keyof typeof itemTypeNames] || { ar: "", en: "" };
-  
-  // ✅ تعريف المتغيرات بشكل صحيح
+
   const seoTitleAr = `${item.titleAr} - ${category.ar} | المكتبة القانونية`;
   const seoTitleEn = `${item.titleEn || item.titleAr} - ${category.en} | Legal Library`;
-  
-  const descriptionAr = item.abstractAr 
-    ? (item.abstractAr.length > 157 
-        ? item.abstractAr.slice(0, 157) + "..." 
+
+  const descriptionAr = item.abstractAr
+    ? (item.abstractAr.length > 157
+        ? item.abstractAr.slice(0, 157) + "..."
         : item.abstractAr)
     : `تصفح ${item.titleAr} في المكتبة القانونية. ${category.ar} ${itemType.ar} مع شرح مفصل وتحليل قانوني.`;
-  
-  const descriptionEn = item.abstractEn 
-    ? (item.abstractEn.length > 157 
-        ? item.abstractEn.slice(0, 157) + "..." 
+
+  const descriptionEn = item.abstractEn
+    ? (item.abstractEn.length > 157
+        ? item.abstractEn.slice(0, 157) + "..."
         : item.abstractEn)
     : `Browse ${item.titleAr} in the Legal Library. ${category.en} ${itemType.en} with detailed explanation and legal analysis.`;
 
@@ -151,14 +157,14 @@ function generateSlug(title: string): string {
   ].slice(0, 10).join(", ");
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
+  // canonical موحّد دائمًا على الـ slug — يطابق ما يولّده sitemap
   const canonicalUrl = `${baseUrl}/library/view/${item.slug || item.id}`;
 
   return {
-    // ✅ استخدام المتغيرات الصحيحة
     title: seoTitleAr,
     description: descriptionAr,
     keywords,
-    
+
     alternates: {
       canonical: canonicalUrl,
       languages: {
@@ -166,7 +172,7 @@ function generateSlug(title: string): string {
         en: `${canonicalUrl}?lang=en`,
       },
     },
-    
+
     openGraph: {
       title: seoTitleAr,
       description: descriptionAr,
@@ -181,14 +187,14 @@ function generateSlug(title: string): string {
       section: category.ar,
       tags: item.keywords || [],
     },
-    
+
     twitter: {
       card: "summary_large_image",
       title: seoTitleAr,
       description: descriptionAr,
       site: "@LegalAdvisor",
     },
-    
+
     robots: {
       index: true,
       follow: true,
@@ -200,7 +206,7 @@ function generateSlug(title: string): string {
         "max-snippet": -1,
       },
     },
-    
+
     other: {
       "rating:views": item.views?.toString(),
       "rating:value": item.rating?.toString(),

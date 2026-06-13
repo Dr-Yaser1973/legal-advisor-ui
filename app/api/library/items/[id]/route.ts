@@ -1,10 +1,20 @@
- import { NextRequest, NextResponse } from "next/server";
+ //app/api/library/items/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { LibraryRelationType } from "@prisma/client";
 
 export const runtime = "nodejs";
+
+// فك ترميز المعرّف بأمان (الروابط العربية تصل مُرمّزة %D9%82...)
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
 // ✅ دالة لتحديد المجلد حسب التصنيف (تعريفها في الأعلى)
 function categoryToFolder(category: string): string {
@@ -48,27 +58,24 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    
-    if (!id) {
+    const { id: rawId } = await params;
+
+    if (!rawId) {
       return NextResponse.json(
         { ok: false, error: "معرف العنصر مطلوب" },
         { status: 400 }
       );
     }
 
-    // زيادة عدد المشاهدات (غير متزامن)
-     // زيادة عدد المشاهدات (غير متزامن)
-prisma.libraryItem
-  .update({
-    where: { id, isPublished: true },
-    data: { views: { increment: 1 } },
-  })
-  .catch(() => {}); // تجاهل الخطأ بصمت
+    // فك ترميز المعرّف لمطابقة slug العربي المخزّن
+    const identifier = safeDecode(rawId);
 
-    // جلب المادة مع جميع العلاقات
-    const item = await prisma.libraryItem.findUnique({
-      where: { id, isPublished: true },
+    // جلب المادة بالبحث عن id أو slug، مع جميع العلاقات
+    const item = await prisma.libraryItem.findFirst({
+      where: {
+        OR: [{ id: identifier }, { slug: identifier }],
+        isPublished: true,
+      },
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -130,6 +137,17 @@ prisma.libraryItem
       );
     }
 
+    // ✅ المعرّف الحقيقي للعنصر — يُستخدم في كل الاستعلامات اللاحقة
+    const itemId = item.id;
+
+    // زيادة عدد المشاهدات (غير متزامن) باستخدام المعرّف الحقيقي
+    prisma.libraryItem
+      .update({
+        where: { id: itemId },
+        data: { views: { increment: 1 } },
+      })
+      .catch(() => {}); // تجاهل الخطأ بصمت
+
     // ✅ تحديد المجلد المناسب لهذه المادة
     const folder = categoryToFolder(item.mainCategory);
 
@@ -172,7 +190,7 @@ prisma.libraryItem
       const sameCategory = await prisma.libraryItem.findMany({
         where: {
           mainCategory: item.mainCategory,
-          id: { not: id },
+          id: { not: itemId },
           isPublished: true,
           NOT: {
             id: { in: relatedItems.map((r) => r.id) },
@@ -198,7 +216,7 @@ prisma.libraryItem
 
     // جلب إحصائيات التقييمات
     const ratingStats = await prisma.libraryRating.aggregate({
-      where: { itemId: id },
+      where: { itemId: itemId },
       _avg: { rating: true },
       _count: true,
     });
@@ -213,7 +231,7 @@ prisma.libraryItem
           const favorite = await prisma.libraryFavorite.findUnique({
             where: {
               itemId_userId: {
-                itemId: id,
+                itemId: itemId,
                 userId: userId,
               },
             },
@@ -262,10 +280,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: rawId } = await params;
+    const identifier = safeDecode(rawId);
 
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { ok: false, error: "يجب تسجيل الدخول أولاً" },
@@ -280,6 +299,21 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // حلّ المعرّف الحقيقي (يقبل id أو slug)
+    const target = await prisma.libraryItem.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }] },
+      select: { id: true },
+    });
+
+    if (!target) {
+      return NextResponse.json(
+        { ok: false, error: "العنصر غير موجود" },
+        { status: 404 }
+      );
+    }
+
+    const id = target.id;
 
     const body = await request.json();
     const { action } = body;
@@ -405,11 +439,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    
+    const { id: rawId } = await params;
+    const identifier = safeDecode(rawId);
+
     const session = await getServerSession(authOptions);
     const role = (session?.user as any)?.role?.toUpperCase?.() || "CLIENT";
-    
+
     if (!session || role !== "ADMIN") {
       return NextResponse.json(
         { ok: false, error: "غير مخول. يتطلب صلاحيات ADMIN." },
@@ -433,8 +468,8 @@ export async function PATCH(
       itemType,
     } = body;
 
-    const existingItem = await prisma.libraryItem.findUnique({
-      where: { id },
+    const existingItem = await prisma.libraryItem.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }] },
     });
 
     if (!existingItem) {
@@ -443,6 +478,8 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    const id = existingItem.id;
 
     // دالة توليد slug
     function generateSlug(title: string): string {
@@ -509,11 +546,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    
+    const { id: rawId } = await params;
+    const identifier = safeDecode(rawId);
+
     const session = await getServerSession(authOptions);
     const role = (session?.user as any)?.role?.toUpperCase?.() || "CLIENT";
-    
+
     if (!session || role !== "ADMIN") {
       return NextResponse.json(
         { ok: false, error: "غير مخول. يتطلب صلاحيات ADMIN." },
@@ -521,8 +559,8 @@ export async function DELETE(
       );
     }
 
-    const existingItem = await prisma.libraryItem.findUnique({
-      where: { id },
+    const existingItem = await prisma.libraryItem.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }] },
       include: { itemDocuments: true },
     });
 
@@ -532,6 +570,8 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    const id = existingItem.id;
 
     await prisma.libraryItemDocument.deleteMany({
       where: { libraryItemId: id },
