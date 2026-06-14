@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { notifyUser } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,7 @@ export async function POST(
         where: { id: requestId },
         include: {
           chatRoom: true,
+          consultation: { select: { title: true } },
         },
       });
 
@@ -122,8 +124,26 @@ export async function POST(
       return {
         request: updatedRequest,
         room,
+        lawyerId,
+        subject: request.consultation?.title || `طلب #${requestId}`,
       };
     });
+
+    // 7) إشعار المحامي بقبول عرضه (خارج الترانزاكشن — best-effort)
+    try {
+      await notifyUser({
+        userId: result.lawyerId,
+        title: "تم قبول عرضك ✅",
+        body: `قَبِل العميل عرضك على استشارة: ${result.subject}. فُتحت غرفة محادثة للبدء.`,
+        emailKind: "offer_accepted",
+        emailData: {
+          subject: result.subject,
+          chatPath: `/dashboard/chat/${result.room.id}`,
+        },
+      });
+    } catch (notifyError) {
+      console.error("فشل إشعار المحامي بقبول العرض:", notifyError);
+    }
 
     return NextResponse.json(
       {

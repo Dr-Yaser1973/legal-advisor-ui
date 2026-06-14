@@ -1,4 +1,5 @@
- import { NextResponse } from "next/server";
+ //app/api/consultations/human/my/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -26,11 +27,11 @@ export async function GET() {
         id: true,
         status: true,
         createdAt: true,
-         chatRoom: {
-    select: {
-      id: true,
-    },
-  },
+        chatRoom: {
+          select: {
+            id: true,
+          },
+        },
 
         // الاستشارة الأصلية (الذكاء الاصطناعي) إن وجدت
         consultation: {
@@ -72,12 +73,14 @@ export async function GET() {
         },
       },
     });
-      // ✅ نرجّع chatRoomId بشكل مباشر حتى تستخدمه الصفحة بسهولة
+
+    // ✅ نرجّع chatRoomId بشكل مباشر حتى تستخدمه الصفحة بسهولة
     const mapped = items.map((r: any) => ({
       ...r,
       chatRoomId: r.chatRoom?.id ?? null,
     }));
-    return NextResponse.json({ items });
+
+    return NextResponse.json({ items: mapped });
   } catch (error) {
     console.error("Error in /api/consultations/human/my:", error);
     return NextResponse.json(

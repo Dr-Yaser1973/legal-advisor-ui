@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { notifyUser } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -44,13 +45,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
     ]);
 
-    await prisma.notification.create({
-      data: {
+    // إشعار العميل داخل المنصة + إيميل (best-effort — خارج الترانزاكشن)
+    try {
+      await notifyUser({
         userId: request.clientId,
         title: "عرض جديد من مكتب محاماة",
         body: `تلقيت عرضاً على استشارتك "${request.subject}" — اضغط لعرض التفاصيل.`,
-      },
-    });
+        emailKind: "new_offer",
+        emailData: {
+          subject: request.subject,
+          offerPath: "/firm-consult/my",
+        },
+      });
+    } catch (notifyError) {
+      console.error("فشل إشعار العميل بعرض المكتب:", notifyError);
+    }
 
     return NextResponse.json({ ok: true, offer });
   } catch (e: any) {

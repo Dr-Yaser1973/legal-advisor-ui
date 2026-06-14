@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { HumanConsultStatus } from "@prisma/client";
+ import { notifyUser } from "@/lib/notify";
 
 export async function POST(req: Request) {
   try {
@@ -46,6 +47,37 @@ export async function POST(req: Request) {
         status: HumanConsultStatus.PENDING,
       },
     });
+
+    // 3️⃣ إشعار المحامين المعتمدين بوجود طلب جديد (best-effort)
+    // لا نُسقط نجاح الطلب إن فشل الإشعار
+    try {
+      const lawyers = await prisma.user.findMany({
+        where: {
+          role: "LAWYER",
+          isApproved: true,
+          status: "ACTIVE",
+          email: { not: null },
+        },
+        select: { id: true },
+      });
+
+      await Promise.allSettled(
+        lawyers.map((l) =>
+          notifyUser({
+            userId: l.id,
+            title: "طلب استشارة جديد",
+            body: `وصل طلب جديد يمكنك تقديم عرض عليه: ${topic}`,
+            emailKind: "new_request",
+            emailData: {
+              subject: topic,
+              consultUrl: "/dashboard/requests",
+            },
+          })
+        )
+      );
+    } catch (notifyError) {
+      console.error("فشل إشعار المحامين بالطلب الجديد:", notifyError);
+    }
 
     return NextResponse.json({
       id: created.id,

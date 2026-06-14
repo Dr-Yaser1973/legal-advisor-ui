@@ -1,8 +1,10 @@
- import { NextResponse } from "next/server";
+ //app/lawyers/human-requests/[id]/offer/route.ts
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { UserRole } from "@prisma/client";
+import { notifyUser } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -47,12 +49,26 @@ export async function POST(
 
     const requestObj = await prisma.humanConsultRequest.findUnique({
       where: { id: requestId },
+      include: {
+        consultation: { select: { title: true } },
+      },
     });
 
     if (!requestObj) {
       return NextResponse.json(
         { error: "لم يتم العثور على طلب الاستشارة." },
         { status: 404 }
+      );
+    }
+
+    // منع تقديم عرض على طلب منتهٍ أو ملغى
+    if (
+      requestObj.status === "COMPLETED" ||
+      requestObj.status === "CANCELED"
+    ) {
+      return NextResponse.json(
+        { error: "لا يمكن تقديم عرض على طلب منتهٍ أو ملغى." },
+        { status: 400 }
       );
     }
 
@@ -74,6 +90,7 @@ export async function POST(
     });
 
     let offer;
+    let isNewOffer = false;
 
     if (existing) {
       offer = await prisma.humanConsultOffer.update({
@@ -84,6 +101,29 @@ export async function POST(
       offer = await prisma.humanConsultOffer.create({
         data: { requestId, lawyerId: userId, fee, currency, note },
       });
+      isNewOffer = true;
+    }
+
+    // إشعار العميل — فقط عند عرض جديد (لا عند تعديل عرض قائم)
+    // best-effort: لا يُسقط نجاح العملية إن فشل الإشعار
+    if (isNewOffer) {
+      try {
+        await notifyUser({
+          userId: requestObj.clientId,
+          title: "وصلك عرض جديد",
+          body: `تم تقديم عرض جديد على استشارتك: ${
+            requestObj.consultation?.title || `طلب #${requestId}`
+          }`,
+          emailKind: "new_offer",
+          emailData: {
+            subject:
+              requestObj.consultation?.title || `طلب #${requestId}`,
+            offerPath: "/consultations/human",
+          },
+        });
+      } catch (notifyError) {
+        console.error("فشل إشعار العميل بالعرض الجديد:", notifyError);
+      }
     }
 
     return NextResponse.json({ ok: true, offer }, { status: 200 });

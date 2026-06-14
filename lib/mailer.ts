@@ -118,4 +118,116 @@ export async function sendRejectionEmail(email: string, name?: string, reason?: 
   });
 }
 
+// ===============================
+// ثوابت مشتركة — واتساب وتذييل موحّد
+// ===============================
+const WHATSAPP_NUMBER = "+9647719183785";
+// رابط wa.me يحذف الرمز "+" وأي مسافات
+const WHATSAPP_LINK = "https://wa.me/9647719183785";
+
+function emailFooter(): string {
+  return `
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+    <p style="color: #6b7280; font-size: 13px; text-align: center;">
+      للاستفسار أو الدعم، تواصل معنا عبر واتساب:
+      <br />
+      <a href="${WHATSAPP_LINK}"
+         style="color: #10b981; font-weight: bold; text-decoration: none;">
+        ${WHATSAPP_NUMBER}
+      </a>
+    </p>
+    <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 8px;">
+      المستشار القانوني الذكي · smartlegaladvisor.com
+    </p>
+  `;
+}
+
+// ===============================
+// إشعار المحامي — وصول طلب استشارة جديد يمكن تقديم عرض عليه
+// ===============================
+export async function sendNewConsultRequestEmail(
+  email: string,
+  opts: { lawyerName?: string; subject: string; consultUrl: string }
+) {
+  await mailer.sendMail({
+    from: `"المستشار القانوني الذكي" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "طلب استشارة جديد — يمكنك تقديم عرض",
+    html: `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #c9a84c;">طلب استشارة جديد 📩</h2>
+        <p>مرحباً ${opts.lawyerName ?? ""}،</p>
+        <p>وصل طلب استشارة جديد على منصة <strong>المستشار القانوني الذكي</strong> يمكنك تقديم عرض عليه:</p>
+        <div style="background-color: #f9fafb; border-right: 4px solid #c9a84c; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+          <strong style="color: #111827;">${opts.subject}</strong>
+        </div>
+        <a href="${opts.consultUrl}"
+           style="background-color: #c9a84c; color: #111827; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 8px; font-weight: bold;">
+          عرض الطلب وتقديم عرض
+        </a>
+        ${emailFooter()}
+      </div>
+    `,
+  });
+}
+
+// ===============================
+// إشعار العميل — وصول عرض جديد على استشارته
+// ===============================
+export async function sendNewOfferEmail(
+  email: string,
+  opts: { clientName?: string; subject: string; offerUrl: string }
+) {
+  await mailer.sendMail({
+    from: `"المستشار القانوني الذكي" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "وصلك عرض جديد على استشارتك ✨",
+    html: `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">وصلك عرض جديد ✨</h2>
+        <p>مرحباً ${opts.clientName ?? ""}،</p>
+        <p>تم تقديم عرض جديد على استشارتك في منصة <strong>المستشار القانوني الذكي</strong>:</p>
+        <div style="background-color: #f9fafb; border-right: 4px solid #10b981; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+          <strong style="color: #111827;">${opts.subject}</strong>
+        </div>
+        <p>يمكنك مراجعة العرض (السعر والملاحظات) واتخاذ قرارك:</p>
+        <a href="${opts.offerUrl}"
+           style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 8px; font-weight: bold;">
+          مراجعة العرض
+        </a>
+        ${emailFooter()}
+      </div>
+    `,
+  });
+}
+
+// ===============================
+// إشعار المحامي — قبول العميل لعرضه
+// ===============================
+export async function sendOfferAcceptedEmail(
+  email: string,
+  opts: { lawyerName?: string; subject: string; chatUrl: string }
+) {
+  await mailer.sendMail({
+    from: `"المستشار القانوني الذكي" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "تم قبول عرضك ✅",
+    html: `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">تم قبول عرضك 🎉</h2>
+        <p>مرحباً ${opts.lawyerName ?? ""}،</p>
+        <p>قَبِل العميل عرضك على الاستشارة التالية في منصة <strong>المستشار القانوني الذكي</strong>:</p>
+        <div style="background-color: #f9fafb; border-right: 4px solid #10b981; padding: 12px 16px; margin: 16px 0; border-radius: 6px;">
+          <strong style="color: #111827;">${opts.subject}</strong>
+        </div>
+        <p>تم فتح غرفة محادثة للبدء بالتواصل مع العميل:</p>
+        <a href="${opts.chatUrl}"
+           style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 8px; font-weight: bold;">
+          فتح المحادثة
+        </a>
+        ${emailFooter()}
+      </div>
+    `,
+  });
+}
 export default mailer;

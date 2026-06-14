@@ -1,7 +1,7 @@
-// app/(site)/consultations/human/page.tsx
+ // app/(site)/consultations/human/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 type LawyerProfile = {
@@ -39,6 +39,7 @@ type HumanConsultRequestItem = {
   id: number;
   status: string;
   createdAt: string;
+  chatRoomId?: number | null;
   consultation: Consultation | null;
   offers: Offer[];
 };
@@ -81,112 +82,123 @@ function statusColorClasses(status: string) {
   }
 }
 
-interface AcceptOfferButtonProps {
-  requestId: number;
-  offerId: number;
-  disabled?: boolean;
-  onAccepted?: () => void;
+// نجوم التقييم
+function RatingStars({ rating }: { rating?: number | null }) {
+  if (rating == null) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-amber-400">
+      <svg
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="w-3.5 h-3.5"
+        aria-hidden="true"
+      >
+        <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 15l-5.2 2.6 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
+      </svg>
+      {rating.toFixed(1)}
+    </span>
+  );
 }
 
-function AcceptOfferButton({
-  requestId,
-  offerId,
-  disabled,
-  onAccepted,
-}: AcceptOfferButtonProps) {
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleClick = async () => {
-    if (loading || disabled) return;
-    setLoading(true);
-
-    try {
-      const res = await fetch(
-        `/api/consultations/human/${requestId}/offers/${offerId}/accept`,
-        { method: "POST" }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "حدث خطأ أثناء اختيار المحامي.");
-        setLoading(false);
-        return;
-      }
-
-      const roomId = data?.room?.id;
-      if (!roomId) {
-        alert("تم اختيار المحامي لكن لم يتم العثور على غرفة المحادثة.");
-        setLoading(false);
-        return;
-      }
-
-      // تحديث القائمة في الخلفية (اختياري)
-      if (onAccepted) onAccepted();
-
-      // الانتقال إلى صفحة الشات
-      router.push(`/chat/${roomId}`);
-    } catch (error) {
-      console.error("Error accepting offer:", error);
-      alert("حدث خطأ غير متوقع أثناء اختيار المحامي.");
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={loading || disabled}
-      className="px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      {loading ? "جاري الاختيار..." : "اختيار هذا المحامي"}
-    </button>
-  );
+interface ConfirmState {
+  requestId: number;
+  offerId: number;
+  lawyerName: string;
 }
 
 export default function MyHumanConsultationsPage() {
   const [items, setItems] = useState<HumanConsultRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [accepting, setAccepting] = useState(false);
+  const router = useRouter();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const res = await fetch("/api/consultations/human/my", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
+        cache: "no-store",
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "تعذر جلب بيانات الاستشارات.");
         setItems([]);
-        setLoading(false);
         return;
       }
 
       const data: ApiResponse = await res.json();
       setItems(data.items || []);
-      setLoading(false);
     } catch (err) {
       console.error("Error fetching my human consultations:", err);
       setError("حدث خطأ غير متوقع أثناء جلب البيانات.");
-      setLoading(false);
+    } finally {
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  // تحديث تلقائي خفيف كل 20 ثانية — فقط إن وُجد طلب معلّق ينتظر عروضاً
+  useEffect(() => {
+    const hasPending = items.some((r) => r.status === "PENDING");
+    if (!hasPending) return;
+    const t = setInterval(() => fetchData(true), 20000);
+    return () => clearInterval(t);
+  }, [items, fetchData]);
+
+  // تنفيذ القبول بعد التأكيد
+  const doAccept = async () => {
+    if (!confirm || accepting) return;
+    setAccepting(true);
+    setActionError(null);
+
+    try {
+      const res = await fetch(
+        `/api/consultations/human/${confirm.requestId}/offers/${confirm.offerId}/accept`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        setActionError(data.error || "حدث خطأ أثناء اختيار المحامي.");
+        setAccepting(false);
+        setConfirm(null);
+        return;
+      }
+
+      const roomId = data?.room?.id;
+      if (!roomId) {
+        setActionError(
+          "تم اختيار المحامي لكن تعذّر العثور على غرفة المحادثة."
+        );
+        setAccepting(false);
+        setConfirm(null);
+        return;
+      }
+
+      router.push(`/chat/${roomId}`);
+    } catch (err) {
+      console.error("Error accepting offer:", err);
+      setActionError("حدث خطأ غير متوقع أثناء اختيار المحامي.");
+      setAccepting(false);
+      setConfirm(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6 flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-right">
-            استشاراتي مع المحامين البشريين
+            استشاراتي مع المحامين المعتمدين
           </h1>
           <p className="text-sm text-zinc-400 text-right">
             في هذه الصفحة يمكنك متابعة طلبات الاستشارة القانونية التي
@@ -195,21 +207,43 @@ export default function MyHumanConsultationsPage() {
           </p>
         </div>
 
-        {loading && (
-          <div className="text-center text-zinc-400 py-8">
-            جاري تحميل الاستشارات...
-          </div>
-        )}
-
+        {/* خطأ تحميل عام */}
         {error && !loading && (
           <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200 text-right">
             {error}
           </div>
         )}
 
+        {/* خطأ إجراء (قبول عرض) — بدل alert */}
+        {actionError && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200 text-right">
+            <span>{actionError}</span>
+            <button
+              onClick={() => setActionError(null)}
+              className="text-red-300 hover:text-red-100 text-xs"
+            >
+              إغلاق
+            </button>
+          </div>
+        )}
+
+        {loading && (
+          <div className="text-center text-zinc-400 py-8">
+            جاري تحميل الاستشارات...
+          </div>
+        )}
+
         {!loading && !error && items.length === 0 && (
-          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-6 text-sm text-zinc-400 text-right">
-            لا توجد لديك طلبات استشارة بشرية حتى الآن.
+          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-8 text-center">
+            <p className="text-sm text-zinc-400 mb-3">
+              لا توجد لديك طلبات استشارة مع محامٍ معتمد حتى الآن.
+            </p>
+            <button
+              onClick={() => router.push("/consultations")}
+              className="px-4 py-2 rounded-lg text-sm bg-[#c9a84c] text-black font-semibold hover:opacity-90"
+            >
+              إرسال استشارة جديدة
+            </button>
           </div>
         )}
 
@@ -219,6 +253,18 @@ export default function MyHumanConsultationsPage() {
             const hasAcceptedOffer = req.offers.some(
               (o) => o.status === "ACCEPTED_BY_CLIENT"
             );
+            const isFinished =
+              req.status === "COMPLETED" || req.status === "CANCELED";
+            const canChat =
+              (req.status === "ACCEPTED" || req.status === "IN_PROGRESS") &&
+              req.chatRoomId;
+
+            // ترتيب العروض بالأقل سعراً (null في النهاية)
+            const sortedOffers = [...req.offers].sort((a, b) => {
+              const fa = a.fee ?? Number.POSITIVE_INFINITY;
+              const fb = b.fee ?? Number.POSITIVE_INFINITY;
+              return fa - fb;
+            });
 
             return (
               <div
@@ -229,6 +275,12 @@ export default function MyHumanConsultationsPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-xs text-zinc-500">
                       رقم الطلب #{req.id}
+                      {req.offers.length > 0 && (
+                        <span className="mr-1">
+                          {" · "}
+                          {req.offers.length} عرض
+                        </span>
+                      )}
                     </div>
                     <div
                       className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${statusColorClasses(
@@ -256,31 +308,67 @@ export default function MyHumanConsultationsPage() {
                   </div>
                 )}
 
+                {/* زر فتح المحادثة للطلبات المقبولة */}
+                {canChat && (
+                  <div className="mb-3">
+                    <button
+                      onClick={() => router.push(`/chat/${req.chatRoomId}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H6l-4 4V4z" />
+                      </svg>
+                      فتح المحادثة
+                    </button>
+                  </div>
+                )}
+
                 <div className="mt-4">
-                  <div className="font-semibold mb-2 text-right">
+                  <div className="font-semibold mb-2 text-right flex items-center gap-2">
                     عروض المحامين:
+                    {req.offers.length > 0 && (
+                      <span className="text-xs font-normal text-zinc-500">
+                        (مرتّبة بالأقل سعراً)
+                      </span>
+                    )}
                   </div>
 
                   {req.offers.length === 0 && (
-                    <div className="text-sm text-zinc-500 text-right">
-                      لم يقم أي محامٍ بتقديم عرض حتى الآن. يرجى الانتظار
-                      لحين استجابة أحد المحامين.
+                    <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/30 px-4 py-6 text-center text-sm text-zinc-500">
+                      لم يقدّم أي محامٍ عرضاً بعد. ستصلك رسالة فور وصول
+                      أول عرض على هذه الاستشارة.
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    {req.offers.map((offer) => {
+                    {sortedOffers.map((offer) => {
                       const offerDate = new Date(offer.createdAt);
                       const lawyer = offer.lawyer;
+                      const isAccepted =
+                        offer.status === "ACCEPTED_BY_CLIENT";
 
                       return (
                         <div
                           key={offer.id}
-                          className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-3"
+                          className={`flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-lg border px-3 py-3 ${
+                            isAccepted
+                              ? "border-emerald-500/40 bg-emerald-500/5"
+                              : "border-zinc-800 bg-zinc-950/40"
+                          }`}
                         >
                           <div className="flex-1 text-right space-y-1">
-                            <div className="font-medium">
-                              {lawyer?.name || "محامٍ (الاسم غير متوفر)"}
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {lawyer?.name || "محامٍ (الاسم غير متوفر)"}
+                              </span>
+                              <RatingStars
+                                rating={lawyer?.lawyerProfile?.rating}
+                              />
                             </div>
                             <div className="text-xs text-zinc-400">
                               {lawyer?.lawyerProfile?.specialties && (
@@ -290,13 +378,17 @@ export default function MyHumanConsultationsPage() {
                                 </span>
                               )}
                               {lawyer?.lawyerProfile?.city && (
-                                <span>– المدينة: {lawyer.lawyerProfile.city}</span>
+                                <span>
+                                  – المدينة: {lawyer.lawyerProfile.city}
+                                </span>
                               )}
                             </div>
                             <div className="text-xs text-zinc-400">
                               الأجر المقترح:{" "}
                               <span className="font-semibold text-zinc-200">
-                                {offer.fee ?? "غير محدد"}{" "}
+                                {offer.fee != null
+                                  ? offer.fee.toLocaleString("ar-IQ")
+                                  : "غير محدد"}{" "}
                                 {offer.currency || "IQD"}
                               </span>
                             </div>
@@ -309,7 +401,7 @@ export default function MyHumanConsultationsPage() {
                               تاريخ العرض:{" "}
                               {offerDate.toLocaleString("ar-IQ")}
                             </div>
-                            {offer.status === "ACCEPTED_BY_CLIENT" && (
+                            {isAccepted && (
                               <div className="text-[11px] text-emerald-400">
                                 تم اختيار هذا المحامي لهذا الطلب.
                               </div>
@@ -317,22 +409,29 @@ export default function MyHumanConsultationsPage() {
                           </div>
 
                           <div className="flex flex-col items-center gap-1">
-                            {offer.status === "ACCEPTED_BY_CLIENT" ? (
+                            {isAccepted ? (
                               <span className="text-xs text-emerald-400">
                                 تم الاختيار
                               </span>
-                            ) : req.status === "COMPLETED" ||
-                              req.status === "CANCELED" ? (
+                            ) : isFinished ? (
                               <span className="text-xs text-zinc-500">
-                                لا يمكن اختيار محامٍ لطلب منهي أو ملغى.
+                                لا يمكن اختيار محامٍ لطلب منهٍ أو ملغى.
                               </span>
                             ) : (
-                              <AcceptOfferButton
-                                requestId={req.id}
-                                offerId={offer.id}
+                              <button
+                                onClick={() =>
+                                  setConfirm({
+                                    requestId: req.id,
+                                    offerId: offer.id,
+                                    lawyerName:
+                                      lawyer?.name || "هذا المحامي",
+                                  })
+                                }
                                 disabled={hasAcceptedOffer}
-                                onAccepted={fetchData}
-                              />
+                                className="px-3 py-1.5 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                اختيار هذا المحامي
+                              </button>
                             )}
                           </div>
                         </div>
@@ -345,7 +444,49 @@ export default function MyHumanConsultationsPage() {
           })}
         </div>
       </div>
+
+      {/* نافذة التأكيد */}
+      {confirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={() => !accepting && setConfirm(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
+            <div className="text-amber-400 text-3xl mb-2">⚠</div>
+            <div className="font-semibold text-lg mb-1">
+              تأكيد اختيار المحامي
+            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed mb-5">
+              عند اختيار{" "}
+              <span className="font-semibold text-zinc-200">
+                {confirm.lawyerName}
+              </span>{" "}
+              سيُرفض باقي العروض تلقائياً وتُفتح غرفة محادثة. لا يمكن
+              التراجع عن هذا الإجراء.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirm(null)}
+                disabled={accepting}
+                className="flex-1 px-4 py-2 rounded-lg text-sm border border-zinc-600 text-zinc-200 hover:bg-zinc-800 disabled:opacity-60"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={doAccept}
+                disabled={accepting}
+                className="flex-1 px-4 py-2 rounded-lg text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {accepting ? "جارٍ الاختيار..." : "تأكيد الاختيار"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
