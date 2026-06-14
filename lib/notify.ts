@@ -6,6 +6,48 @@ import {
   sendOfferAcceptedEmail,
 } from "@/lib/mailer";
 
+// إرسال Push عبر Expo — best-effort
+async function sendExpoPush(
+  userId: number,
+  title: string,
+  body: string
+): Promise<boolean> {
+  try {
+    const tokens = await prisma.pushToken.findMany({
+      where: { userId },
+      select: { token: true },
+    });
+
+    if (tokens.length === 0) return false;
+
+    // Expo يستقبل رسائل متعددة دفعة واحدة
+    const messages = tokens.map((t) => ({
+      to: t.token,
+      sound: "default",
+      title,
+      body,
+    }));
+
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(messages),
+    });
+
+    if (!res.ok) {
+      console.error("Expo push failed:", await res.text());
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("sendExpoPush error:", e);
+    return false;
+  }
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
 
@@ -26,11 +68,11 @@ type NotifyParams = {
 
 /**
  * دالة مركزية: تكتب إشعاراً داخل المنصة دائماً، وترسل إيميلاً
- * حسب النوع (best-effort — لا تُسقط العملية إن فشل الإيميل).
+ * و Push حسب النوع (best-effort — لا تُسقط العملية إن فشلت أي قناة).
  */
 export async function notifyUser(
   params: NotifyParams
-): Promise<{ ok: boolean; emailSent: boolean }> {
+): Promise<{ ok: boolean; emailSent: boolean; pushSent: boolean }> {
   const { userId, title, body, emailKind = null, emailData } = params;
 
   // 1) إشعار داخل المنصة (دائماً)
@@ -77,5 +119,13 @@ export async function notifyUser(
     }
   }
 
-  return { ok: true, emailSent };
+  // 3) إشعار Push (best-effort — لا يُسقط العملية)
+  let pushSent = false;
+  try {
+    pushSent = await sendExpoPush(userId, title, body);
+  } catch (e) {
+    console.error("notifyUser push failed:", e);
+  }
+
+  return { ok: true, emailSent, pushSent };
 }
