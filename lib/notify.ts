@@ -10,7 +10,8 @@ import {
 async function sendExpoPush(
   userId: number,
   title: string,
-  body: string
+  body: string,
+  data?: Record<string, any>
 ): Promise<boolean> {
   try {
     const tokens = await prisma.pushToken.findMany({
@@ -26,6 +27,7 @@ async function sendExpoPush(
       sound: "default",
       title,
       body,
+      data: data || {},
     }));
 
     const res = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -64,10 +66,11 @@ type NotifyParams = {
     offerPath?: string;
     chatPath?: string;
   };
+  pushData?: Record<string, any>;
 };
 
 /**
- * دالة مركزية: تكتب إشعاراً داخل المنصة دائماً، وترسل إيميلاً
+ * دالة مركزية: تكتب إشعاراً داخل المنصة دائماً, وترسل إيميلاً
  * و Push حسب النوع (best-effort — لا تُسقط العملية إن فشلت أي قناة).
  */
 export async function notifyUser(
@@ -122,7 +125,7 @@ export async function notifyUser(
   // 3) إشعار Push (best-effort — لا يُسقط العملية)
   let pushSent = false;
   try {
-    pushSent = await sendExpoPush(userId, title, body);
+    pushSent = await sendExpoPush(userId, title, body, params.pushData);
   } catch (e) {
     console.error("notifyUser push failed:", e);
   }

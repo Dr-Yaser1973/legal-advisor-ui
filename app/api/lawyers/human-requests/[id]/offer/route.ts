@@ -108,7 +108,7 @@ export async function POST(
     // best-effort: لا يُسقط نجاح العملية إن فشل الإشعار
     if (isNewOffer) {
       try {
-        await notifyUser({
+       await notifyUser({
           userId: requestObj.clientId,
           title: "وصلك عرض جديد",
           body: `تم تقديم عرض جديد على استشارتك: ${
@@ -119,6 +119,10 @@ export async function POST(
             subject:
               requestObj.consultation?.title || `طلب #${requestId}`,
             offerPath: "/consultations/human",
+          },
+          pushData: {
+            type: "new_offer",
+            screen: "/(main)/consultations",
           },
         });
       } catch (notifyError) {
