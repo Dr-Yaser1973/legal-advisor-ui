@@ -14,9 +14,9 @@ function buildFileUrl(filename: string | null) {
 
 export async function GET(
   _req: NextRequest,
-  ctx: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const { id } = ctx.params;
+  const { id } = await ctx.params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing ID" }, { status: 400 });
 
   try {
@@ -84,7 +84,7 @@ export async function GET(
         },
         ratings: {
           take: 5,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { id: 'desc' },
           include: {
             user: {
               select: { id: true, name: true, image: true }
@@ -98,8 +98,17 @@ export async function GET(
       return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
     }
 
+    // حل موضعي: الاستعلام يتضمن include صحيحاً، لكن الاستنتاج يفقد العلاقات هنا.
+    // التحويل يعكس الواقع وقت التشغيل (Prisma يُرجع هذه العلاقات فعلاً).
+    const it = item as typeof item & {
+      itemDocuments: any[];
+      itemTags: any[];
+      fromRelations: any[];
+      toRelations: any[];
+    };
+
     // تجهيز روابط جميع الملفات
-    const documents = item.itemDocuments.map(doc => ({
+    const documents = it.itemDocuments.map((doc: any) => ({
       id: doc.document.id,
       title: doc.document.title,
       filename: doc.document.filename,
@@ -110,11 +119,11 @@ export async function GET(
     }));
 
     // تجهيز التصنيفات
-    const tags = item.itemTags.map(t => t.tag.name);
+    const tags = it.itemTags.map((t: any) => t.tag.name);
 
     // تجهيز المواد المرتبطة (دمج العلاقات)
     const relatedItems = [
-      ...item.fromRelations.map(rel => ({
+      ...it.fromRelations.map((rel: any) => ({
         id: rel.toItem.id,
         titleAr: rel.toItem.titleAr,
         titleEn: rel.toItem.titleEn,
@@ -122,7 +131,7 @@ export async function GET(
         itemType: rel.toItem.itemType,
         relationType: rel.relationType
       })),
-      ...item.toRelations.map(rel => ({
+      ...it.toRelations.map((rel: any) => ({
         id: rel.fromItem.id,
         titleAr: rel.fromItem.titleAr,
         titleEn: rel.fromItem.titleEn,
@@ -140,7 +149,7 @@ export async function GET(
           id: { not: id },
           isPublished: true,
           NOT: {
-            id: { in: relatedItems.map(r => r.id) }
+            id: { in: relatedItems.map((r: any) => r.id) }
           }
         },
         take: 6 - relatedItems.length,
@@ -152,8 +161,8 @@ export async function GET(
           itemType: true
         }
       });
-      
-      relatedItems.push(...sameCategory.map(item => ({
+
+      relatedItems.push(...sameCategory.map((item) => ({
         ...item,
         relationType: 'SAME_CATEGORY'
       })));
@@ -172,8 +181,8 @@ export async function GET(
         ...item,
         documents,
         tags,
-        pdfUrl: documents.find(d => d.mimetype.includes('pdf'))?.url || null,
-        wordUrl: documents.find(d => d.mimetype.includes('word') || d.mimetype.includes('document'))?.url || null,
+        pdfUrl: documents.find((d: any) => d.mimetype.includes('pdf'))?.url || null,
+        wordUrl: documents.find((d: any) => d.mimetype.includes('word') || d.mimetype.includes('document'))?.url || null,
         rating: ratingStats._avg.rating || 0,
         totalRatings: ratingStats._count
       },
@@ -197,17 +206,21 @@ export async function GET(
 // POST للإجراءات التفاعلية
 export async function POST(
   req: NextRequest,
-  ctx: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const { id } = ctx.params;
-  const session = await getServerSession(authOptions as any);
-  
+  const { id } = await ctx.params;
+  const session = (await getServerSession(authOptions as any)) as {
+    user?: { id: number };
+  } | null;
+
   if (!session?.user) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized" },
       { status: 401 }
     );
   }
+
+  const userId = Number(session.user.id);
 
   const body = await req.json();
   const { action } = body;
@@ -219,7 +232,7 @@ export async function POST(
           where: {
             itemId_userId: {
               itemId: id,
-              userId: session.user.id
+              userId
             }
           }
         });
@@ -232,10 +245,10 @@ export async function POST(
           await prisma.libraryFavorite.create({
             data: {
               itemId: id,
-              userId: session.user.id
+              userId
             }
           });
-          
+
           // زيادة عدد الحفظ
           await prisma.libraryItem.update({
             where: { id },
@@ -250,13 +263,13 @@ export async function POST(
           where: {
             itemId_userId: {
               itemId: id,
-              userId: session.user.id
+              userId
             }
           },
           update: { rating, review },
           create: {
             itemId: id,
-            userId: session.user.id,
+            userId,
             rating,
             review
           }
@@ -275,7 +288,7 @@ export async function POST(
         await prisma.libraryNote.create({
           data: {
             itemId: id,
-            userId: session.user.id,
+            userId,
             content,
             page
           }
