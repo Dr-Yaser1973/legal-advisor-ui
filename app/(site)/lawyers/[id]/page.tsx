@@ -13,11 +13,11 @@ type Lawyer = {
   officeAddress: string;
 };
 
-export default function LawyerDetailsPage() {
+ export default function LawyerDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
   const currentUser = (session?.user as any);
-  const isOwner = currentUser?.id === Number(id);
+  const isOwner = Number(currentUser?.id) === Number(id);
   const isAdmin = currentUser?.role === "ADMIN";
 
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);

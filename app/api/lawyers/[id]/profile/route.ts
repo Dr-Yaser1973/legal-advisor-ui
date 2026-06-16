@@ -7,9 +7,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-type Params = { params: { id: string } };
+ type Params = { params: Promise<{ id: string }> };
 
-// POST: المحامي يرسل نبذة أو صورة جديدة (تحفظ كـ pending)
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
@@ -19,10 +18,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    const lawyerId = Number(params.id);
+    const { id } = await params;
+    const lawyerId = Number(id);
 
-    // تأكد أن المحامي يعدّل ملفه هو فقط
-    if (user.id !== lawyerId && user.role !== "ADMIN") {
+    if (Number(user.id) !== lawyerId && user.role !== "ADMIN") {
       return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
     }
 
@@ -54,10 +53,11 @@ export async function POST(req: NextRequest, { params }: Params) {
         return NextResponse.json({ error: "فشل رفع الصورة" }, { status: 500 });
       }
 
-      await prisma.lawyerProfile.update({
-        where: { userId: lawyerId },
-        data: { pendingAvatarPath: path },
-      });
+      await prisma.lawyerProfile.upsert({
+      where: { userId: lawyerId },
+      update: { pendingAvatarPath: path },
+      create: { userId: lawyerId, pendingAvatarPath: path },
+    });
 
       return NextResponse.json({ ok: true, message: "تم إرسال الصورة وستظهر بعد مراجعة الإدارة" });
     }
@@ -80,9 +80,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
-    await prisma.lawyerProfile.update({
+    await prisma.lawyerProfile.upsert({
       where: { userId: lawyerId },
-      data: { pendingBio: bio.trim() },
+      update: { pendingBio: bio.trim() },
+      create: { userId: lawyerId, pendingBio: bio.trim() },
     });
 
     return NextResponse.json({
