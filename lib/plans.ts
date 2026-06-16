@@ -55,6 +55,9 @@ export const POINTS_COST = {
 
 export type PointsAction = keyof typeof POINTS_COST;
 
+// الأفعال التي تُسجَّل في aiUsageLog (كل استخدام لمحرك AI)
+const AI_TRACKED_ACTIONS: PointsAction[] = ["AI_CONSULT", "AI_TRANSLATION"];
+
 // ===============================
 // صلاحيات كل باقة
 // ===============================
@@ -173,9 +176,6 @@ export async function getUserPlanData(userId: number) {
 // ===============================
 // التحقق قبل تنفيذ عملية تستهلك نقاطاً
 // ===============================
- // ===============================
-// التحقق قبل تنفيذ عملية تستهلك نقاطاً
-// ===============================
 export async function canPerformAction(
   userId: number,
   action: PointsAction
@@ -233,7 +233,8 @@ export async function canPerformAction(
 }
 
 // ===============================
-// تسجيل استخدام AI
+// تسجيل استخدام AI (مستقل — يُستعمل عند الحاجة لتسجيل دون استهلاك)
+// ملاحظة: consumePoints يسجّل تلقائياً، فلا تستدعِ هذه بعده لتفادي التسجيل المضاعف.
 // ===============================
 export async function logAiUsage(
   userId: number,
@@ -245,7 +246,8 @@ export async function logAiUsage(
 }
 
 // ===============================
-// استهلاك النقاط
+ // ===============================
+// استهلاك النقاط (يسجّل استخدام AI تلقائياً)
 // ===============================
 export async function consumePoints(
   userId: number,
@@ -254,24 +256,41 @@ export async function consumePoints(
   const { allowed, cost, reason } = await canPerformAction(userId, action);
 
   if (!allowed) throw new Error(reason);
+
+  const isAiAction = AI_TRACKED_ACTIONS.includes(action);
+
+  // عملية مجانية (cost === 0): لا نقاط، لكن نسجّل استخدام AI إن كان فعلاً من نوع AI
   if (cost === 0) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { points: true } });
+    if (isAiAction) {
+      await prisma.aiUsageLog.create({ data: { userId, action } });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { points: true },
+    });
     return { success: true, remainingPoints: user?.points ?? 0 };
   }
 
-  const [updated] = await prisma.$transaction([
-    prisma.user.update({
+  // عملية بنقاط: خصم + تسجيل المعاملة + تسجيل استخدام AI (إن لزم) — ذرّياً
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.update({
       where: { id: userId },
       data: { points: { decrement: cost } },
-    }),
-    prisma.pointsTransaction.create({
+    });
+
+    await tx.pointsTransaction.create({
       data: { userId, amount: -cost, reason: action },
-    }),
-  ]);
+    });
+
+    if (isAiAction) {
+      await tx.aiUsageLog.create({ data: { userId, action } });
+    }
+
+    return u;
+  });
 
   return { success: true, remainingPoints: updated.points };
 }
-
 // ===============================
 // إضافة نقاط
 // ===============================

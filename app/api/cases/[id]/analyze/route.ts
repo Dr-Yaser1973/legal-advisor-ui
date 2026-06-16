@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateAnswer } from "@/lib/ai";
 import { requireCaseAccess } from "@/lib/auth/guards";
- import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
+import { consumePoints, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -23,13 +23,39 @@ export async function POST(_req: Request, context: RouteContext) {
     const auth = await requireCaseAccess(id);
     if (!auth.ok) return auth.res;
 
-    // ===============================
-    // التحقق من الباقة والنقاط
-    // ===============================
     const userId = Number(auth.user.id);
-    const { allowed, reason } = await canPerformAction(userId, "AI_CONSULT");
 
-    if (!allowed) {
+    // ===============================
+    // فحص صلاحية إدارة القضايا (محجوبة عن FREE)
+    // ===============================
+    const planData = await getUserPlanData(userId);
+    if (!planData?.permissions.caseManagement) {
+      return NextResponse.json(
+        {
+          error: "إدارة القضايا غير متاحة في باقتك. يرجى الترقية.",
+          upgradeRequired: true,
+        },
+        { status: 403 }
+      );
+    }
+
+    // ===============================
+    // جلب القضية أولاً (نتأكد من وجودها قبل أي استهلاك)
+    // ===============================
+    const c = await prisma.case.findUnique({ where: { id } });
+    if (!c) {
+      return NextResponse.json({ error: "القضية غير موجودة." }, { status: 404 });
+    }
+
+    // ===============================
+    // الاستهلاك أولاً: يفحص الحد ويخصم ويسجّل ذرّياً.
+    // إن فشل، لا يصل المستخدم إلى الـ AI إطلاقاً.
+    // ===============================
+    try {
+      await consumePoints(userId, "AI_CONSULT");
+    } catch (err) {
+      const reason =
+        err instanceof Error ? err.message : "غير مسموح بهذه العملية.";
       return NextResponse.json(
         { error: reason, upgradeRequired: true },
         { status: 403 }
@@ -37,39 +63,18 @@ export async function POST(_req: Request, context: RouteContext) {
     }
 
     // ===============================
-    // جلب القضية
+    // تحليل القضية بـ GPT (بعد تأكيد الاستهلاك)
     // ===============================
-    const c = await prisma.case.findUnique({ where: { id } });
-    if (!c) {
-      return NextResponse.json({ error: "القضية غير موجودة." }, { status: 404 });
-    }
-
     const contextText = [
       `عنوان القضية: ${c.title ?? ""}`,
       `الأطراف: ${JSON.stringify(c.parties ?? {}, null, 2)}`,
       `الوصف: ${c.description ?? ""}`,
     ].join("\n");
 
-    // ===============================
-    // تحليل القضية بـ GPT-5.5
-    // ===============================
     const answer = await generateAnswer(
       "حلّل هذه القضية قانونيًا وقدّم توصيات عملية مختصرة.",
       contextText
     );
-
-    // ===============================
-    // استهلاك النقاط بعد نجاح التحليل
-    // ===============================
-     // ===============================
-// استهلاك النقاط بعد نجاح التحليل
-// ===============================
-try {
-  await logAiUsage(userId, "AI_CONSULT");  // ← أضف هذا السطر
-  await consumePoints(userId, "AI_CONSULT");
-} catch (err) {
-  console.error("Points consumption error:", err);
-}
 
     // ===============================
     // حفظ نتيجة التحليل
