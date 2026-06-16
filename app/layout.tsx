@@ -1,4 +1,5 @@
  // app/layout.tsx
+ import Providers from "./providers";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -129,10 +130,10 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="font-sans antialiased bg-[#0b1220] text-gray-200">
+         <body className="font-sans antialiased bg-[#0b1220] text-gray-200">
         {/* ✅ التحديث التلقائي عند deploy جديد */}
         <ServiceWorkerUpdater />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
