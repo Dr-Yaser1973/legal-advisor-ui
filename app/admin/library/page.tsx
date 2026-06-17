@@ -208,13 +208,7 @@ export default async function AdminLibraryPage() {
                 <div className="flex items-center gap-2">
                   <EditLibraryItemButton item={item} />
                   
-                  <Link
-                    href={`/admin/library/edit/${item.id}`}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="تعديل"
-                  >
-                    ✏️
-                  </Link>
+                  
 
                   <DeleteLibraryItemButton 
                     id={item.id} 
