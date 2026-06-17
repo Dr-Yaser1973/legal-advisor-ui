@@ -81,8 +81,8 @@ ${updated.question_text}
 ${updated.answer_text}
 `.trim();
 
-      const emb = await getEmbedding(text);
-      await prisma.legalDocEmbedding.upsert({
+    const emb = await getEmbedding(text);
+      await prisma.questionEmbedding.upsert({
         where: { legalQuestionId: updated.id },
         update: { embedding: emb as unknown as any },
         create: { legalQuestionId: updated.id, embedding: emb as unknown as any },
