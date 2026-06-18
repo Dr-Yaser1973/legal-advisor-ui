@@ -1,8 +1,8 @@
-//app/api/organizations/[id]/members/route.ts
+ // app/api/organizations/[id]/members/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-  import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const runtime = "nodejs";
 
@@ -18,12 +18,13 @@ async function getManagerMembership(userId: number, orgId: number) {
 }
 
 // GET: قائمة أعضاء المنظمة
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const orgId = Number(params.id);
+    const { id } = await params;
+    const orgId = Number(id);
     if (isNaN(orgId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
 
     const userId = Number((session.user as any).id);
@@ -52,7 +53,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 // POST: إضافة عضو جديد
- export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });

@@ -1,5 +1,4 @@
-
-// app/api/legal-questions/[id]/route.ts
+ // app/api/legal-questions/[id]/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -20,9 +19,9 @@ const UpdateSchema = z.object({
 }).refine((d) => Object.keys(d).length > 0, { message: "لا يوجد حقول لتحديثها" });
 
 /* ===== GET /api/legal-questions/:id ===== */
-export async function GET(_: Request, ctx: { params: { id: string } }) {
+export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = IdSchema.parse(ctx.params);
+    const { id } = IdSchema.parse(await ctx.params);
     const item = await prisma.legalQuestion.findUnique({
       where: { id },
       select: {
@@ -39,13 +38,13 @@ export async function GET(_: Request, ctx: { params: { id: string } }) {
 }
 
 /* ===== PUT /api/legal-questions/:id ===== */
-export async function PUT(req: Request, ctx: { params: { id: string } }) {
+export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "غير مصرّح" }, { status: 401 });
     }
-    const { id } = IdSchema.parse(ctx.params);
+    const { id } = IdSchema.parse(await ctx.params);
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ error: "JSON مفقود" }, { status: 400 });
     const data = UpdateSchema.parse(body);
@@ -81,7 +80,7 @@ ${updated.question_text}
 ${updated.answer_text}
 `.trim();
 
-    const emb = await getEmbedding(text);
+      const emb = await getEmbedding(text);
       await prisma.questionEmbedding.upsert({
         where: { legalQuestionId: updated.id },
         update: { embedding: emb as unknown as any },
@@ -98,13 +97,13 @@ ${updated.answer_text}
 }
 
 /* ===== DELETE /api/legal-questions/:id ===== */
-export async function DELETE(_: Request, ctx: { params: { id: string } }) {
+export async function DELETE(_: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "غير مصرّح" }, { status: 401 });
     }
-    const { id } = IdSchema.parse(ctx.params);
+    const { id } = IdSchema.parse(await ctx.params);
 
     // مع onDelete: Cascade في العلاقة، سيُحذف embedding تلقائيًا
     await prisma.legalQuestion.delete({ where: { id } });

@@ -1,8 +1,8 @@
-//app/api/organizations/[id]/members/[memberId]/route.ts
+ // app/api/organizations/[id]/members/[memberId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-  import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const runtime = "nodejs";
 
@@ -17,14 +17,14 @@ async function canManage(userId: number, orgId: number, isPlatformAdmin: boolean
 }
 
 // PATCH: تغيير دور العضو أو تفعيله/تعطيله
- export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; memberId: string }> }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; memberId: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-      const { id, memberId: memberIdStr } = await params;
-  const orgId = Number(id);
-  const memberId = Number(memberIdStr);
+    const { id, memberId: memberIdStr } = await params;
+    const orgId = Number(id);
+    const memberId = Number(memberIdStr);
     if (isNaN(orgId) || isNaN(memberId)) {
       return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
     }
@@ -36,7 +36,6 @@ async function canManage(userId: number, orgId: number, isPlatformAdmin: boolean
       return NextResponse.json({ error: "لا تملك صلاحية التعديل." }, { status: 403 });
     }
 
-    // العضو يجب أن ينتمي لنفس المنظمة
     const member = await prisma.orgMember.findUnique({ where: { id: memberId } });
     if (!member || member.orgId !== orgId) {
       return NextResponse.json({ error: "العضو غير موجود." }, { status: 404 });
@@ -45,7 +44,6 @@ async function canManage(userId: number, orgId: number, isPlatformAdmin: boolean
     const body = await req.json();
     const { role, isActive, branchId } = body || {};
 
-    // حماية: لا يمكن تعطيل أو تخفيض آخر OWNER
     if (member.role === "OWNER" && (role && role !== "OWNER" || isActive === false)) {
       const ownerCount = await prisma.orgMember.count({
         where: { orgId, role: "OWNER", isActive: true },
@@ -81,14 +79,15 @@ async function canManage(userId: number, orgId: number, isPlatformAdmin: boolean
 // DELETE: إزالة عضو
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
-    const orgId = Number(params.id);
-    const memberId = Number(params.memberId);
+    const { id, memberId: memberIdStr } = await params;
+    const orgId = Number(id);
+    const memberId = Number(memberIdStr);
     if (isNaN(orgId) || isNaN(memberId)) {
       return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
     }
@@ -105,7 +104,6 @@ export async function DELETE(
       return NextResponse.json({ error: "العضو غير موجود." }, { status: 404 });
     }
 
-    // حماية: لا يمكن حذف آخر OWNER
     if (member.role === "OWNER") {
       const ownerCount = await prisma.orgMember.count({
         where: { orgId, role: "OWNER", isActive: true },

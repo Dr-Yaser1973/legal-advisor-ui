@@ -1,4 +1,4 @@
-// app/api/translation/office/requests/[id]/accept/route.ts
+ // app/api/translation/office/requests/[id]/accept/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
@@ -22,7 +22,8 @@ export async function POST(
       );
     }
 
-    const requestId = Number(params.id);
+    const { id } = await params;
+    const requestId = Number(id);
     if (!Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح." },
@@ -121,4 +122,3 @@ export async function POST(
     );
   }
 }
-

@@ -5,9 +5,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   turbopack: {},
 
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  
 
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],

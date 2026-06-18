@@ -5,9 +5,10 @@ import { requireCaseAccess } from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const caseId = Number(params.id);
+    const { id } = await params;
+    const caseId = Number(id);
     if (!Number.isFinite(caseId)) {
       return NextResponse.json({ error: "معرّف القضية غير صالح." }, { status: 400 });
     }

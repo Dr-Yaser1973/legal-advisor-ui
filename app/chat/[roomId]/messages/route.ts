@@ -1,12 +1,13 @@
-// app/api/chat/[id]/messages/route.ts
+ // app/chat/[roomId]/messages/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
-  const roomId = Number(params.id);
+  const { roomId: rid } = await params;
+  const roomId = Number(rid);
 
   const messages = await prisma.message.findMany({
     where: { roomId },
@@ -18,4 +19,3 @@ export async function GET(
 
   return NextResponse.json(messages);
 }
-

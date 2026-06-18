@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = (await getServerSession(authOptions as any)) as any;
@@ -33,7 +33,8 @@ export async function POST(
       );
     }
 
-    const requestId = Number(params.id);
+    const { id } = await params;
+    const requestId = Number(id);
     if (!Number.isFinite(requestId) || requestId <= 0) {
       return NextResponse.json(
         { ok: false, error: "رقم الطلب غير صالح." },

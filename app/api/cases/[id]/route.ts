@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
- import { getCaseAccess, canDeleteCase } from "@/lib/caseAccess";
+import { getCaseAccess, canDeleteCase } from "@/lib/caseAccess";
 
 export const runtime = "nodejs";
 
- async function getAuthorizedUser() {
+async function getAuthorizedUser() {
   const session: any = await getServerSession(authOptions as any);
   const user = session?.user as any;
 
@@ -28,7 +28,6 @@ export const runtime = "nodejs";
 }
 
 // GET /api/cases/[id]
- // GET
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getAuthorizedUser();
   if ("error" in auth) return auth.error;
@@ -36,7 +35,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id: idStr } = await params;
   const id = Number(idStr);
-  // ... الباقي كما هو
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
   }
@@ -53,7 +51,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "غير موجود." }, { status: 404 });
   }
 
-  // التحقق المركزي من الصلاحية
   const access = await getCaseAccess(
     Number(user.id),
     user.role === "ADMIN",
@@ -63,23 +60,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "لا تملك صلاحية الوصول لهذه القضية." }, { status: 403 });
   }
 
-  // نمرّر access للواجهة لإخفاء أزرار التعديل عن READ
   return NextResponse.json({ item, access });
 }
 
 // PATCH /api/cases/[id]
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthorizedUser();
     if ("error" in auth) return auth.error;
     const user = auth.user;
 
-    const id = Number(params.id);
+    const { id: idStr } = await params;
+    const id = Number(idStr);
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
     }
 
-    // نجلب القضية أولاً للتحقق من الصلاحية
     const existing = await prisma.case.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "غير موجود." }, { status: 404 });
@@ -94,7 +90,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (data.filingDate) data.filingDate = new Date(data.filingDate);
     if (data.closingDate) data.closingDate = new Date(data.closingDate);
 
-    // حماية: نمنع تعديل حقول الملكية والربط عبر هذا المسار
     delete data.userId;
     delete data.orgId;
     delete data.branchId;
@@ -112,13 +107,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/cases/[id]
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthorizedUser();
     if ("error" in auth) return auth.error;
     const user = auth.user;
 
-    const id = Number(params.id);
+    const { id: idStr } = await params;
+    const id = Number(idStr);
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "معرّف غير صالح." }, { status: 400 });
     }
@@ -128,8 +124,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "غير موجود." }, { status: 404 });
     }
 
-    // الحذف يتطلب WRITE — وغالباً نريد قصره على OWNER/ADMIN ومالك القضية
-      const allowed = await canDeleteCase(Number(user.id), user.role === "ADMIN", existing);
+    const allowed = await canDeleteCase(Number(user.id), user.role === "ADMIN", existing);
     if (!allowed) {
       return NextResponse.json({ error: "صلاحية الحذف مقصورة على مالك المنظمة أو الإدارة." }, { status: 403 });
     }

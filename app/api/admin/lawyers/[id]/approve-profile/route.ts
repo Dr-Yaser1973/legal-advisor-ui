@@ -1,4 +1,4 @@
-// app/api/admin/lawyers/[id]/approve-profile/route.ts
+ // app/api/admin/lawyers/[id]/approve-profile/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
     }
 
-    const lawyerId = Number(params.id);
+    const { id } = await params;
+    const lawyerId = Number(id);
     const { action, field } = await req.json();
     // action: "approve" | "reject"
     // field: "bio" | "avatar" | "both"
