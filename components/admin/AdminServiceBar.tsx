@@ -1,4 +1,4 @@
-//components/admin/AdminServiceBar.tsx
+ //components/admin/AdminServiceBar.tsx
 "use client";
 
 import Link from "next/link";
@@ -14,8 +14,15 @@ import {
   Scale,
 } from "lucide-react";
 
+type ServiceItem = {
+  href: string;
+  label: string;
+  icon: typeof BookOpen;
+  disabled?: boolean;
+};
+
 export default function AdminServiceBar() {
-  const adminServices = [
+  const adminServices: ServiceItem[] = [
     {
       href: "/admin/library",
       label: "إدارة المكتبة",
@@ -40,7 +47,6 @@ export default function AdminServiceBar() {
       href: "/admin/ocr",
       label: "OCR",
       icon: ScanText,
-      disabled: true,
     },
     {
       href: "/admin/ai-usage",
@@ -50,7 +56,7 @@ export default function AdminServiceBar() {
     },
   ];
 
-  const siteServices = [
+  const siteServices: ServiceItem[] = [
     {
       href: "/",
       label: "الرئيسية",
@@ -130,4 +136,3 @@ export default function AdminServiceBar() {
     </div>
   );
 }
-

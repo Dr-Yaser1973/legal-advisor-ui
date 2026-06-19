@@ -75,8 +75,8 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         documentId: id,
         bucket: "library",
-        objectPath: filePath, // ✅ الاسم الصحيح
-        maxPages: 20,
+        objectPath: filePath.startsWith("laws/") ? filePath : `laws/${filePath}`,
+        maxPages: 1000,
       }),
     });
 
