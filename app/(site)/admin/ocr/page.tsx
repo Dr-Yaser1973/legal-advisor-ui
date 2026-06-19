@@ -67,12 +67,9 @@ export default function AdminOcrPage() {
                   </td>
 
                   <td className="p-3">
-                     <OcrRunButton
-  documentId={doc.id}
-  onDone={load}
-/>
-  /
+                    <OcrRunButton documentId={doc.id} onDone={load} />
                   </td>
+  
                 </tr>
               ))}
             </tbody>
