@@ -5,8 +5,6 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   turbopack: {},
 
-  
-
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
@@ -16,26 +14,44 @@ const nextConfig: NextConfig = {
     middlewareClientMaxBodySize: "200mb",
   },
 };
-
-// PWA يلفّ nextConfig
+ // PWA يلفّ nextConfig
 const configWithPWA = withPWA({
   dest: "public",
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
+  register: true,
   disable: process.env.NODE_ENV === "development",
-})(nextConfig);
 
+  workboxOptions: {
+    // التفعيل الفوري للـ SW الجديد محل القديم
+    skipWaiting: true,
+    clientsClaim: true,
+
+    // استثناء المصادقة من التنقّل المخزّن
+    navigateFallbackDenylist: [
+      /^\/api\/auth/,
+      /^\/login/,
+      /^\/api\//,
+    ],
+
+    // لا تخزين إطلاقاً لنطاقات OAuth الخارجية
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/(accounts\.google\.com|oauth2\.googleapis\.com)/,
+        handler: "NetworkOnly",
+      },
+    ],
+  },
+})(nextConfig);
 // Sentry يلفّ النتيجة (الطبقة الخارجية)
- export default withSentryConfig(configWithPWA, {
-  org: "smartlegal",      // ضع slug مؤسستك
-  project: "smartlegal-web",   // ضع اسم مشروع الويب
+export default withSentryConfig(configWithPWA, {
+  org: "smartlegal",
+  project: "smartlegal-web",
 
   silent: !process.env.CI,
   widenClientFileUpload: true,
   disableLogger: true,
 
-  // يحذف ملفات .map من bundle بعد رفعها إلى Sentry
-  // (المستخدم لا يراها، وحجم النشر أصغر)
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
