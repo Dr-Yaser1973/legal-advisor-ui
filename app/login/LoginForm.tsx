@@ -1,13 +1,12 @@
-"use client";
+ "use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { FcGoogle } from "react-icons/fc";
 
 export default function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [email, setEmail] = useState("");
@@ -39,7 +38,8 @@ export default function LoginForm() {
         return;
       }
 
-      router.push(res.url || callbackUrl);
+      // إعادة تحميل كاملة لضمان قراءة الجلسة الجديدة من الكوكي
+      window.location.href = res.url || callbackUrl;
     } catch (err) {
       console.error("LOGIN_FETCH_ERROR", err);
       setErrorMsg("حدث خطأ أثناء الاتصال بالخادم.");
@@ -93,32 +93,31 @@ export default function LoginForm() {
         >
           {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
         </button>
+
         <div className="mt-4">
-  <div className="flex items-center gap-3">
-    <div className="h-px flex-1 bg-zinc-700" />
-    <span className="text-xs text-zinc-400">أو</span>
-    <div className="h-px flex-1 bg-zinc-700" />
-  </div>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-zinc-700" />
+            <span className="text-xs text-zinc-400">أو</span>
+            <div className="h-px flex-1 bg-zinc-700" />
+          </div>
 
-  <button
-  type="button"
-  onClick={() => {
-    signIn("google", {
-      callbackUrl: "/",
-    });
-  }}
-  className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
->
-  <FcGoogle className="h-5 w-5" />
-  <span>تسجيل الدخول عبر Google</span>
-  <span className="text-xs text-zinc-400 hidden sm:inline">
-    Sign in with Google
-  </span>
-</button>
-
-</div>
+          <button
+            type="button"
+            onClick={() => {
+              signIn("google", {
+                callbackUrl: "/",
+              });
+            }}
+            className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800"
+          >
+            <FcGoogle className="h-5 w-5" />
+            <span>تسجيل الدخول عبر Google</span>
+            <span className="text-xs text-zinc-400 hidden sm:inline">
+              Sign in with Google
+            </span>
+          </button>
+        </div>
       </form>
     </div>
   );
 }
-
