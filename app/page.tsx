@@ -17,7 +17,7 @@ import {
   Globe,
   CheckCircle2,
 } from "lucide-react";
-
+import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
 type Lang = "ar" | "en";
 
 type Service = {
@@ -433,10 +433,17 @@ export default function HomeGovPortal() {
                   text={t.trust[1].title}
                   icon={<BadgeCheck className="h-4 w-4" />}
                 />
-                <TrustPill
+                 <TrustPill
                   text={t.trust[2].title}
                   icon={<Sparkles className="h-4 w-4" />}
                 />
+              </div>
+
+              {/* عدّاد زوّار المنصّة */}
+              <div className="mt-6 flex justify-center md:justify-start">
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 px-6 py-4">
+                  <PlatformVisitorsCounter />
+                </div>
               </div>
             </div>
 
