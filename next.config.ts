@@ -22,21 +22,24 @@ const configWithPWA = withPWA({
   register: true,
   disable: process.env.NODE_ENV === "development",
 
-  workboxOptions: {
-    // التفعيل الفوري للـ SW الجديد محل القديم
+ workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
 
-    // استثناء المصادقة من التنقّل المخزّن
     navigateFallbackDenylist: [
       /^\/api\/auth/,
       /^\/login/,
       /^\/api\//,
     ],
 
-    // لا تخزين إطلاقاً لنطاقات OAuth الخارجية
     runtimeCaching: [
       {
+        // مسارات المصادقة: لا تُخزَّن إطلاقاً — تمرّ للشبكة دائماً
+        urlPattern: /\/api\/auth\/.*/,
+        handler: "NetworkOnly",
+      },
+      {
+        // نطاقات Google OAuth الخارجية
         urlPattern: /^https:\/\/(accounts\.google\.com|oauth2\.googleapis\.com)/,
         handler: "NetworkOnly",
       },

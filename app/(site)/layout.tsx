@@ -1,4 +1,5 @@
- import type { ReactNode } from "react";
+//app/(site)/layout.tsx
+import type { ReactNode } from "react";
 import Providers from "@/app/providers";
 import AuthButton from "@/components/AuthButton";
 import BetaAnnouncementModal from "@/components/BetaAnnouncementModal";
