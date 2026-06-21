@@ -2,6 +2,7 @@
 //app/page.tsx
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   BookOpen,
   FileText,
@@ -18,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
+import AuthButton from "@/components/AuthButton";
 type Lang = "ar" | "en";
 
 type Service = {
@@ -44,6 +46,7 @@ const CONTENT = {
     heroPrimary: "الدخول إلى المكتبة القانونية",
     heroSecondary: "إنشاء حساب",
     heroTertiary: "تسجيل الدخول",
+    heroLoggedIn: "الدخول إلى المكتبة القانونية",
 
     quickActionsTitle: "الخدمات الأساسية",
     quickActionsHint:
@@ -125,6 +128,7 @@ const CONTENT = {
     heroPrimary: "Open Legal Library",
     heroSecondary: "Create Account",
     heroTertiary: "Sign In",
+    heroLoggedIn: "Open Legal Library",
 
     quickActionsTitle: "Core Services",
     quickActionsHint:
@@ -205,6 +209,9 @@ const CONTENT = {
 export default function HomeGovPortal() {
   const [lang, setLang] = useState<Lang>("ar");
   const t = CONTENT[lang];
+
+  const { data: session } = useSession();
+  const isLoggedIn = Boolean(session?.user);
 
   const services: Service[] = useMemo(
     () => [
@@ -357,19 +364,9 @@ export default function HomeGovPortal() {
             </Link>
           </nav>
 
+          {/* الـ Header يعرض حالة المستخدم الحقيقية عبر AuthButton */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="hidden sm:inline-flex rounded-xl border border-white/10 bg-zinc-900/50 px-4 py-2 text-sm font-semibold hover:bg-zinc-900 transition"
-            >
-              {t.heroTertiary}
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex rounded-xl bg-amber-400 text-zinc-900 px-4 py-2 text-sm font-bold hover:bg-amber-300 transition"
-            >
-              {t.heroSecondary}
-            </Link>
+            <AuthButton />
           </div>
         </div>
       </header>
@@ -397,6 +394,7 @@ export default function HomeGovPortal() {
                 {t.heroSubtitle}
               </p>
 
+              {/* أزرار Hero: للزائر دعوات تسجيل بارزة، وللمسجّل دخول مباشر للمكتبة */}
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/library"
@@ -406,21 +404,35 @@ export default function HomeGovPortal() {
                   <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
 
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
-                >
-                  {t.heroSecondary}
-                  <ChevronLeft className="ms-2 h-4 w-4" />
-                </Link>
+                {!isLoggedIn && (
+                  <>
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
+                    >
+                      {t.heroSecondary}
+                      <ChevronLeft className="ms-2 h-4 w-4" />
+                    </Link>
 
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-transparent px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-white/5 transition"
-                >
-                  {t.heroTertiary}
-                  <ArrowLeft className="ms-2 h-4 w-4" />
-                </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-transparent px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-white/5 transition"
+                    >
+                      {t.heroTertiary}
+                      <ArrowLeft className="ms-2 h-4 w-4" />
+                    </Link>
+                  </>
+                )}
+
+                {isLoggedIn && (
+                  <Link
+                    href="/consultations"
+                    className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 px-5 py-3 text-sm font-semibold text-zinc-100 hover:bg-zinc-900 transition"
+                  >
+                    {lang === "ar" ? "الاستشارات" : "Consultations"}
+                    <ChevronLeft className="ms-2 h-4 w-4" />
+                  </Link>
+                )}
               </div>
 
               {/* Official Trust strip */}
@@ -433,7 +445,7 @@ export default function HomeGovPortal() {
                   text={t.trust[1].title}
                   icon={<BadgeCheck className="h-4 w-4" />}
                 />
-                 <TrustPill
+                <TrustPill
                   text={t.trust[2].title}
                   icon={<Sparkles className="h-4 w-4" />}
                 />
@@ -618,12 +630,14 @@ export default function HomeGovPortal() {
               <BookOpen className="me-2 h-5 w-5" />
               {t.mobileCta}
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-sm font-semibold text-zinc-100"
-            >
-              {lang === "ar" ? "دخول" : "Sign In"}
-            </Link>
+            {!isLoggedIn && (
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-zinc-950/40 px-4 py-3 text-sm font-semibold text-zinc-100"
+              >
+                {lang === "ar" ? "دخول" : "Sign In"}
+              </Link>
+            )}
           </div>
         </div>
       </div>
