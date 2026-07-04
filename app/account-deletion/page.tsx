@@ -85,7 +85,7 @@ export default function AccountDeletionPage() {
         <p style={{ marginBottom: 0 }}>
           إذا واجهت أي صعوبة في حذف حسابك، تواصل معنا عبر البريد:{" "}
           <a
-            href="mailto:support@smartlegaladvisor.com"
+            href="mailto:yaseralzbadi@gmail.com"
             style={{ color: "#c9a84c", textDecoration: "none" }}
           >
             support@smartlegaladvisor.com
