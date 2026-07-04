@@ -88,7 +88,7 @@ export default function AccountDeletionPage() {
             href="mailto:yaseralzbadi@gmail.com"
             style={{ color: "#c9a84c", textDecoration: "none" }}
           >
-            support@smartlegaladvisor.com
+             yaseralzbadi@gmail.com
           </a>
         </p>
       </article>
