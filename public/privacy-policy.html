@@ -1,0 +1,513 @@
+<title>Smart Lawyer Quiz — Privacy Policy</title>
+<style>
+  :root {
+    --paper: #F2F4F8;
+    --paper-raised: #FFFFFF;
+    --ink: #16202E;
+    --ink-muted: #4B5768;
+    --line: rgba(11, 31, 58, 0.13);
+    --navy: #0B1F3A;
+    --gold: #A9791F;
+    --gold-strong: #8C6417;
+    --chip-bg: rgba(11, 31, 58, 0.06);
+    --focus: #2B6CB0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0A1420;
+      --paper-raised: #101B2B;
+      --ink: #E7EAEE;
+      --ink-muted: #9FACBB;
+      --line: rgba(255, 255, 255, 0.12);
+      --navy: #C9D6E8;
+      --gold: #D9B65B;
+      --gold-strong: #EAC875;
+      --chip-bg: rgba(255, 255, 255, 0.06);
+      --focus: #6FA8E0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0A1420;
+    --paper-raised: #101B2B;
+    --ink: #E7EAEE;
+    --ink-muted: #9FACBB;
+    --line: rgba(255, 255, 255, 0.12);
+    --navy: #C9D6E8;
+    --gold: #D9B65B;
+    --gold-strong: #EAC875;
+    --chip-bg: rgba(255, 255, 255, 0.06);
+    --focus: #6FA8E0;
+  }
+  :root[data-theme="light"] {
+    --paper: #F2F4F8;
+    --paper-raised: #FFFFFF;
+    --ink: #16202E;
+    --ink-muted: #4B5768;
+    --line: rgba(11, 31, 58, 0.13);
+    --navy: #0B1F3A;
+    --gold: #A9791F;
+    --gold-strong: #8C6417;
+    --chip-bg: rgba(11, 31, 58, 0.06);
+    --focus: #2B6CB0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  /* ---------- Header / seal ---------- */
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+  .seal {
+    width: 56px;
+    height: 56px;
+    color: var(--gold);
+  }
+  .eyebrow {
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .doc-title {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: clamp(28px, 4vw, 36px);
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--navy);
+    text-wrap: balance;
+    margin: 0;
+  }
+  .doc-title .ar {
+    display: block;
+    font-family: -apple-system, "Segoe UI", Tahoma, sans-serif;
+    font-size: 0.86em;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .meta-line {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Language toggle (radio hack, no JS needed) ---------- */
+  .lang-switch {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--chip-bg);
+    border: 1px solid var(--line);
+    margin-top: 8px;
+  }
+  .lang-switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .lang-switch label {
+    padding: 7px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  #lang-ar:checked ~ .lang-switch label[for="lang-ar"],
+  #lang-en:checked ~ .lang-switch label[for="lang-en"] {
+    background: var(--navy);
+    color: var(--paper-raised);
+  }
+  :root[data-theme="dark"] #lang-ar:checked ~ .lang-switch label[for="lang-ar"],
+  :root[data-theme="dark"] #lang-en:checked ~ .lang-switch label[for="lang-en"] {
+    color: var(--paper);
+  }
+  .lang-switch label:focus-within,
+  .lang-switch input:focus-visible + label {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  #doc-ar, #doc-en { display: none; }
+  #lang-ar:checked ~ .content #doc-ar { display: block; }
+  #lang-en:checked ~ .content #doc-en { display: block; }
+
+  /* ---------- Document body ---------- */
+  .content { }
+
+  #doc-ar {
+    direction: rtl;
+    text-align: right;
+    font-family: -apple-system, "Segoe UI", Tahoma, sans-serif;
+  }
+  #doc-en {
+    direction: ltr;
+    text-align: left;
+  }
+
+  article section {
+    padding: 28px 0;
+    border-top: 1px solid var(--line);
+  }
+  article section:first-child { border-top: none; padding-top: 8px; }
+
+  h2 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--navy);
+    margin: 0 0 12px;
+  }
+  #doc-ar h2 { font-family: -apple-system, "Segoe UI", Tahoma, sans-serif; font-weight: 700; }
+
+  p {
+    max-width: 62ch;
+    line-height: 1.7;
+    color: var(--ink);
+    margin: 0 0 12px;
+  }
+  #doc-ar p { max-width: 60ch; line-height: 1.9; }
+
+  .lede {
+    font-size: 16.5px;
+    color: var(--ink-muted);
+  }
+
+  /* two-card contrast: not collected vs stored locally */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 6px;
+  }
+  @media (max-width: 560px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .card h3 {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold-strong);
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+  .card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  #doc-ar .card li { line-height: 1.7; }
+  .card svg { flex: none; width: 17px; height: 17px; margin-top: 2px; }
+  .card.no svg { color: var(--ink-muted); }
+  .card.yes svg { color: var(--gold-strong); }
+
+  .contact-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 22px;
+  }
+  .contact-box a {
+    color: var(--focus);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .contact-box a:hover, .contact-box a:focus-visible { text-decoration: underline; }
+
+  .foot-note {
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="page">
+  <input type="radio" name="lang" id="lang-ar" checked>
+  <input type="radio" name="lang" id="lang-en">
+
+  <header class="masthead">
+    <svg class="seal" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="50" cy="19" r="4.2" fill="currentColor"/>
+      <line x1="50" y1="23" x2="50" y2="72" stroke="currentColor" stroke-width="4.4" stroke-linecap="round"/>
+      <line x1="27" y1="30" x2="73" y2="30" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"/>
+      <path d="M27,30 L20,44 Q27,52 34,44 Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M73,30 L66,44 Q73,52 80,44 Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+      <rect x="38" y="72" width="24" height="5" rx="2.5" fill="currentColor"/>
+      <path d="M45,72 L55,72 L58,78 L42,78 Z" fill="currentColor"/>
+      <rect x="35" y="78" width="30" height="5.5" rx="2.75" fill="currentColor"/>
+    </svg>
+    <div class="eyebrow">Smart Lawyer Quiz</div>
+    <h1 class="doc-title">
+      Privacy Policy
+      <span class="ar">سياسة الخصوصية</span>
+    </h1>
+    <div class="meta-line">Last updated · آخر تحديث: 12 July 2026</div>
+
+    <div class="lang-switch">
+      <label for="lang-ar">العربية</label>
+      <label for="lang-en">English</label>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ================= ARABIC ================= -->
+    <article id="doc-ar" lang="ar" dir="rtl">
+      <section>
+        <p class="lede">
+          تُقدَّر خصوصيتك. توضّح هذه الصفحة، بلغة بسيطة، ما الذي تجمعه لعبة
+          «Smart Lawyer Quiz» من بيانات — وما لا تجمعه إطلاقاً.
+        </p>
+      </section>
+
+      <section>
+        <h2>الخلاصة السريعة</h2>
+        <div class="cards">
+          <div class="card no">
+            <h3>لا نجمع</h3>
+            <ul>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> اسمك أو بريدك أو رقم هاتفك</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> موقعك الجغرافي</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> صلاحية الكاميرا أو الميكروفون</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> أي بيانات تُرسَل إلى خادم خارجي</li>
+            </ul>
+          </div>
+          <div class="card yes">
+            <h3>يُحفظ على جهازك فقط</h3>
+            <ul>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> أفضل نتائجك في كل تصنيف</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> نقاطك التراكمية ورتبتك</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> سلسلة أيام التحدي اليومي</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> تفضيلات الصوت والاهتزاز</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>كيف نخزّن هذه البيانات</h2>
+        <p>
+          تُحفظ كل العناصر أعلاه محلياً على جهازك فقط، باستخدام مساحة التخزين
+          الخاصة بالتطبيق (AsyncStorage). لا تُرسَل هذه البيانات إلى أي خادم،
+          ولا نملك نحن أو أي طرف آخر إمكانية الوصول إليها. عند حذف التطبيق أو
+          مسح بياناته من إعدادات جهازك، تُحذف هذه المعلومات نهائياً.
+        </p>
+      </section>
+
+      <section>
+        <h2>وضع «تحدّي صديق»</h2>
+        <p>
+          عندما تُنشئ تحدياً وتشاركه بكود مع صديق، فإن هذا الكود لا يحمل سوى
+          رقم عشوائي (بذرة الأسئلة) يُنشَأ على جهازك، ويُشارَك عبر نافذة
+          المشاركة الأصلية في نظام هاتفك. لا يمرّ هذا الكود بأي خادم، ولا
+          نطّلع عليه من جهتنا.
+        </p>
+      </section>
+
+      <section>
+        <h2>الصلاحيات المطلوبة</h2>
+        <p>
+          لا يطلب التطبيق أي صلاحية للكاميرا أو الميكروفون أو الموقع أو
+          جهات الاتصال. تُستخدم صلاحية الاهتزاز المحلية فقط لتأثيرات اللمس
+          داخل اللعبة، ولا تُنقَل أي بيانات عبرها.
+        </p>
+      </section>
+
+      <section>
+        <h2>أطراف ثالثة وإعلانات</h2>
+        <p>
+          لا يحتوي التطبيق حالياً على أي إعلانات، أو أدوات تحليل استخدام
+          (Analytics)، أو أي مكتبات تتبّع من أطراف ثالثة.
+        </p>
+      </section>
+
+      <section>
+        <h2>خصوصية الأطفال</h2>
+        <p>
+          بما أن التطبيق لا يجمع أي بيانات شخصية من أي مستخدم، فهو مناسب
+          لجميع الأعمار ولا يشكّل خطراً على خصوصية الأطفال.
+        </p>
+      </section>
+
+      <section>
+        <h2>التحكّم ببياناتك</h2>
+        <p>
+          يمكنك حذف كل بياناتك المحلية في أي وقت من خلال حذف التطبيق، أو
+          مسح بيانات التطبيق من إعدادات هاتفك.
+        </p>
+      </section>
+
+      <section>
+        <h2>تحديثات هذه السياسة</h2>
+        <p>
+          قد نُحدّث هذه السياسة مستقبلاً إن أضفنا ميزات جديدة تغيّر طريقة
+          التعامل مع البيانات. سيظهر تاريخ آخر تحديث دائماً أعلى الصفحة.
+        </p>
+      </section>
+
+      <section>
+        <h2>تواصل معنا</h2>
+        <div class="contact-box">
+          <span>لأي استفسار حول الخصوصية، راسلنا مباشرة.</span>
+          <a href="mailto:yaseralzbadi@googlemail.com">yaseralzbadi@googlemail.com</a>
+        </div>
+      </section>
+    </article>
+
+    <!-- ================= ENGLISH ================= -->
+    <article id="doc-en" lang="en" dir="ltr">
+      <section>
+        <p class="lede">
+          Your privacy matters. This page explains, in plain language, exactly
+          what Smart Lawyer Quiz collects — and, just as importantly, what it
+          never does.
+        </p>
+      </section>
+
+      <section>
+        <h2>The short version</h2>
+        <div class="cards">
+          <div class="card no">
+            <h3>We never collect</h3>
+            <ul>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Your name, email, or phone number</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Your location</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Camera or microphone access</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Any data sent to an external server</li>
+            </ul>
+          </div>
+          <div class="card yes">
+            <h3>Kept on your device only</h3>
+            <ul>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Your best score per category</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Cumulative points and rank</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Daily-challenge streak</li>
+              <li><svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Sound, music &amp; haptics preferences</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>How this data is stored</h2>
+        <p>
+          Everything above is saved locally on your device only, using the
+          app's standard on-device storage (AsyncStorage). None of it is ever
+          transmitted to a server, and neither we nor any third party can
+          access it. Uninstalling the app, or clearing its storage in your
+          phone's settings, permanently deletes this information.
+        </p>
+      </section>
+
+      <section>
+        <h2>"Challenge a Friend" mode</h2>
+        <p>
+          When you create a challenge and share its code, that code only
+          encodes a random number (a question seed) generated on your device,
+          shared through your phone's own native share sheet. It never passes
+          through a server, and we never see it.
+        </p>
+      </section>
+
+      <section>
+        <h2>Permissions requested</h2>
+        <p>
+          The app does not request camera, microphone, location, or contacts
+          access. Haptic (vibration) feedback is used purely for local
+          in-game feel and never transmits data anywhere.
+        </p>
+      </section>
+
+      <section>
+        <h2>Third parties &amp; advertising</h2>
+        <p>
+          The app currently contains no ads, no usage-analytics tools, and no
+          third-party tracking libraries of any kind.
+        </p>
+      </section>
+
+      <section>
+        <h2>Children's privacy</h2>
+        <p>
+          Because no personal data is collected from any user, the app is
+          suitable for all ages and poses no risk to children's privacy.
+        </p>
+      </section>
+
+      <section>
+        <h2>Your control over your data</h2>
+        <p>
+          You can erase all locally stored data at any time by uninstalling
+          the app, or by clearing its storage from your device settings.
+        </p>
+      </section>
+
+      <section>
+        <h2>Changes to this policy</h2>
+        <p>
+          This policy may be updated if new features change how data is
+          handled. The "last updated" date at the top of this page will
+          always reflect the current version.
+        </p>
+      </section>
+
+      <section>
+        <h2>Contact</h2>
+        <div class="contact-box">
+          <span>Questions about privacy? Reach out directly.</span>
+          <a href="mailto:yaseralzbadi@googlemail.com">yaseralzbadi@googlemail.com</a>
+        </div>
+      </section>
+    </article>
+
+  </div>
+
+  <p class="foot-note">Smart Lawyer Quiz · com.smartlegal.quiz</p>
+</div>
