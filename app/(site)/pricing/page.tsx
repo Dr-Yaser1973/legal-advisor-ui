@@ -183,7 +183,7 @@ export default function PricingPage() {
       <section className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/40 px-3 py-1 text-xs text-zinc-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          <span>خطط تجريبية — قابلة للتعديل قبل الإطلاق الرسمي</span>
+          <span>التفعيل خلال دقائق عبر التواصل المباشر</span>
         </div>
 
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
@@ -199,9 +199,9 @@ export default function PricingPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-zinc-500">
           <span>العملة: دينار عراقي</span>
           <span className="hidden sm:inline">•</span>
-          <span>لا يوجد دفع إلكتروني حالياً (تفعيل يدوي)</span>
+          <span>التفعيل فوري عبر واتساب</span>
           <span className="hidden sm:inline">•</span>
-          <span>سيتم إضافة فواتير ودفع لاحقاً</span>
+          <span>ترقية أو إلغاء في أي وقت</span>
         </div>
       </section>
 
@@ -282,7 +282,7 @@ export default function PricingPage() {
                   )}
                   {!isFree && (
                     <p className="text-[11px] text-zinc-500 mt-1 leading-5">
-                      * السعر تجريبي وقد يتغير بعد الإطلاق الرسمي.
+                      اشتراك شهري — يمكنك الترقية أو الإلغاء متى شئت.
                     </p>
                   )}
                 </div>
@@ -454,10 +454,9 @@ export default function PricingPage() {
       {/* Footer */}
       <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-5 text-sm text-zinc-400 space-y-3 leading-7">
         <p>
-          <span className="text-zinc-200 font-semibold">ملاحظة مهمة:</span> هذه
-          صفحة تسعير للنسخة التجريبية (Beta). التفعيل حالياً يتم يدوياً عبر
-          التواصل، وبعد الإطلاق الرسمي سنضيف الدفع الإلكتروني والفواتير وربط كل
-          باقة بحدود استخدام دقيقة.
+          <span className="text-zinc-200 font-semibold">كيف يتم التفعيل؟</span> اختر
+          الباقة المناسبة وتواصل معنا عبر واتساب، ويُفعَّل حسابك خلال دقائق. يمكنك
+          طلب فاتورة رسمية، والترقية أو تغيير الباقة في أي وقت.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="text-xs text-zinc-500">

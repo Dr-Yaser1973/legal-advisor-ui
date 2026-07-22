@@ -35,6 +35,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       totalItems: "أكثر من {count} مادة قانونية بين قوانين، دراسات، وعقود احترافية.",
       search: "🔍 بحث متقدم",
       browse: "📚 تصفح الأقسام",
+      translate: "🌐 ترجمة قانونية معتمدة",
       sections: "الأقسام الرئيسية",
       recent: "🆕 أحدث الإضافات",
       external: "🌐 مكتبة المصادر الخارجية",
@@ -61,6 +62,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       totalItems: "Over {count} legal materials including laws, studies, and professional contracts.",
       search: "🔍 Advanced Search",
       browse: "📚 Browse Sections",
+      translate: "🌐 Certified Legal Translation",
       sections: "Main Sections",
       recent: "🆕 Recent Additions",
       external: "🌐 External Resources Library",
@@ -153,6 +155,9 @@ export default async function LibraryPage({ searchParams }: Props) {
               </Link>
               <Link href={`/library/categories?lang=${locale}`} className="bg-blue-500/30 backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-500/40 transition-all">
                 {texts.browse}
+              </Link>
+              <Link href="/translate" className="bg-emerald-500 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg">
+                {texts.translate}
               </Link>
             </div>
           </div>

@@ -129,13 +129,36 @@ export default function LegalTranslationPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 text-right text-zinc-100">
       <h1 className="text-3xl font-bold mb-2">
-        🌐 الترجمة القانونية للمستندات
+        🌐 ترجمة قانونية معتمدة للمستندات
       </h1>
       <p className="text-sm text-zinc-400 mb-6">
-        يمكنك استخدام الترجمة الذكية الفوري
-        ة لفهم المستندات، أو طلب ترجمة
-        رسمية معتمدة من مكاتب الترجمة الشريكة مع المنصّة.
+        اطلب ترجمة قانونية رسمية مصدّقة من مكاتب ترجمة معتمدة (للمحاكم،
+        السفارات، الدوائر الرسمية والجامعات)، أو استخدم الترجمة الذكية الفورية
+        لفهم مستنداتك.
       </p>
+
+      {/* لافتة رئيسية: طلب ترجمة معتمدة */}
+      <div className="mb-8 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-emerald-200">
+              تحتاج ترجمة قانونية معتمدة؟
+            </h2>
+            <p className="text-sm text-zinc-300 mt-1">
+              أرسل مستندك إلى مكتب ترجمة معتمد واحصل على ترجمة رسمية مصدّقة
+              معترف بها أمام الجهات الرسمية.
+            </p>
+          </div>
+          <Link
+            href="/translation-offices"
+            className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl
+                       bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold
+                       px-5 py-3 transition"
+          >
+            اطلب ترجمة معتمدة الآن ↗
+          </Link>
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* العمود الأيسر: رفع المستند واستخراج النص */}

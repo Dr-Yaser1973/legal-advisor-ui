@@ -1,12 +1,20 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "الترجمة القانونية | Legal Translation",
-  description: "ترجمة قانونية دقيقة بالذكاء الاصطناعي أو مع مكاتب ترجمة متخصصة. Accurate legal translation via AI or certified offices.",
+  title: "ترجمة قانونية معتمدة | Certified Legal Translation",
+  description: "ترجمة قانونية معتمدة ومصدّقة من مكاتب ترجمة متخصصة — للمحاكم والسفارات والدوائر الرسمية والجامعات، أو ترجمة ذكية فورية بالذكاء الاصطناعي. Certified legal translation by accredited offices.",
+  keywords: [
+    "ترجمة قانونية معتمدة",
+    "ترجمة قانونية",
+    "مكتب ترجمة قانونية",
+    "ترجمة قانونية مصدقة",
+    "ترجمة قانونية معتمدة عربي انجليزي",
+    "certified legal translation",
+  ],
   alternates: { canonical: "/translation" },
   openGraph: {
-    title: "الترجمة القانونية الذكية",
-    description: "ترجمة المستندات القانونية بدقة عالية.",
+    title: "ترجمة قانونية معتمدة",
+    description: "ترجمة رسمية مصدّقة للمستندات القانونية من مكاتب معتمدة، معترف بها أمام الجهات الرسمية.",
     url: "https://smartlegaladvisor.com/translation",
   },
 };

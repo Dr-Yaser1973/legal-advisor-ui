@@ -418,6 +418,30 @@ export default function LibraryItemViewClient({
               )}
             </div>
 
+             {/* لافتة: ترجمة معتمدة لهذا المستند */}
+            <div className="mt-8 rounded-2xl border border-emerald-500/40 bg-emerald-50 p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-emerald-800">
+                    {locale === 'ar'
+                      ? 'تحتاج هذا المستند بترجمة قانونية معتمدة؟'
+                      : 'Need this document in certified legal translation?'}
+                  </h3>
+                  <p className="text-sm text-emerald-700/80 mt-1">
+                    {locale === 'ar'
+                      ? 'ترجمة رسمية مصدّقة من مكاتب معتمدة، معترف بها أمام الجهات الرسمية.'
+                      : 'Official certified translation by accredited offices, recognized by authorities.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/translate')}
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-3 transition"
+                >
+                  {locale === 'ar' ? 'اطلب ترجمة معتمدة ↗' : 'Request certified translation ↗'}
+                </button>
+              </div>
+            </div>
+
              {/* التبويبات */}
 <LibraryTabs
   abstractAr={item.abstractAr}
