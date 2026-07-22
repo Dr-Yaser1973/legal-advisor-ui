@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 type TargetLang = string;
 
@@ -26,6 +27,7 @@ export default function RequestOfficialTranslationButton({
   disabled,
 }: RequestOfficialTranslationButtonProps) {
   const { status } = useSession();
+  const searchParams = useSearchParams();
   const [offices, setOffices] = useState<TranslationOffice[]>([]);
   const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
   const [loadingOffices, setLoadingOffices] = useState(false);
@@ -54,6 +56,16 @@ export default function RequestOfficialTranslationButton({
 
     loadOffices();
   }, []);
+
+  // تحديد المكتب تلقائياً من الرابط (?officeId=...) — قادم من صفحة تفاصيل المكتب
+  useEffect(() => {
+    const officeIdParam = searchParams.get("officeId");
+    if (!officeIdParam) return;
+    const n = Number(officeIdParam);
+    if (Number.isFinite(n) && n > 0) {
+      setSelectedOfficeId(n);
+    }
+  }, [searchParams]);
 
   // إرسال الطلب فعلياً إلى الخادم
   async function submitRequest(

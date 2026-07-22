@@ -404,6 +404,14 @@ export default function HomeGovPortal() {
                   <ChevronLeft className="ms-2 h-4 w-4" />
                 </Link>
 
+                <Link
+                  href="/translate"
+                  className="inline-flex items-center justify-center rounded-xl bg-emerald-500 text-zinc-950 px-5 py-3 text-sm font-bold hover:bg-emerald-400 transition"
+                >
+                  <Languages className="me-2 h-4 w-4" />
+                  {lang === "ar" ? "ترجمة قانونية معتمدة" : "Certified Legal Translation"}
+                </Link>
+
                 {!isLoggedIn && (
                   <>
                     <Link

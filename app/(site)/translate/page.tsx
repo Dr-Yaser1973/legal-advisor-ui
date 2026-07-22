@@ -1,13 +1,11 @@
 "use client";
-//app/(site)translate/page.tsx
+//app/(site)/translate/page.tsx
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import RequestOfficialTranslationButton from "./RequestOfficialTranslationButton";
 import Link from "next/link";
 
-
 type TargetLang = "AR" | "EN" | "FR" | "TR" | "FA";
- 
 
 export default function LegalTranslationPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -19,6 +17,8 @@ export default function LegalTranslationPage() {
   const [toLang, setToLang] = useState<TargetLang>("EN");
   const [mode, setMode] = useState("formal");
   const [documentId, setDocumentId] = useState<number | null>(null);
+  // لغة هدف مستقلة للترجمة المعتمدة (AR/EN فقط)
+  const [officialLang, setOfficialLang] = useState<"AR" | "EN">("EN");
 
   async function extractText() {
     if (!file) {
@@ -27,7 +27,6 @@ export default function LegalTranslationPage() {
     }
     setLoadingExtract(true);
     setSourceText("");
-    
 
     const form = new FormData();
     form.append("file", file);
@@ -46,10 +45,9 @@ export default function LegalTranslationPage() {
       }
 
       setSourceText(data.text || "");
-       if (!documentId && data.documentId) {
-  setDocumentId(data.documentId);
-}
-
+      if (!documentId && data.documentId) {
+        setDocumentId(data.documentId);
+      }
     } catch (err) {
       console.error(err);
       alert("حدث خطأ أثناء استخراج النص");
@@ -70,12 +68,7 @@ export default function LegalTranslationPage() {
       const res = await fetch("/api/translation/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: sourceText,
-          fromLang,
-          toLang,
-          mode,
-        }),
+        body: JSON.stringify({ text: sourceText, fromLang, toLang, mode }),
       });
 
       const data = await res.json();
@@ -92,42 +85,33 @@ export default function LegalTranslationPage() {
       setLoadingTranslate(false);
     }
   }
-   
-    async function uploadDocumentOnly() {
-    if (!file) {
-      alert("يرجى اختيار ملف أولًا");
-      return;
-    }
+
+  // رفع الملف (يُستدعى عند اختيار ملف) — يخزّن المستند ويهيّئ الطلب المعتمد
+  async function handleFileChange(f: File | null) {
+    setFile(f);
+    if (!f) return;
 
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", f);
 
     try {
       const res = await fetch("/api/translation/official/upload", {
         method: "POST",
         body: form,
       });
-
       const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        alert(data.error || "فشل رفع المستند");
-        return;
+      if (res.ok && data.ok && data.documentId) {
+        setDocumentId(data.documentId);
       }
-
-      setDocumentId(data.documentId); // ⭐ المفتاح
     } catch (err) {
-      console.error(err);
-      alert("حدث خطأ أثناء رفع المستند");
+      console.error("upload error:", err);
     }
   }
 
-   const canRequestOfficial =
-  !!documentId;
-
+  const canRequestOfficial = !!documentId;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 text-right text-zinc-100">
+    <div className="max-w-3xl mx-auto px-4 py-8 text-right text-zinc-100">
       <h1 className="text-3xl font-bold mb-2">
         🌐 ترجمة قانونية معتمدة للمستندات
       </h1>
@@ -137,16 +121,16 @@ export default function LegalTranslationPage() {
         لفهم مستنداتك.
       </p>
 
-      {/* لافتة رئيسية: طلب ترجمة معتمدة */}
-      <div className="mb-8 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5">
+      {/* لافتة رئيسية: تصفّح المكاتب المعتمدة */}
+      <div className="mb-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-emerald-200">
               تحتاج ترجمة قانونية معتمدة؟
             </h2>
             <p className="text-sm text-zinc-300 mt-1">
-              أرسل مستندك إلى مكتب ترجمة معتمد واحصل على ترجمة رسمية مصدّقة
-              معترف بها أمام الجهات الرسمية.
+              ارفع مستندك أدناه واطلب الترجمة مباشرة، أو تصفّح المكاتب المعتمدة
+              أولاً.
             </p>
           </div>
           <Link
@@ -155,215 +139,187 @@ export default function LegalTranslationPage() {
                        bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold
                        px-5 py-3 transition"
           >
-            اطلب ترجمة معتمدة الآن ↗
+            تصفّح مكاتب الترجمة ↗
           </Link>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* العمود الأيسر: رفع المستند واستخراج النص */}
-        <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4">
-          <h2 className="text-xl font-semibold mb-3">١) رفع المستند</h2>
+      {/* ١) رفع المستند */}
+      <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4 mb-6">
+        <h2 className="text-xl font-semibold mb-3">١) رفع المستند</h2>
 
-           <input
-  type="file"
-  accept=".pdf,.txt,.jpg,.jpeg,.png,image/*"
-  onChange={async (e) => {
-    const f = e.target.files?.[0] || null;
-    setFile(f);
+        <input
+          type="file"
+          accept=".pdf,.txt,.jpg,.jpeg,.png,image/*"
+          onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+          className="border border-white/10 rounded bg-zinc-900/70 text-sm text-zinc-100 p-2 w-full"
+        />
 
-    if (!f) return;
-
-    // ⬅️ رفع الملف فقط (بدون استخراج نص)
-    const form = new FormData();
-    form.append("file", f);
-
-    try {
-      const res = await fetch("/api/translation/official/upload", {
-        method: "POST",
-        body: form,
-      });
-
-      const data = await res.json();
-      if (res.ok && data.ok && data.documentId) {
-        setDocumentId(data.documentId); // ⭐ المفتاح
-      }
-    } catch (err) {
-      console.error("upload error:", err);
-    }
-  }}
-  className="border border-white/10 rounded bg-zinc-900/70 text-sm text-zinc-100 p-2 w-full mb-3"
-/>
-
-             
-          <button
-            onClick={extractText}
-            disabled={loadingExtract || !file}
-            className="px-4 py-2 bg-amber-500 text-black font-semibold rounded-lg 
-                       hover:bg-amber-400 disabled:opacity-50"
-          >
-            {loadingExtract ? "جارٍ استخراج النص..." : "استخراج النص من الملف"}
-          </button>
-
-          <hr className="my-4 border-zinc-800" />
-
-          <h3 className="font-semibold mb-2">النص المستخرج:</h3>
-          <textarea
-            className="w-full border border-white/10 rounded-lg bg-zinc-900/70 
-                       text-zinc-100 p-3 min-h-[200px] leading-7 
-                       focus:outline-none focus:ring-2 focus:ring-amber-500/60"
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-          />
-
-          <p className="mt-2 text-[11px] text-zinc-500">
-            ملاحظة: إذا كان الملف عبارة عن صور ممسوحة ضوئيًا فقد لا يتمكن
-            النظام من استخراج النص بالكامل.
+        {documentId ? (
+          <p className="mt-3 text-xs text-emerald-400">
+            ✓ تم رفع المستند بنجاح — يمكنك الآن طلب الترجمة المعتمدة أدناه.
           </p>
+        ) : (
+          <p className="mt-3 text-[11px] text-zinc-500">
+            يمكنك رفع ملف PDF أو نصّي أو صورة من الهاتف.
+          </p>
+        )}
+      </div>
+
+      {/* ٢) الترجمة المعتمدة — القسم الأساسي */}
+      <div className="border-2 border-emerald-500/50 rounded-xl bg-emerald-500/5 p-5 mb-6">
+        <h2 className="text-xl font-semibold mb-1 text-emerald-100">
+          ٢) اطلب الترجمة المعتمدة
+        </h2>
+        <p className="text-sm text-zinc-300 mb-4">
+          ترجمة رسمية مصدّقة من مكتب معتمد، معترف بها أمام الجهات الرسمية.
+          يدفع العميل للمكتب مباشرة حسب الوثيقة.
+        </p>
+
+        <label className="text-sm block mb-1">لغة الهدف:</label>
+        <select
+          className="w-full sm:w-56 border border-white/10 p-2 rounded bg-zinc-900/70 text-sm text-zinc-100 mb-4"
+          value={officialLang}
+          onChange={(e) => setOfficialLang(e.target.value as "AR" | "EN")}
+        >
+          <option value="EN">الإنجليزية</option>
+          <option value="AR">العربية</option>
+        </select>
+
+        <RequestOfficialTranslationButton
+          savedDocumentId={documentId}
+          targetLang={officialLang}
+          disabled={!canRequestOfficial}
+        />
+
+        <p className="text-[11px] text-zinc-400 mt-3">
+          ارفع المستند (PDF أو صورة) واختر لغة الهدف، ثم اختر المكتب المعتمد
+          وأرسل طلبك — لا حاجة لاستخراج النص للترجمة الرسمية.
+        </p>
+
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <a
+            href="/translate/requests"
+            className="inline-flex items-center gap-2 text-sm text-emerald-300 hover:text-emerald-200 transition"
+          >
+            📄 عرض طلباتي في الترجمة الرسمية ومتابعة حالتها ↗
+          </a>
+        </div>
+      </div>
+
+      {/* ٣) الترجمة الذكية الفورية — أداة ثانوية */}
+      <div className="border border-white/10 rounded-xl bg-zinc-900/50 p-4">
+        <h2 className="text-lg font-semibold mb-1">
+          ٣) الترجمة الذكية الفورية{" "}
+          <span className="text-xs font-normal text-zinc-500">
+            (للفهم فقط — ليست بديلاً عن الترجمة الرسمية)
+          </span>
+        </h2>
+        <p className="text-xs text-zinc-500 mb-4">
+          أداة سريعة لفهم مضمون المستند بالذكاء الاصطناعي. تتطلّب استخراج النص
+          أولاً.
+        </p>
+
+        <button
+          onClick={extractText}
+          disabled={loadingExtract || !file}
+          className="px-4 py-2 bg-amber-500 text-black font-semibold rounded-lg
+                     hover:bg-amber-400 disabled:opacity-50"
+        >
+          {loadingExtract ? "جارٍ استخراج النص..." : "استخراج النص من الملف"}
+        </button>
+
+        <p className="mt-2 text-[11px] text-zinc-500">
+          ملاحظة: إذا كان الملف صورة ممسوحة ضوئيًا فقد لا يتمكن النظام من
+          استخراج النص بالكامل.
+        </p>
+
+        <h3 className="font-semibold mb-2 mt-4">النص المستخرج:</h3>
+        <textarea
+          className="w-full border border-white/10 rounded-lg bg-zinc-900/70
+                     text-zinc-100 p-3 min-h-[160px] leading-7
+                     focus:outline-none focus:ring-2 focus:ring-amber-500/60"
+          value={sourceText}
+          onChange={(e) => setSourceText(e.target.value)}
+        />
+
+        <div className="grid grid-cols-2 gap-3 my-4">
+          <div>
+            <label className="text-sm mb-1 block">من:</label>
+            <select
+              className="w-full border border-white/10 p-2 rounded bg-zinc-900/70 text-sm text-zinc-100"
+              value={fromLang}
+              onChange={(e) => setFromLang(e.target.value as TargetLang)}
+            >
+              <option value="AR">العربية</option>
+              <option value="EN">الإنجليزية</option>
+              <option value="FR">الفرنسية</option>
+              <option value="TR">التركية</option>
+              <option value="FA">الفارسية</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm mb-1 block">إلى:</label>
+            <select
+              className="w-full border border-white/10 p-2 rounded bg-zinc-900/70 text-sm text-zinc-100"
+              value={toLang}
+              onChange={(e) => setToLang(e.target.value as TargetLang)}
+            >
+              <option value="AR">العربية</option>
+              <option value="EN">الإنجليزية</option>
+              <option value="FR">الفرنسية</option>
+              <option value="TR">التركية</option>
+              <option value="FA">الفارسية</option>
+            </select>
+          </div>
         </div>
 
-        {/* العمود الأيمن: الترجمة الذكية + الطلب الرسمي */}
-        <div className="space-y-4">
-          {/* كارت الترجمة الذكية */}
-          <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4">
-            <h2 className="text-xl font-semibold mb-3">٢) الترجمة الذكية الفورية</h2>
+        <label className="font-semibold text-sm">نوع الترجمة:</label>
+        <select
+          className="w-full border border-white/10 p-2 rounded my-2 bg-zinc-900/70 text-sm text-zinc-100"
+          value={mode}
+          onChange={(e) => setMode(e.target.value)}
+        >
+          <option value="formal">ترجمة قانونية رسمية الأسلوب</option>
+          <option value="simple">ترجمة مبسطة للفهم العام</option>
+          <option value="free">ترجمة حرة مع إعادة صياغة</option>
+          <option value="review">ترجمة مع تدقيق قانوني شديد</option>
+        </select>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="text-sm mb-1 block">من:</label>
-                <select
-                  className="w-full border border-white/10 p-2 rounded bg-zinc-900/70 text-sm text-zinc-100"
-                  value={fromLang}
-                  onChange={(e) => setFromLang(e.target.value as TargetLang)}
-                >
-                   <option value="AR">العربية</option>
-<option value="EN">الإنجليزية</option>
-<option value="FR">الفرنسية</option>
-<option value="TR">التركية</option>
-<option value="FA">الفارسية</option>
+        <button
+          onClick={translate}
+          disabled={loadingTranslate || !sourceText}
+          className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-lg
+                     hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {loadingTranslate ? "جارٍ الترجمة..." : "ترجمة الآن"}
+        </button>
 
-                </select>
-              </div>
+        {translatedText && (
+          <>
+            <hr className="my-4 border-zinc-800" />
+            <h3 className="font-semibold mb-2">الترجمة الذكية:</h3>
 
-              <div>
-                <label className="text-sm mb-1 block">إلى:</label>
-                <select
-                  className="w-full border border-white/10 p-2 rounded bg-zinc-900/70 text-sm text-zinc-100"
-                  value={toLang}
-                  onChange={(e) => setToLang(e.target.value as TargetLang)}
-                >
-                  <option value="AR">العربية</option>
-<option value="EN">الإنجليزية</option>
-<option value="FR">الفرنسية</option>
-<option value="TR">التركية</option>
-<option value="FA">الفارسية</option>
-
-                </select>
-              </div>
+            <div className="prose prose-sm max-w-none border border-white/10
+                            rounded-lg p-4 bg-zinc-900/70 text-zinc-100 leading-8">
+              <ReactMarkdown>{translatedText}</ReactMarkdown>
             </div>
-
-            <label className="font-semibold text-sm">نوع الترجمة:</label>
-            <select
-              className="w-full border border-white/10 p-2 rounded my-2 bg-zinc-900/70 text-sm text-zinc-100"
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-            >
-              <option value="formal">ترجمة قانونية رسمية الأسلوب</option>
-              <option value="simple">ترجمة مبسطة للفهم العام</option>
-              <option value="free">ترجمة حرة مع إعادة صياغة</option>
-              <option value="review">ترجمة مع تدقيق قانوني شديد</option>
-            </select>
 
             <button
-              onClick={translate}
-              disabled={loadingTranslate || !sourceText}
-              className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-lg 
-                         hover:bg-emerald-700 disabled:opacity-50"
+              onClick={() => navigator.clipboard.writeText(translatedText)}
+              className="mt-3 px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-black"
             >
-              {loadingTranslate ? "جارٍ الترجمة..." : "ترجمة الآن"}
+              نسخ الترجمة
             </button>
 
-            {translatedText && (
-              <>
-                <hr className="my-4 border-zinc-800" />
-                <h3 className="font-semibold mb-2">الترجمة الذكية:</h3>
-
-                <div className="prose prose-sm max-w-none border border-white/10 
-                                rounded-lg p-4 bg-zinc-900/70 text-zinc-100 leading-8">
-                  <ReactMarkdown>{translatedText}</ReactMarkdown>
-                </div>
-
-                <button
-                  onClick={() => navigator.clipboard.writeText(translatedText)}
-                  className="mt-3 px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-black"
-                >
-                  نسخ الترجمة
-                </button>
-
-                <p className="mt-2 text-[11px] text-zinc-500">
-                  هذه الترجمة آلية وتهدف إلى المساعدة في الفهم، ولا تُعتبر بديلًا
-                  عن الترجمة الرسمية المعتمدة أمام الجهات الرسمية.
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* كارت طلب الترجمة الرسمية من مكتب معتمد */}
-    
-          <div className="border border-white/10 rounded-xl bg-zinc-900/70 p-4">
-            <h2 className="text-xl font-semibold mb-2">
-           ٣ طلب ترجمة رسمية من مكتب معتمد
-            </h2>
-                           <Link
-           href="/translation-offices"
-           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-               bg-emerald-600 hover:bg-emerald-500
-               text-white text-sm font-medium"
-            >
-            عرض مكاتب الترجمة المعتمدة
-            </Link>
-</div>
-            <p className="text-sm text-zinc-400 mb-3">
-              إذا كنت بحاجة إلى ترجمة رسمية مصدّقة (للدوائر الرسمية، المحاكم،
-              الجامعات)، يمكنك إرسال طلبك إلى أحد مكاتب الترجمة المعتمدة
-              المتعاونة مع المنصّة.
+            <p className="mt-2 text-[11px] text-zinc-500">
+              هذه الترجمة آلية وتهدف إلى المساعدة في الفهم، ولا تُعتبر بديلًا
+              عن الترجمة الرسمية المعتمدة أمام الجهات الرسمية.
             </p>
-
-             <RequestOfficialTranslationButton
-             savedDocumentId={documentId}
-             targetLang={toLang}
-             disabled={!canRequestOfficial}
-/>
-
-
-            <p className="text-[11px] text-zinc-500 mt-2">
-              ارفع المستند (PDF أو صورة) واختر لغة الهدف، ثم اختر المكتب
-              المعتمد وأرسل طلبك — لا حاجة لاستخراج النص للترجمة الرسمية.
-            </p>
-
-            <div className="mt-4 border border-white/10 rounded-xl bg-zinc-950/70 p-4">
-              <h2 className="text-lg font-semibold mb-2">📄 طلباتي السابقة</h2>
-
-              <p className="text-sm text-zinc-400 mb-3">
-                يمكنك عرض جميع طلبات الترجمة الرسمية التي قمت بتقديمها ومتابعة
-                حالتها.
-              </p>
-
-              <a
-                href="/translate/requests"
-                className="inline-flex items-center rounded-xl border border-emerald-600 
-                           bg-emerald-600 text-white px-4 py-2 text-sm hover:bg-emerald-700 transition"
-              >
-                عرض طلباتي في الترجمة الرسمية ↗
-              </a>
-            </div>
-            <div className="flex justify-end mb-6">
-      
-
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
