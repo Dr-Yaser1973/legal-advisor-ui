@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // ✅ قراءة جميع معاملات الفلترة
+    const q = (searchParams.get("q") || "").trim();
     const category = searchParams.get("category");
     const type = searchParams.get("type");
     const year = searchParams.get("year");
@@ -63,6 +64,20 @@ export async function GET(request: NextRequest) {
       } else if (explanation === "commercial") {
         where.commercialExplanation = { not: null };
       }
+    }
+
+    // ✅ فلتر البحث النصّي (q) — يبحث في العناوين والملخّص والمؤلف والاختصاص والكلمات المفتاحية
+    if (q) {
+      where.OR = [
+        { titleAr: { contains: q, mode: "insensitive" } },
+        { titleEn: { contains: q, mode: "insensitive" } },
+        { abstractAr: { contains: q, mode: "insensitive" } },
+        { abstractEn: { contains: q, mode: "insensitive" } },
+        { author: { contains: q, mode: "insensitive" } },
+        { jurisdiction: { contains: q, mode: "insensitive" } },
+        { subCategory: { contains: q, mode: "insensitive" } },
+        { keywords: { has: q } },
+      ];
     }
 
     // ✅ بناء شرط الترتيب (sort)

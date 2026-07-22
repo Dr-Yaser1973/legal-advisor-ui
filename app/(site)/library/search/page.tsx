@@ -1,32 +1,28 @@
-import Link from "next/link";
+// app/(site)/library/search/page.tsx
+import { Suspense } from 'react';
+import Link from 'next/link';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import SearchContent from './SearchContent';
 
-type Props = {
-  searchParams?: Promise<{ lang?: string }>;
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "البحث في المكتبة القانونية | Search Legal Library",
+  description: "ابحث في آلاف القوانين والوثائق والدراسات القانونية العراقية والعربية.",
+  alternates: { canonical: "/library/search" },
 };
 
-export default async function SearchPage({ searchParams }: Props) {
-  const params = await searchParams;
-  const locale = params?.lang === 'en' ? 'en' : 'ar';
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
-
-  const texts = {
-    ar: {
-      title: "البحث المتقدم",
-      description: "ابحث في المكتبة القانونية",
-      back: "← العودة للمكتبة"
-    },
-    en: {
-      title: "Advanced Search",
-      description: "Search the legal library",
-      back: "← Back to Library"
-    }
-  };
-
-  const t = texts[locale];
-
+export default function LibrarySearchPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir={dir}>
+    <Suspense fallback={<SearchSkeleton />}>
+      <SearchContent />
+    </Suspense>
+  );
+}
+
+function SearchSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
       <div className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-blue-600">
@@ -35,21 +31,17 @@ export default async function SearchPage({ searchParams }: Props) {
           <LanguageSwitcher />
         </div>
       </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <Link 
-          href={`/library?lang=${locale}`} 
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-8"
-        >
-          {t.back}
-        </Link>
-        
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t.title}</h1>
-        <p className="text-gray-600 mb-8">{t.description}</p>
-        
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-          <div className="text-center py-12">
-            <p className="text-gray-500">قيد التطوير - سيتم إضافة البحث المتقدم قريباً</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-12 bg-gray-200 rounded-xl w-full mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="h-12 w-12 bg-gray-200 rounded-2xl mb-4" />
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-3" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+              </div>
+            ))}
           </div>
         </div>
       </div>

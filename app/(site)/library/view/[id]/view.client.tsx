@@ -12,20 +12,17 @@ import {
   ArrowDownTrayIcon, 
   StarIcon as StarOutline,
   HeartIcon as HeartOutline,
-  BookmarkIcon as BookmarkOutline,
   ChevronRightIcon,
   ChevronLeftIcon,
   ShareIcon,
   PrinterIcon,
   EyeIcon,
   CloudArrowDownIcon,
-  BookmarkIcon,
   ChatBubbleLeftRightIcon
 } from "@heroicons/react/24/outline";
-import { 
-  StarIcon as StarSolid, 
+import {
+  StarIcon as StarSolid,
   HeartIcon as HeartSolid,
-  BookmarkIcon as BookmarkSolid,
 } from "@heroicons/react/24/solid";
 
 // تعريف الأنواع
@@ -110,7 +107,6 @@ export default function LibraryItemViewClient({
   const router = useRouter();
   const { locale, dir } = useLocale(); // ✅ إضافة دعم اللغة
   const [isFavorited, setIsFavorited] = useState(initialFavorited);
-  const [isSaved, setIsSaved] = useState(false);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<number | null>(null);
@@ -409,7 +405,7 @@ export default function LibraryItemViewClient({
                     <span
                       key={index}
                       className="px-4 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full text-sm hover:from-blue-100 hover:to-indigo-100 transition-all cursor-pointer border border-blue-200/50"
-                      onClick={() => router.push(`/library?keyword=${encodeURIComponent(keyword)}`)}
+                      onClick={() => router.push(`/library/search?q=${encodeURIComponent(keyword)}&lang=${locale}`)}
                     >
                       #{keyword}
                     </span>
@@ -572,6 +568,10 @@ export default function LibraryItemViewClient({
   </div>
 )}
 
+          </div>
+
+          {/* العمود الجانبي */}
+          <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
             {/* بطاقة التقييم */}
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -626,23 +626,6 @@ export default function LibraryItemViewClient({
                     {isFavorited 
                       ? (locale === 'ar' ? 'إزالة من المفضلة' : 'Remove from favorites')
                       : (locale === 'ar' ? 'أضف إلى المفضلة' : 'Add to favorites')
-                    }
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setIsSaved(!isSaved)}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all transform hover:scale-[1.02]
-                    ${isSaved 
-                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-600 border border-blue-200 shadow-sm' 
-                      : 'bg-gradient-to-r from-gray-50 to-white text-gray-700 border border-gray-200 hover:bg-gray-100'
-                    }`}
-                >
-                  {isSaved ? <BookmarkSolid className="h-5 w-5" /> : <BookmarkOutline className="h-5 w-5" />}
-                  <span className="font-medium">
-                    {isSaved 
-                      ? (locale === 'ar' ? 'تم الحفظ' : 'Saved')
-                      : (locale === 'ar' ? 'احفظ للقراءة لاحقاً' : 'Save for later')
                     }
                   </span>
                 </button>
@@ -747,7 +730,7 @@ export default function LibraryItemViewClient({
                 </div>
               </div>
             )}
-          </div>
+          </aside>
         </div>
       </div>
 

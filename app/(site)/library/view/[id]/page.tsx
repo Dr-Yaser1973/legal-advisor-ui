@@ -6,6 +6,7 @@ import { Metadata } from "next";
 import LibraryItemViewClient from "./view.client";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { getLibraryItemView } from "@/lib/library-item";
 
 export const dynamic = "force-dynamic";
 
@@ -35,23 +36,6 @@ function safeDecode(value: string): string {
   }
 }
 
-// جلب البيانات من API
-async function fetchLibraryItem(identifier: string) {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
-  // نعيد ترميز المعرّف بعد فكه لضمان رابط API صحيح حتى لو احتوى أحرفًا عربية
-  const encoded = encodeURIComponent(safeDecode(identifier));
-
-  const res = await fetch(`${baseUrl}/api/library/items/${encoded}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data;
-}
 
 // جلب المادة مباشرة من قاعدة البيانات لـ generateMetadata
 async function getLibraryItemByIdentifier(identifier: string) {
@@ -227,12 +211,13 @@ export default async function LibraryItemPage({
   const { id } = await params;
   if (!id) return notFound();
 
-  const data = await fetchLibraryItem(id);
-  if (!data?.doc) return notFound();
-
   const session = await getServerSession(authOptions as any) as any;
   const user = session?.user;
   const canEdit = user ? ["ADMIN", "LAWYER"].includes(user?.role) : false;
+
+  // استدعاء مباشر لدالة الخادم — بلا self-fetch عبر HTTP
+  const data = await getLibraryItemView(id, user?.id ? Number(user.id) : null);
+  if (!data?.doc) return notFound();
 
   return (
     <Suspense fallback={
@@ -244,7 +229,7 @@ export default async function LibraryItemPage({
       </div>
     }>
       <LibraryItemViewClient
-        item={data.doc}
+        item={data.doc as any}
         relatedItems={data.related || []}
         stats={data.stats || { views: 0, downloads: 0, saves: 0 }}
         canEdit={canEdit}

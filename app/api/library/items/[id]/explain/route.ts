@@ -1,5 +1,7 @@
  import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -7,6 +9,19 @@ export const runtime = "nodejs";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
+
+// تحديد المعدّل لكل مستخدم (بلا Redis — عبر AiUsageLog)
+const EXPLAIN_ACTION = "AI_EXPLAIN";
+const RATE_WINDOW_MIN = 10; // نافذة بالدقائق
+const RATE_MAX = 12;        // أقصى عدد توليدات جديدة لكل مستخدم داخل النافذة
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
 // ===============================
 // قطع النص بشكل صحيح عند مسافة
@@ -114,32 +129,43 @@ ${safeSlice(content, 5000)}
 }
 
 // ===============================
-// GET /api/library/items/[id]/explain
+// POST /api/library/items/[id]/explain
+// (كان GET — حُوِّل إلى POST محمي لمنع البوتات من حرق رصيد OpenAI)
 // ===============================
-export async function GET(
+export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await ctx.params;
+    // =========================
+    // 1) التحقق من تسجيل الدخول (إلزامي)
+    // =========================
+    const session: any = await getServerSession(authOptions as any);
+    const userId = session?.user?.id ? Number(session.user.id) : null;
 
-    const { searchParams } = new URL(req.url);
-    const level =
-      (searchParams.get("level") as "basic" | "pro" | "business") || "basic";
-    const articleText = (searchParams.get("text") || "").trim();
-
-    if (!articleText) {
-      return NextResponse.json({
-        ok: false,
-        error: "يرجى إدخال نص المادة للشرح",
-      });
+    if (!userId) {
+      return NextResponse.json(
+        { ok: false, error: "غير مصرح. يرجى تسجيل الدخول أولاً." },
+        { status: 401 }
+      );
     }
 
     // =========================
-    // 1) جلب المادة من قاعدة البيانات
+    // 2) قراءة المدخلات من جسم الطلب
     // =========================
-    const item = await prisma.libraryItem.findUnique({
-      where: { id },
+    const { id: rawId } = await ctx.params;
+    const identifier = safeDecode(rawId);
+
+    const body = await req.json().catch(() => ({} as any));
+    const level: "basic" | "pro" | "business" =
+      body?.level === "pro" || body?.level === "business" ? body.level : "basic";
+    const articleText = (body?.text || "").trim();
+
+    // =========================
+    // 3) جلب المادة (يقبل id أو slug)
+    // =========================
+    const item = await prisma.libraryItem.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }] },
       select: {
         id: true,
         titleAr: true,
@@ -157,7 +183,7 @@ export async function GET(
     }
 
     // =========================
-    // 2) التحقق من وجود شرح مخبأ
+    // 4) خدمة الشرح المخزَّن إن وُجد (بشري موثّق أو مولَّد سابقاً)
     // =========================
     const existingMap = {
       basic: item.basicExplanation,
@@ -177,30 +203,56 @@ export async function GET(
     }
 
     // =========================
-    // 3) توليد شرح جديد
+    // 5) نحتاج نص المادة للتوليد
+    // =========================
+    if (!articleText) {
+      return NextResponse.json(
+        { ok: false, error: "يرجى إدخال نص المادة للشرح" },
+        { status: 400 }
+      );
+    }
+
+    // =========================
+    // 6) تحديد المعدّل لكل مستخدم (نافذة زمنية)
+    // =========================
+    const windowStart = new Date(Date.now() - RATE_WINDOW_MIN * 60_000);
+    const recentCount = await prisma.aiUsageLog.count({
+      where: {
+        userId,
+        action: EXPLAIN_ACTION,
+        createdAt: { gte: windowStart },
+      },
+    });
+
+    if (recentCount >= RATE_MAX) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `طلبات كثيرة خلال وقت قصير. يرجى المحاولة بعد ${RATE_WINDOW_MIN} دقائق.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // =========================
+    // 7) توليد شرح جديد
     // =========================
     const explanation = await generateExplanation(item.titleAr, articleText, level);
 
     // =========================
-    // 4) حفظ في الحقل المناسب
+    // 8) تسجيل الاستخدام فقط (لا نكتب في الحقول البشرية → لا تلويث للمحتوى الموثّق)
     // =========================
-    const fieldMap = {
-      basic: { basicExplanation: explanation },
-      pro: { professionalExplanation: explanation },
-      business: { commercialExplanation: explanation },
-    };
-
-    await prisma.libraryItem.update({
-      where: { id: item.id },
-      data: fieldMap[level],
-    });
+    await prisma.aiUsageLog
+      .create({ data: { userId, action: EXPLAIN_ACTION } })
+      .catch(() => {});
 
     // =========================
-    // 5) الرد النهائي
+    // 9) الرد النهائي — الشرح للجلسة فقط، غير محفوظ في حقول الشرح المعتمدة
     // =========================
     return NextResponse.json({
       ok: true,
       cached: false,
+      generated: true,
       level,
       explanation,
     });

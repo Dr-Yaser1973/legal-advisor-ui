@@ -76,13 +76,14 @@ export default function LibraryAIExplainPanel({
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      params.set("level", lv);
-      params.set("text", articleText);
-
       const res = await fetch(
-        `/api/library/items/${itemId}/explain?${params.toString()}`,
-        { cache: "no-store" }
+        `/api/library/items/${itemId}/explain`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ level: lv, text: articleText }),
+          cache: "no-store",
+        }
       );
 
       const data = await res.json();

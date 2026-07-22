@@ -37,7 +37,7 @@ export default function LibraryCard({ item, locale = 'ar', dir = 'rtl' }: Librar
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    return date.toLocaleDateString(locale === 'ar' ? 'ar-IQ' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -128,10 +128,10 @@ export default function LibraryCard({ item, locale = 'ar', dir = 'rtl' }: Librar
 
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
           <span className="flex items-center gap-1">
-            👁️ {item.views.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+            👁️ {item.views.toLocaleString(locale === 'ar' ? 'ar-IQ' : 'en-US')}
           </span>
           <span className="flex items-center gap-1">
-            ⬇️ {item.downloads.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+            ⬇️ {item.downloads.toLocaleString(locale === 'ar' ? 'ar-IQ' : 'en-US')}
           </span>
           <span className="flex items-center gap-1">
             ⭐ {item.rating.toFixed(1)}

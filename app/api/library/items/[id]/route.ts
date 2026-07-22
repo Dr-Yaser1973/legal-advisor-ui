@@ -3,55 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { LibraryRelationType } from "@prisma/client";
+import { getLibraryItemView, safeDecode } from "@/lib/library-item";
 
 export const runtime = "nodejs";
-
-// فك ترميز المعرّف بأمان (الروابط العربية تصل مُرمّزة %D9%82...)
-function safeDecode(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
-// ✅ دالة لتحديد المجلد حسب التصنيف (تعريفها في الأعلى)
-function categoryToFolder(category: string): string {
-  switch (category) {
-    case "LAW":
-      return "laws";
-    case "ACADEMIC":
-      return "studies";
-    case "FIQH":
-      return "fiqh";
-    default:
-      return "misc";
-  }
-}
-
-// ✅ دالة بناء رابط الملف
-function buildFileUrl(
-  filename: string | null,
-  type: "laws" | "studies" | "fiqh" | "misc" = "laws"
-): string | null {
-  if (!filename) return null;
-
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) {
-    console.error("❌ NEXT_PUBLIC_SUPABASE_URL is not defined");
-    return null;
-  }
-
-  const cleanBase = base.replace(/\/$/, "");
-  const validTypes = ["laws", "studies", "fiqh", "misc"];
-  const folder = validTypes.includes(type) ? type : "laws";
-
-  const url = `${cleanBase}/storage/v1/object/public/library/${folder}/${filename}`;
-  console.log("🔗 Generated File URL:", url);
-
-  return url;
-}
 
 export async function GET(
   request: NextRequest,
@@ -67,205 +21,26 @@ export async function GET(
       );
     }
 
-    // فك ترميز المعرّف لمطابقة slug العربي المخزّن
-    const identifier = safeDecode(rawId);
+    // معرّف المستخدم (لحساب المفضلة) إن وُجدت جلسة
+    let userId: number | null = null;
+    try {
+      const session = await getServerSession(authOptions);
+      const sid = (session?.user as any)?.id;
+      if (sid) userId = Number(sid);
+    } catch {
+      /* زائر مجهول — لا مفضلة */
+    }
 
-    // جلب المادة بالبحث عن id أو slug، مع جميع العلاقات
-    const item = await prisma.libraryItem.findFirst({
-      where: {
-        OR: [{ id: identifier }, { slug: identifier }],
-        isPublished: true,
-      },
-      include: {
-        createdBy: {
-          select: { id: true, name: true, email: true },
-        },
-        itemDocuments: {
-          include: {
-            document: {
-              select: {
-                id: true,
-                title: true,
-                filename: true,
-                mimetype: true,
-                size: true,
-                createdAt: true,
-              },
-            },
-          },
-        },
-        itemTags: {
-          include: {
-            tag: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-        fromRelations: {
-          include: {
-            toItem: {
-              select: {
-                id: true,
-                titleAr: true,
-                titleEn: true,
-                mainCategory: true,
-                itemType: true,
-              },
-            },
-          },
-        },
-        toRelations: {
-          include: {
-            fromItem: {
-              select: {
-                id: true,
-                titleAr: true,
-                titleEn: true,
-                mainCategory: true,
-                itemType: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const data = await getLibraryItemView(rawId, userId);
 
-    if (!item) {
+    if (!data) {
       return NextResponse.json(
         { ok: false, error: "العنصر غير موجود" },
         { status: 404 }
       );
     }
 
-    // ✅ المعرّف الحقيقي للعنصر — يُستخدم في كل الاستعلامات اللاحقة
-    const itemId = item.id;
-
-    // زيادة عدد المشاهدات (غير متزامن) باستخدام المعرّف الحقيقي
-    prisma.libraryItem
-      .update({
-        where: { id: itemId },
-        data: { views: { increment: 1 } },
-      })
-      .catch(() => {}); // تجاهل الخطأ بصمت
-
-    // ✅ تحديد المجلد المناسب لهذه المادة
-    const folder = categoryToFolder(item.mainCategory);
-
-    // تجهيز روابط جميع الملفات
-    const documents = item.itemDocuments.map((doc) => ({
-      id: doc.document.id,
-      title: doc.document.title,
-      filename: doc.document.filename,
-      mimetype: doc.document.mimetype,
-      size: doc.document.size,
-      url: buildFileUrl(doc.document.filename, folder as any),
-      createdAt: doc.document.createdAt,
-    }));
-
-    // تجهيز التصنيفات
-    const tags = item.itemTags.map((t) => t.tag.name);
-
-    // تجهيز المواد المرتبطة
-    const relatedItems = [
-      ...item.fromRelations.map((rel) => ({
-        id: rel.toItem.id,
-        titleAr: rel.toItem.titleAr,
-        titleEn: rel.toItem.titleEn,
-        mainCategory: rel.toItem.mainCategory,
-        itemType: rel.toItem.itemType,
-        relationType: rel.relationType,
-      })),
-      ...item.toRelations.map((rel) => ({
-        id: rel.fromItem.id,
-        titleAr: rel.fromItem.titleAr,
-        titleEn: rel.fromItem.titleEn,
-        mainCategory: rel.fromItem.mainCategory,
-        itemType: rel.fromItem.itemType,
-        relationType: rel.relationType,
-      })),
-    ];
-
-    // إذا كانت العلاقات قليلة، نضيف مواد من نفس التصنيف
-    if (relatedItems.length < 4) {
-      const sameCategory = await prisma.libraryItem.findMany({
-        where: {
-          mainCategory: item.mainCategory,
-          id: { not: itemId },
-          isPublished: true,
-          NOT: {
-            id: { in: relatedItems.map((r) => r.id) },
-          },
-        },
-        take: 6 - relatedItems.length,
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          mainCategory: true,
-          itemType: true,
-        },
-      });
-
-      relatedItems.push(
-        ...sameCategory.map((item) => ({
-          ...item,
-          relationType: "SAME_CATEGORY" as LibraryRelationType,
-        }))
-      );
-    }
-
-    // جلب إحصائيات التقييمات
-    const ratingStats = await prisma.libraryRating.aggregate({
-      where: { itemId: itemId },
-      _avg: { rating: true },
-      _count: true,
-    });
-
-    // التحقق من أن المستخدم أضاف العنصر للمفضلة
-    let isFavorited = false;
-    try {
-      const session = await getServerSession(authOptions);
-      if (session?.user) {
-        const userId = (session.user as any).id;
-        if (userId) {
-          const favorite = await prisma.libraryFavorite.findUnique({
-            where: {
-              itemId_userId: {
-                itemId: itemId,
-                userId: userId,
-              },
-            },
-          });
-          isFavorited = !!favorite;
-        }
-      }
-    } catch (error) {
-      console.error("Error checking favorite:", error);
-    }
-
-    return NextResponse.json({
-      ok: true,
-      doc: {
-        ...item,
-        documents,
-        tags,
-        pdfUrl:
-          documents.find((d) => d.mimetype.includes("pdf"))?.url || null,
-        wordUrl:
-          documents.find(
-            (d) => d.mimetype.includes("word") || d.mimetype.includes("document")
-          )?.url || null,
-        rating: ratingStats._avg.rating || 0,
-        totalRatings: ratingStats._count,
-      },
-      related: relatedItems.slice(0, 8),
-      stats: {
-        views: item.views,
-        downloads: item.downloads,
-        saves: item.saves,
-      },
-      isFavorited,
-    });
+    return NextResponse.json({ ok: true, ...data });
   } catch (error) {
     console.error("Error fetching library item:", error);
     return NextResponse.json(

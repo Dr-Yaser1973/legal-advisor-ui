@@ -202,7 +202,7 @@ export default async function LibraryPage({ searchParams }: Props) {
                     {item.mainCategory === 'CONTRACT' && '🤝'}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {new Date(item.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                    {new Date(item.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-IQ' : 'en-US')}
                   </span>
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
