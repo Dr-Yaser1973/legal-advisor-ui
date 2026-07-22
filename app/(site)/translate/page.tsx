@@ -1,6 +1,6 @@
 "use client";
 //app/(site)/translate/page.tsx
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
 import RequestOfficialTranslationButton from "./RequestOfficialTranslationButton";
 import Link from "next/link";
@@ -186,11 +186,13 @@ export default function LegalTranslationPage() {
           <option value="AR">العربية</option>
         </select>
 
-        <RequestOfficialTranslationButton
-          savedDocumentId={documentId}
-          targetLang={officialLang}
-          disabled={!canRequestOfficial}
-        />
+        <Suspense fallback={null}>
+          <RequestOfficialTranslationButton
+            savedDocumentId={documentId}
+            targetLang={officialLang}
+            disabled={!canRequestOfficial}
+          />
+        </Suspense>
 
         <p className="text-[11px] text-zinc-400 mt-3">
           ارفع المستند (PDF أو صورة) واختر لغة الهدف، ثم اختر المكتب المعتمد
