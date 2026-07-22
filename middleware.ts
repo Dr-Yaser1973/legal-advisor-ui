@@ -67,6 +67,7 @@ if (
   pathname.startsWith("/api/mobile") || 
    pathname.startsWith("/api/blog") ||
   pathname.startsWith("/api/library") ||
+  pathname.startsWith("/api/contracts/templates") ||
   pathname.startsWith("/api/ocr") ||
   pathname.startsWith("/api/translation")
 ) {
