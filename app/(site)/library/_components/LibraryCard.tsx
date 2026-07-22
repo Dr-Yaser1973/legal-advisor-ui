@@ -17,7 +17,7 @@ export default function LibraryCard({ item, locale = 'ar', dir = 'rtl' }: Librar
       case "LAW": return "⚖️";
       case "FIQH": return "📜";
       case "ACADEMIC": return "🎓";
-      case "CONTRACT": return "🤝";
+      case "CONTRACT": return "🏛️";
       default: return "📄";
     }
   };

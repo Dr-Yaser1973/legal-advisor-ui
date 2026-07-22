@@ -28,7 +28,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
         { id: "LAW", name: "القوانين والتشريعات", icon: "⚖️", count: law, desc: "قوانين مدنية، تجارية، جزائية، ودستورية" },
         { id: "FIQH", name: "الفقه وأصوله", icon: "📜", count: fiqh, desc: "فقه مقارن، قواعد فقهية، وأصول الفقه" },
         { id: "ACADEMIC", name: "الدراسات الأكاديمية", icon: "🎓", count: academic, desc: "رسائل ماجستير، دكتوراه، وأبحاث محكمة" },
-        { id: "CONTRACT", name: "نماذج العقود", icon: "🤝", count: contracts, desc: "عقود اعتيادية ودولية احترافية" }
+        { id: "CONTRACT", name: "قرارات القضاء الدستوري", icon: "🏛️", count: contracts, desc: "أحكام وقرارات المحكمة الاتحادية العليا والقضاء الدستوري" }
       ]
     },
     en: {
@@ -39,7 +39,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
         { id: "LAW", name: "Laws & Legislation", icon: "⚖️", count: law, desc: "Civil, commercial, criminal, and constitutional laws" },
         { id: "FIQH", name: "Fiqh & Its Principles", icon: "📜", count: fiqh, desc: "Comparative fiqh, legal rules, and principles of fiqh" },
         { id: "ACADEMIC", name: "Academic Studies", icon: "🎓", count: academic, desc: "Master's theses, doctoral dissertations, and peer-reviewed research" },
-        { id: "CONTRACT", name: "Contract Templates", icon: "🤝", count: contracts, desc: "Standard and international professional contracts" }
+        { id: "CONTRACT", name: "Constitutional Court Rulings", icon: "🏛️", count: contracts, desc: "Rulings of the Federal Supreme Court and constitutional judiciary" }
       ]
     }
   };

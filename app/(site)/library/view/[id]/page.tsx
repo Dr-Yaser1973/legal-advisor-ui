@@ -76,7 +76,7 @@ const categoryNames = {
   LAW: { ar: "قانون", en: "Law" },
   FIQH: { ar: "فقه", en: "Fiqh" },
   ACADEMIC: { ar: "دراسة أكاديمية", en: "Academic Study" },
-  CONTRACT: { ar: "عقد", en: "Contract" }
+  CONTRACT: { ar: "قرار دستوري", en: "Constitutional Ruling" }
 };
 
 // أنواع المواد للـ SEO

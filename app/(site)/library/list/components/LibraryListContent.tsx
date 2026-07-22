@@ -170,7 +170,7 @@ export default function LibraryListContent() {
     { key: "LAW", label: t.categories.law, icon: "⚖️" },
     { key: "FIQH", label: t.categories.fiqh, icon: "📜" },
     { key: "ACADEMIC", label: t.categories.academic, icon: "🎓" },
-    { key: "CONTRACT", label: t.categories.contract, icon: "🤝" },
+    { key: "CONTRACT", label: t.categories.contract, icon: "🏛️" },
   ];
 
   return (

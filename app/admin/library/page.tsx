@@ -20,7 +20,7 @@ const categoryLabels = {
   LAW: { ar: "قانون", color: "blue" },
   FIQH: { ar: "فقه", color: "emerald" },
   ACADEMIC: { ar: "دراسة أكاديمية", color: "purple" },
-  CONTRACT: { ar: "عقد", color: "amber" }
+  CONTRACT: { ar: "قرار دستوري", color: "amber" }
 };
 
 const itemTypeLabels = {
@@ -145,7 +145,7 @@ export default async function AdminLibraryPage() {
                   {item.mainCategory === "LAW" && "⚖️"}
                   {item.mainCategory === "FIQH" && "📜"}
                   {item.mainCategory === "ACADEMIC" && "🎓"}
-                  {item.mainCategory === "CONTRACT" && "🤝"}
+                  {item.mainCategory === "CONTRACT" && "🏛️"}
                 </div>
 
                 {/* المحتوى */}

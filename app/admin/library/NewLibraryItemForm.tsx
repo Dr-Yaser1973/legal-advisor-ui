@@ -9,7 +9,7 @@ const MAIN_CATEGORIES = [
   { value: "LAW", label: "قوانين" },
   { value: "FIQH", label: "فقه" },
   { value: "ACADEMIC", label: "أكاديمي" },
-  { value: "CONTRACT", label: "عقود" }
+  { value: "CONTRACT", label: "قرارات دستورية" }
 ];
 
 const ITEM_TYPES: Record<string, Array<{ value: string; label: string }>> = {
@@ -26,8 +26,8 @@ const ITEM_TYPES: Record<string, Array<{ value: string; label: string }>> = {
     { value: "RESEARCH_PAPER", label: "بحث علمي" }
   ],
   CONTRACT: [
-    { value: "LOCAL_CONTRACT", label: "عقد محلي" },
-    { value: "INTERNATIONAL_CONTRACT", label: "عقد دولي" }
+    { value: "COURT_RULING", label: "قرار / حكم دستوري" },
+    { value: "CONSTITUTION", label: "نص دستوري" }
   ]
 };
 

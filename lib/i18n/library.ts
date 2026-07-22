@@ -22,7 +22,7 @@ export const libraryTranslations = {
       law: "القوانين",
       fiqh: "الفقه",
       academic: "دراسات أكاديمية",
-      contract: "العقود",
+      contract: "قرارات دستورية",
       other: "أخرى"
     },
     
@@ -82,7 +82,7 @@ export const libraryTranslations = {
       law: "Laws",
       fiqh: "Jurisprudence",
       academic: "Academic Studies",
-      contract: "Contracts",
+      contract: "Constitutional",
       other: "Other"
     },
     

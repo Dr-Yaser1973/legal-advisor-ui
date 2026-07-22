@@ -32,7 +32,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       siteName: "Legal Advisor",
       title: "المكتبة القانونية",
       description: "مكتبتك الشاملة للعلوم القانونية",
-      totalItems: "أكثر من {count} مادة قانونية بين قوانين، دراسات، وعقود احترافية.",
+      totalItems: "أكثر من {count} مادة قانونية بين قوانين، دراسات، وقرارات دستورية.",
       search: "🔍 بحث متقدم",
       browse: "📚 تصفح الأقسام",
       translate: "🌐 ترجمة قانونية معتمدة",
@@ -46,8 +46,8 @@ export default async function LibraryPage({ searchParams }: Props) {
       fiqhDesc: "فقه مقارن، قواعد فقهية، وأصول الفقه",
       academic: "الدراسات الأكاديمية",
       academicDesc: "رسائل ماجستير، دكتوراه، وأبحاث محكمة",
-      contract: "نماذج العقود",
-      contractDesc: "عقود اعتيادية ودولية احترافية",
+      contract: "قرارات القضاء الدستوري",
+      contractDesc: "أحكام وقرارات المحكمة الاتحادية العليا والقضاء الدستوري",
       sources: [
         { name: "مكتبة الكونجرس", nameEn: "Library of Congress", icon: "🇺🇸" },
         { name: "Google Scholar", nameEn: "Google Scholar", icon: "🎓" },
@@ -59,7 +59,7 @@ export default async function LibraryPage({ searchParams }: Props) {
       siteName: "Legal Advisor",
       title: "Legal Library",
       description: "Your comprehensive legal library",
-      totalItems: "Over {count} legal materials including laws, studies, and professional contracts.",
+      totalItems: "Over {count} legal materials including laws, studies, and constitutional rulings.",
       search: "🔍 Advanced Search",
       browse: "📚 Browse Sections",
       translate: "🌐 Certified Legal Translation",
@@ -73,8 +73,8 @@ export default async function LibraryPage({ searchParams }: Props) {
       fiqhDesc: "Comparative fiqh, legal rules, and principles of fiqh",
       academic: "Academic Studies",
       academicDesc: "Master's theses, doctoral dissertations, and peer-reviewed research",
-      contract: "Contract Templates",
-      contractDesc: "Standard and international professional contracts",
+      contract: "Constitutional Court Rulings",
+      contractDesc: "Rulings of the Federal Supreme Court and constitutional judiciary",
       sources: [
         { name: "Library of Congress", nameEn: "Library of Congress", icon: "🇺🇸" },
         { name: "Google Scholar", nameEn: "Google Scholar", icon: "🎓" },
@@ -118,7 +118,7 @@ export default async function LibraryPage({ searchParams }: Props) {
     { id: "LAW", title: texts.law, description: texts.lawDesc, icon: "⚖️", bg: "bg-blue-100", text: "text-blue-600", gradient: "from-blue-600 to-blue-400", count: law, href: `/library/list?category=LAW&lang=${locale}` },
     { id: "FIQH", title: texts.fiqh, description: texts.fiqhDesc, icon: "📜", bg: "bg-emerald-100", text: "text-emerald-600", gradient: "from-emerald-600 to-emerald-400", count: fiqh, href: `/library/list?category=FIQH&lang=${locale}` },
     { id: "ACADEMIC", title: texts.academic, description: texts.academicDesc, icon: "🎓", bg: "bg-purple-100", text: "text-purple-600", gradient: "from-purple-600 to-purple-400", count: academic, href: `/library/list?category=ACADEMIC&lang=${locale}` },
-    { id: "CONTRACT", title: texts.contract, description: texts.contractDesc, icon: "🤝", bg: "bg-amber-100", text: "text-amber-600", gradient: "from-amber-600 to-amber-400", count: contracts, href: `/library/list?category=CONTRACT&lang=${locale}` }
+    { id: "CONTRACT", title: texts.contract, description: texts.contractDesc, icon: "🏛️", bg: "bg-amber-100", text: "text-amber-600", gradient: "from-amber-600 to-amber-400", count: contracts, href: `/library/list?category=CONTRACT&lang=${locale}` }
   ];
 
   return (
@@ -199,7 +199,7 @@ export default async function LibraryPage({ searchParams }: Props) {
                     {item.mainCategory === 'LAW' && '⚖️'}
                     {item.mainCategory === 'FIQH' && '📜'}
                     {item.mainCategory === 'ACADEMIC' && '🎓'}
-                    {item.mainCategory === 'CONTRACT' && '🤝'}
+                    {item.mainCategory === 'CONTRACT' && '🏛️'}
                   </span>
                   <span className="text-xs text-gray-400">
                     {new Date(item.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-IQ' : 'en-US')}

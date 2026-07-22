@@ -274,7 +274,7 @@ export default function LibraryItemViewClient({
       'LAW': locale === 'ar' ? 'قانون' : 'Law',
       'FIQH': locale === 'ar' ? 'فقه' : 'Fiqh',
       'ACADEMIC': locale === 'ar' ? 'أكاديمي' : 'Academic',
-      'CONTRACT': locale === 'ar' ? 'عقد' : 'Contract'
+      'CONTRACT': locale === 'ar' ? 'قرار دستوري' : 'Constitutional Ruling'
     };
     return categories[category] || category;
   };
@@ -287,7 +287,7 @@ export default function LibraryItemViewClient({
       'MASTER_THESIS': locale === 'ar' ? 'رسالة ماجستير' : 'Master Thesis',
       'RESEARCH_PAPER': locale === 'ar' ? 'بحث علمي' : 'Research Paper',
       'CONSTITUTION': locale === 'ar' ? 'دستور' : 'Constitution',
-      'CONTRACT': locale === 'ar' ? 'عقد' : 'Contract',
+      'CONTRACT': locale === 'ar' ? 'قرار دستوري' : 'Constitutional Ruling',
       'COURT_RULING': locale === 'ar' ? 'حكم قضائي' : 'Court Ruling'
     };
     return types[type] || type;

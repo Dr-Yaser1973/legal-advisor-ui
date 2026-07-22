@@ -14,7 +14,7 @@ const TABS: { key: MainCategory | "ALL"; icon: string }[] = [
   { key: "LAW", icon: "⚖️" },
   { key: "FIQH", icon: "📜" },
   { key: "ACADEMIC", icon: "🎓" },
-  { key: "CONTRACT", icon: "🤝" },
+  { key: "CONTRACT", icon: "🏛️" },
 ];
 
 export default function SearchContent() {
