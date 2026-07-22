@@ -2,10 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 
- type TargetLang = string;
-
-
+type TargetLang = string;
 
 interface TranslationOffice {
   id: number;
@@ -18,11 +17,15 @@ interface RequestOfficialTranslationButtonProps {
   disabled?: boolean;
 }
 
+// مفتاح حفظ الطلب المعلّق أثناء تسجيل الدخول عبر Google
+const PENDING_KEY = "pendingTranslationRequest";
+
 export default function RequestOfficialTranslationButton({
   savedDocumentId,
   targetLang,
   disabled,
 }: RequestOfficialTranslationButtonProps) {
+  const { status } = useSession();
   const [offices, setOffices] = useState<TranslationOffice[]>([]);
   const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
   const [loadingOffices, setLoadingOffices] = useState(false);
@@ -33,8 +36,6 @@ export default function RequestOfficialTranslationButton({
     async function loadOffices() {
       try {
         setLoadingOffices(true);
-
-        // عدّل هذا المسار إذا كان مختلفًا عندك
         const res = await fetch("/api/translation/offices");
         const data = await res.json();
 
@@ -54,28 +55,19 @@ export default function RequestOfficialTranslationButton({
     loadOffices();
   }, []);
 
-  async function handleClick() {
-    if (!savedDocumentId) {
-      alert("يجب حفظ المستند قبل طلب الترجمة الرسمية.");
-      return;
-    }
-
-    if (!selectedOfficeId) {
-      alert("يرجى اختيار مكتب الترجمة أولاً.");
-      return;
-    }
-
+  // إرسال الطلب فعلياً إلى الخادم
+  async function submitRequest(
+    documentId: number,
+    officeId: number,
+    lang: TargetLang
+  ) {
     try {
       setSending(true);
 
       const res = await fetch("/api/translation/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          officeId: selectedOfficeId,
-          documentId: savedDocumentId,
-          targetLang,
-        }),
+        body: JSON.stringify({ officeId, documentId, targetLang: lang }),
       });
 
       const data = await res.json();
@@ -95,14 +87,65 @@ export default function RequestOfficialTranslationButton({
     }
   }
 
-  // نجعل التعطيل فقط عند الإرسال أو تحميل المكاتب أو disabled الخارجي
-   const isDisabled =
-  disabled ||
-  sending ||
-  loadingOffices ||
-  !savedDocumentId ||
-  !selectedOfficeId;
+  // بعد العودة من تسجيل دخول Google: أكمل الطلب المعلّق تلقائياً
+  useEffect(() => {
+    if (status !== "authenticated") return;
 
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(PENDING_KEY);
+
+    try {
+      const pending = JSON.parse(raw);
+      if (pending?.documentId && pending?.officeId) {
+        submitRequest(
+          Number(pending.documentId),
+          Number(pending.officeId),
+          pending.targetLang || "EN"
+        );
+      }
+    } catch {
+      /* تجاهل أي طلب معلّق تالف */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  async function handleClick() {
+    if (!savedDocumentId) {
+      alert("يجب رفع المستند قبل طلب الترجمة الرسمية.");
+      return;
+    }
+
+    if (!selectedOfficeId) {
+      alert("يرجى اختيار مكتب الترجمة أولاً.");
+      return;
+    }
+
+    // غير مسجّل الدخول: احفظ الطلب ثم سجّل الدخول عبر Google بنقرة واحدة
+    if (status !== "authenticated") {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          documentId: savedDocumentId,
+          officeId: selectedOfficeId,
+          targetLang,
+        })
+      );
+      signIn("google", { callbackUrl: window.location.href });
+      return;
+    }
+
+    submitRequest(savedDocumentId, selectedOfficeId, targetLang);
+  }
+
+  const needsLogin = status !== "authenticated";
+
+  const isDisabled =
+    disabled ||
+    sending ||
+    loadingOffices ||
+    !savedDocumentId ||
+    !selectedOfficeId;
 
   return (
     <div className="space-y-3">
@@ -138,7 +181,7 @@ export default function RequestOfficialTranslationButton({
         </span>
       </p>
 
-      {/* زر الإرسال */}
+      {/* زر الإرسال / تسجيل الدخول عبر Google */}
       <button
         type="button"
         onClick={handleClick}
@@ -146,8 +189,19 @@ export default function RequestOfficialTranslationButton({
         className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white
                    hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {sending ? "جارٍ إرسال طلب الترجمة..." : "طلب ترجمة رسمية من مكتب"}
+        {sending
+          ? "جارٍ إرسال طلب الترجمة..."
+          : needsLogin
+          ? "🔒 سجّل الدخول عبر Google لإرسال الطلب"
+          : "طلب ترجمة رسمية من مكتب"}
       </button>
+
+      {needsLogin && (
+        <p className="text-[11px] text-zinc-400 text-center leading-5">
+          تسجيل الدخول بنقرة واحدة عبر Google — لن تفقد مستندك، وسيُرسَل طلبك
+          تلقائياً بعد الدخول.
+        </p>
+      )}
     </div>
   );
 }

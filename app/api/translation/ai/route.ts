@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { chatCompletion } from "@/lib/ai";
- import { canPerformAction, consumePoints, hasPermission, getUserPlanData, logAiUsage } from "@/lib/plans";
+ import { canPerformAction, consumePoints, hasPermission, getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -117,11 +117,11 @@ export async function POST(req: NextRequest) {
     // استهلاك النقاط بعد النجاح
     // ===============================
     try {
-  await logAiUsage(userId, "AI_TRANSLATION");  // ← أضف هذا السطر
-  await consumePoints(userId, "AI_TRANSLATION");
-} catch (err) {
-  console.error("Points consumption error:", err);
-}
+      // consumePoints يسجّل استخدام AI تلقائياً — لا نستدعي logAiUsage معه (تفادي التسجيل المضاعف)
+      await consumePoints(userId, "AI_TRANSLATION");
+    } catch (err) {
+      console.error("Points consumption error:", err);
+    }
 
     return NextResponse.json({ ok: true, translated });
   } catch (err) {

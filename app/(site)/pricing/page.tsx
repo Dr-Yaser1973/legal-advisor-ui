@@ -59,7 +59,8 @@ const plans: Plan[] = [
       { text: "الوصول للمكتبة القانونية (قراءة فقط)", included: true },
       { text: "توليد العقود", included: false },
       { text: "إدارة القضايا", included: false },
-      { text: "التواصل مع محامٍ أو مكتب ترجمة", included: false },
+      { text: "طلب ترجمة معتمدة من مكتب معتمد (تُدفع للمكتب)", included: true },
+      { text: "التواصل مع محامٍ (استشارة بشرية)", included: false },
     ],
     ctaLabel: "سجّل حساباً مجانياً",
     ctaType: "register",
@@ -77,7 +78,7 @@ const plans: Plan[] = [
       { text: "استشارة ذكية = 1 نقطة", included: true },
       { text: "ترجمة ذكية = 2 نقطة", included: true },
       { text: "استشارة بشرية = 5 نقاط", included: true },
-      { text: "ترجمة بشرية = 5 نقاط", included: true },
+      { text: "الترجمة المعتمدة: تُدفع مباشرة للمكتب حسب الوثيقة", included: true },
       { text: "توليد العقود الأساسية", included: true },
       { text: "عرض قائمة المحامين والتواصل معهم", included: true },
       { text: "إدارة القضايا", included: false },
@@ -354,7 +355,6 @@ export default function PricingPage() {
               { label: "استشارة ذكية", points: 1 },
               { label: "ترجمة ذكية", points: 2 },
               { label: "استشارة بشرية", points: 5 },
-              { label: "ترجمة بشرية", points: 5 },
             ].map((item) => (
               <div
                 key={item.label}
@@ -427,6 +427,7 @@ export default function PricingPage() {
                 { feature: "توليد العقود", values: ["—", "✓", "✓", "—", "✓"] },
                 { feature: "إدارة القضايا", values: ["—", "—", "✓", "—", "✓"] },
                 { feature: "تقديم عروض بشرية", values: ["—", "—", "✓", "—", "✓"] },
+                { feature: "طلب ترجمة معتمدة", values: ["✓", "✓", "✓", "—", "✓"] },
                 { feature: "استقبال طلبات ترجمة", values: ["—", "—", "—", "✓", "✓"] },
                 { feature: "التواصل مع محامٍ", values: ["عرض فقط", "✓ نقاط", "—", "—", "✓"] },
                 { feature: "عدة مستخدمين", values: ["—", "—", "—", "—", "✓"] },

@@ -167,7 +167,7 @@ export default function LegalTranslationPage() {
 
            <input
   type="file"
-  accept=".pdf,.txt"
+  accept=".pdf,.txt,.jpg,.jpeg,.png,image/*"
   onChange={async (e) => {
     const f = e.target.files?.[0] || null;
     setFile(f);
@@ -337,8 +337,8 @@ export default function LegalTranslationPage() {
 
 
             <p className="text-[11px] text-zinc-500 mt-2">
-              يجب أولًا رفع المستند واستخراج النص، ثم اختيار لغة الهدف قبل
-              إرسال طلب الترجمة الرسمية.
+              ارفع المستند (PDF أو صورة) واختر لغة الهدف، ثم اختر المكتب
+              المعتمد وأرسل طلبك — لا حاجة لاستخراج النص للترجمة الرسمية.
             </p>
 
             <div className="mt-4 border border-white/10 rounded-xl bg-zinc-950/70 p-4">
