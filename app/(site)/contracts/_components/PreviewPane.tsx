@@ -34,7 +34,12 @@ export default function PreviewPane({
 
   return (
     <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-4">
-      <div className="mb-2 text-sm text-zinc-400">Preview (HTML)</div>
+      <div className="mb-2 flex items-center gap-2 text-sm">
+        <span className="text-zinc-300 font-medium">معاينة العقد</span>
+        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
+          مجانية
+        </span>
+      </div>
       <div className="prose prose-invert max-w-none">
         <div dangerouslySetInnerHTML={{ __html: preview }} />
       </div>

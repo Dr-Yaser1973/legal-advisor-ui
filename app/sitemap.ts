@@ -1,6 +1,7 @@
  //sitemap.ts
 import { prisma } from "@/lib/prisma";
 import { MetadataRoute } from "next";
+import { listTemplates } from "@/lib/contracts/catalog";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
 
@@ -108,11 +109,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // ============================================
+  // 6. نماذج العقود (كتالوج ثابت)
+  // ============================================
+  const contractPages: MetadataRoute.Sitemap = listTemplates().map((t) => ({
+    url: `${baseUrl}/contracts/${t.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   return [
     ...staticPages,
     ...libraryPages,
     ...lawyerPages,
     ...translationOfficePages,
     ...blogPages,
+    ...contractPages,
   ];
 }

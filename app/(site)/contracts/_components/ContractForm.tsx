@@ -34,6 +34,7 @@ export default function ContractForm({ templateSlug }: { templateSlug: string })
   const [result, setResult] = useState<{ id: number; pdfUrl: string } | null>(null);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [upgrade, setUpgrade] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +87,7 @@ export default function ContractForm({ templateSlug }: { templateSlug: string })
     setLoading(true);
     setError("");
     setResult(null);
+    setUpgrade(false);
     try {
       const r = await fetch("/api/contracts/generate", {
         method: "POST",
@@ -93,7 +95,14 @@ export default function ContractForm({ templateSlug }: { templateSlug: string })
         body: JSON.stringify({ slug: templateSlug, lang: tpl?.lang ?? "ar", data }),
       });
       const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || "Failed");
+      if (!r.ok) {
+        // FREE: المعاينة مجانية، وتنزيل PDF يتطلّب اشتراكاً → بطاقة ترقية ودّية
+        if (j?.upgradeRequired) {
+          setUpgrade(true);
+          return;
+        }
+        throw new Error(j?.error || "Failed");
+      }
       setResult({ id: j.id, pdfUrl: j.pdfUrl });
     } catch (e: any) {
       setError(e?.message || "Error");
@@ -233,6 +242,29 @@ export default function ContractForm({ templateSlug }: { templateSlug: string })
           ) : null}
        
         </div>
+
+        <p className="mt-1 text-[11px] text-zinc-500 leading-6">
+          المعاينة على اليسار مجانية · تنزيل نسخة PDF نظيفة يتطلّب اشتراكاً.
+        </p>
+
+        {upgrade ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+            <div className="mb-1 font-semibold text-amber-300">
+              معاينتك جاهزة على اليسار — مجاناً ✓
+            </div>
+            <p className="leading-6 text-zinc-300">
+              لتنزيل نسخة PDF نظيفة جاهزة للتوقيع، تحتاج اشتراكاً في باقة الأفراد أو أعلى.
+            </p>
+            <a
+              href="https://wa.me/9647719183785?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B4%D8%AA%D8%B1%D8%A7%D9%83%20%D9%84%D8%AA%D9%86%D8%B2%D9%8A%D9%84%20%D8%A7%D9%84%D8%B9%D9%82%D9%88%D8%AF%20PDF"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition hover:bg-emerald-500"
+            >
+              اشترك لتنزيل PDF (واتساب) ↗
+            </a>
+          </div>
+        ) : null}
       </div>
 
       {/* عمود المعاينة */}
