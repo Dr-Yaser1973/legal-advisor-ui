@@ -33,6 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/translation-offices`, priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
     { url: `${baseUrl}/smart-lawyer`,        priority: 0.8, changeFrequency: "weekly",  lastModified: new Date() },
     { url: `${baseUrl}/lawyers`,             priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
+    { url: `${baseUrl}/blog`,                priority: 0.8, changeFrequency: "daily",   lastModified: new Date() },
     { url: `${baseUrl}/pricing`,             priority: 0.7, changeFrequency: "weekly",  lastModified: new Date() },
     { url: `${baseUrl}/about`,               priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
     { url: `${baseUrl}/privacy`,             priority: 0.4, changeFrequency: "monthly", lastModified: new Date() },
@@ -91,10 +92,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // ============================================
+  // 5. مقالات المدونة المنشورة
+  // ============================================
+  const posts = await prisma.blogPost.findMany({
+    where: { status: "PUBLISHED" },
+    select: { slug: true, updatedAt: true },
+    orderBy: { publishedAt: "desc" },
+  });
+
+  const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: post.updatedAt,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
   return [
     ...staticPages,
     ...libraryPages,
     ...lawyerPages,
     ...translationOfficePages,
+    ...blogPages,
   ];
 }
