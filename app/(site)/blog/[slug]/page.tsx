@@ -11,6 +11,15 @@ export const dynamic = "force-dynamic";
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "https://smartlegaladvisor.com";
 
+// فكّ ترميز الـ slug العربي بأمان (الروابط تصل مُرمّزة %D8%AA...)
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 // ===============================
 // جلب المقال مع علاقاته
 // ===============================
@@ -38,7 +47,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = safeDecode(rawSlug);
 
   const post = await prisma.blogPost.findUnique({
     where: { slug },
@@ -111,7 +121,8 @@ export default async function BlogPostPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = safeDecode(rawSlug);
   const post = await getPost(slug);
 
   if (!post || post.status !== "PUBLISHED") notFound();
