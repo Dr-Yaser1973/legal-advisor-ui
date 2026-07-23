@@ -64,7 +64,7 @@ export default function Sidebar() {
     { href: "/consultations", label: "الاستشارات",       icon: <MessageSquare className="w-5 h-5" /> },
     { href: "/contracts",     label: "العقود الذكية",    icon: <FileText className="w-5 h-5" /> },
     { href: "/smart-lawyer",  label: "المحامي الذكي",    icon: <Gavel className="w-5 h-5" /> },
-    { href: "/cases",         label: "إدارة القضايا",    icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/my-cases",      label: "قضاياي",           icon: <Briefcase className="w-5 h-5" /> },
     { href: "/translate",     label: "الترجمة القانونية", icon: <Languages className="w-5 h-5" /> },
     { href: "/lawyers",       label: "المحامون",          icon: <Users className="w-5 h-5" /> },
     { href: "/pricing",       label: "الأسعار",           icon: <DollarSign className="w-5 h-5" /> },

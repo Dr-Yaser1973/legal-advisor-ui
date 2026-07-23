@@ -11,6 +11,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getCaseAccess } from "@/lib/caseAccess";
 import CaseAssignments from "./CaseAssignments";
+import ClientPortalPanel from "./ClientPortalPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +117,8 @@ export default async function CasePage({ params }: PageProps) {
           document: true,
         },
       },
+      client: { select: { id: true, name: true, email: true } },
+      updates: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -304,8 +307,23 @@ export default async function CasePage({ params }: PageProps) {
         <CaseAssignments caseId={caseItem.id} canManage={canManageTeam} />
       )}
         </section>
+      ) : null}
 
-      ) : (
+      {/* بوابة متابعة الموكّل — للمحررين */}
+      {canWrite && (
+        <ClientPortalPanel
+          caseId={caseItem.id}
+          client={caseItem.client}
+          updates={caseItem.updates.map((u) => ({
+            id: u.id,
+            title: u.title,
+            content: u.content,
+            createdAt: u.createdAt.toISOString(),
+          }))}
+        />
+      )}
+
+      {!canWrite && (
         <section>
           <p className="text-xs text-zinc-500 rounded-2xl border border-white/10 bg-zinc-900/40 p-3">
             لديك صلاحية الاطّلاع فقط على هذه القضية — لا يمكنك إجراء تعديلات.

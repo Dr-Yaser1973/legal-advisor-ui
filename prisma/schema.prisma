@@ -39,8 +39,10 @@ model User {
   // Core
   cases                      Case[]                @relation("UserOwnedCases")
   assignedCases              Case[]                @relation("AssignedCases")
+  clientCases                Case[]                @relation("ClientCases")
   caseNotes                  CaseNote[]
   caseEventCreations         CaseEvent[]           @relation("CaseEventCreator")
+  caseUpdates                CaseUpdate[]          @relation("CaseUpdateAuthor")
   caseAssignments CaseAssignment[] @relation("CaseAssignments")
   orgMembers                 OrgMember[]
 
@@ -818,24 +820,43 @@ model Case {
   orgId       Int?
   branchId    Int?
   assignedTo  Int?
+  clientId    Int?           // حساب العميل (الموكّل) لمتابعة قضيته
   visibility  CaseVisibility @default(PRIVATE)
 
    user     User          @relation("UserOwnedCases", fields: [userId], references: [id], onDelete: Cascade)
   org         Organization?  @relation(fields: [orgId], references: [id], onDelete: SetNull)
   branch      Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assigned    User?          @relation("AssignedCases", fields: [assignedTo], references: [id], onDelete: SetNull)
+  client      User?          @relation("ClientCases", fields: [clientId], references: [id], onDelete: SetNull)
 
   documents   CaseDocument[]
   events      CaseEvent[]
   caseNotes   CaseNote[]
   assignments CaseAssignment[]
+  updates     CaseUpdate[]
 
   @@index([userId])
   @@index([orgId])
   @@index([assignedTo])
+  @@index([clientId])
   @@index([status])
   @@index([type])
   @@index([filingDate])
+}
+
+// تحديثات موجّهة للعميل (الموكّل) — يكتبها المكتب فيراها العميل في بوابته
+model CaseUpdate {
+  id        Int      @id @default(autoincrement())
+  caseId    Int
+  authorId  Int?     // كاتب التحديث من المكتب
+  title     String?
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author    User?    @relation("CaseUpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
 }
 
 model CaseEvent {
