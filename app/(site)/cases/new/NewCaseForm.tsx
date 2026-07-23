@@ -4,9 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-const CASE_TYPES = ["مدني", "تجاري", "جنائي", "عمالي", "أحوال شخصية", "إداري", "أخرى"];
-const CASE_STATUSES = ["مفتوحة", "قيد المتابعة", "محجوزة للحكم", "مغلقة"];
+import { CASE_TYPES, CASE_STATUSES, CASE_VISIBILITY_OPTIONS } from "@/lib/cases/options";
 
 export default function NewCaseForm() {
   const router = useRouter();
@@ -20,6 +18,7 @@ export default function NewCaseForm() {
     type: CASE_TYPES[0],
     court: "",
     status: CASE_STATUSES[0],
+    visibility: "PRIVATE",
     filingDate: "",
     closingDate: "",
     notes: "",
@@ -45,6 +44,7 @@ export default function NewCaseForm() {
         type: form.type,
         court: form.court.trim(),
         status: form.status,
+        visibility: form.visibility,
         filingDate: form.filingDate,
         closingDate: form.closingDate || null,
         notes: form.notes.trim() || null,
@@ -134,6 +134,18 @@ export default function NewCaseForm() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>مستوى المشاركة</label>
+          <select className={inputClass} value={form.visibility} onChange={(e) => update("visibility", e.target.value)}>
+            {CASE_VISIBILITY_OPTIONS.map((v) => (
+              <option key={v.value} value={v.value}>{v.label}</option>
+            ))}
+          </select>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            «مشتركة» تتيح لزملائك في الشركة/الفرع الاطّلاع على القضية (قراءة فقط)؛ التعديل يبقى لك.
+          </p>
         </div>
 
         <div>

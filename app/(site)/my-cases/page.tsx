@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { caseStatusColor } from "@/lib/cases/options";
 
 export const dynamic = "force-dynamic";
 
@@ -11,16 +12,6 @@ export const metadata = {
   title: "قضاياي | متابعة القضايا",
   description: "تابع تطوّرات قضاياك والتحديثات الواردة من مكتبك القانوني.",
 };
-
-function statusColor(status: string) {
-  switch (status) {
-    case "مفتوحة": return "bg-emerald-500/10 text-emerald-300 border-emerald-500/40";
-    case "قيد المتابعة": return "bg-amber-500/10 text-amber-300 border-amber-500/40";
-    case "محجوزة للحكم": return "bg-blue-500/10 text-blue-300 border-blue-500/40";
-    case "مغلقة": return "bg-zinc-500/10 text-zinc-200 border-zinc-400/40";
-    default: return "bg-zinc-500/10 text-zinc-200 border-zinc-400/40";
-  }
-}
 
 export default async function MyCasesPage() {
   const session: any = await getServerSession(authOptions as any);
@@ -76,7 +67,7 @@ export default async function MyCasesPage() {
               >
                 <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                   <h2 className="font-semibold">{c.title || `قضية #${c.id}`}</h2>
-                  <span className={"inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] " + statusColor(c.status)}>
+                  <span className={"inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] " + caseStatusColor(c.status)}>
                     {c.status}
                   </span>
                 </div>

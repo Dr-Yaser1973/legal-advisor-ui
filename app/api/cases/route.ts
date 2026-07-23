@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { buildCaseListFilter } from "@/lib/caseAccess";
+import { CaseVisibility } from "@prisma/client";
 
 export const runtime = "nodejs";
+
+const VALID_VISIBILITY = Object.values(CaseVisibility) as string[];
 
 async function getAuthorizedUser() {
   const session: any = await getServerSession(authOptions as any);
@@ -94,7 +97,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       title, description, type, court, status,
-      filingDate, closingDate, parties, notes,
+      filingDate, closingDate, parties, notes, visibility,
     } = body || {};
 
     if (!title || !type || !court || !status || !filingDate) {
@@ -103,6 +106,16 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // بصم القضية بسياق منظمة/فرع المنشئ لتفعيل المشاركة على مستوى الشركة/الفرع
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { branchId: true, branch: { select: { orgId: true } } },
+    });
+
+    const vis = VALID_VISIBILITY.includes(visibility)
+      ? (visibility as CaseVisibility)
+      : CaseVisibility.PRIVATE;
 
     const created = await prisma.case.create({
       data: {
@@ -116,6 +129,9 @@ export async function POST(req: Request) {
         parties: parties ?? {},
         notes: notes || null,
         userId, // المنشئ = مالك القضية
+        branchId: me?.branchId ?? null,
+        orgId: me?.branch?.orgId ?? null,
+        visibility: vis,
       },
     });
 

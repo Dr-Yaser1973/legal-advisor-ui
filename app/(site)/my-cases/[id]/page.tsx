@@ -4,18 +4,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { caseStatusColor } from "@/lib/cases/options";
 
 export const dynamic = "force-dynamic";
-
-function statusColor(status: string) {
-  switch (status) {
-    case "مفتوحة": return "bg-emerald-500/10 text-emerald-300 border-emerald-500/40";
-    case "قيد المتابعة": return "bg-amber-500/10 text-amber-300 border-amber-500/40";
-    case "محجوزة للحكم": return "bg-blue-500/10 text-blue-300 border-blue-500/40";
-    case "مغلقة": return "bg-zinc-500/10 text-zinc-200 border-zinc-400/40";
-    default: return "bg-zinc-500/10 text-zinc-200 border-zinc-400/40";
-  }
-}
 
 export default async function MyCaseDetailPage({
   params,
@@ -65,7 +56,7 @@ export default async function MyCaseDetailPage({
               {c.court && <span>المحكمة: {c.court}</span>}
             </div>
           </div>
-          <span className={"inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium " + statusColor(c.status)}>
+          <span className={"inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium " + caseStatusColor(c.status)}>
             {c.status}
           </span>
         </header>

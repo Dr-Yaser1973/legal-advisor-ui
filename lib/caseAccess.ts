@@ -33,22 +33,29 @@ async function getCaseOrgId(caseOwnerId: number): Promise<number | null> {
 export async function getCaseAccess(
   userId: number,
   isPlatformAdmin: boolean,
-  c: { id: number; userId: number }
+  c: {
+    id: number;
+    userId: number;
+    orgId?: number | null;
+    branchId?: number | null;
+    visibility?: string | null;
+  }
 ): Promise<AccessLevel> {
   if (isPlatformAdmin) return "WRITE";
 
   // منشئ القضية
   if (c.userId === userId) return "WRITE";
 
-  // المدير العام لنفس شركة القضية
   const me = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isManager: true, branch: { select: { orgId: true } } },
+    select: { isManager: true, branchId: true, branch: { select: { orgId: true } } },
   });
+  const myOrgId = me?.branch?.orgId ?? null;
 
-  if (me?.isManager && me.branch?.orgId) {
+  // المدير العام لنفس شركة القضية
+  if (me?.isManager && myOrgId) {
     const caseOrgId = await getCaseOrgId(c.userId);
-    if (caseOrgId && caseOrgId === me.branch.orgId) return "WRITE";
+    if (caseOrgId && caseOrgId === myOrgId) return "WRITE";
   }
 
   // مكلّف بالقضية
@@ -57,6 +64,14 @@ export async function getCaseAccess(
     select: { role: true },
   });
   if (assignment) return "WRITE";
+
+  // مشاركة على مستوى المنظمة/الفرع → اطّلاع فقط (READ)
+  if (c.visibility === "ORG" && c.orgId && myOrgId && c.orgId === myOrgId) {
+    return "READ";
+  }
+  if (c.visibility === "BRANCH" && c.branchId && me?.branchId && c.branchId === me.branchId) {
+    return "READ";
+  }
 
   return "NONE";
 }
@@ -99,26 +114,25 @@ export async function buildCaseListFilter(
 
   const me = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isManager: true, branch: { select: { orgId: true } } },
+    select: { isManager: true, branchId: true, branch: { select: { orgId: true } } },
   });
 
+  const orgId = me?.branch?.orgId ?? null;
+  const branchId = me?.branchId ?? null;
+
+  const or: Prisma.CaseWhereInput[] = [
+    { userId },                             // قضاياه هو
+    { assignments: { some: { userId } } },  // المكلّف بها
+  ];
+
+  // قضايا مُشارَكة على مستوى منظمته/فرعه (اطّلاع)
+  if (orgId) or.push({ visibility: "ORG", orgId });
+  if (branchId) or.push({ visibility: "BRANCH", branchId });
+
   // المدير العام: كل قضايا شركته
-  if (me?.isManager && me.branch?.orgId) {
-    const orgId = me.branch.orgId;
-    return {
-      OR: [
-        { userId },                                       // قضاياه هو
-        { assignments: { some: { userId } } },            // المكلّف بها
-        { user: { branch: { orgId } } },                  // كل قضايا الشركة
-      ],
-    };
+  if (me?.isManager && orgId) {
+    or.push({ user: { branch: { orgId } } });
   }
 
-  // موظف عادي: قضاياه + المكلّف بها فقط
-  return {
-    OR: [
-      { userId },
-      { assignments: { some: { userId } } },
-    ],
-  };
+  return { OR: or };
 }
