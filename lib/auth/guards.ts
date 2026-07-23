@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { getCaseAccess } from "@/lib/caseAccess";
 
 export type DbAuthUser = {
   id: number;
@@ -106,17 +107,20 @@ export async function requireCaseAccess(caseId: number) {
 
   const c = await prisma.case.findUnique({
     where: { id: caseId },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, orgId: true, branchId: true, visibility: true },
   });
 
   if (!c) {
     return { ok: false as const, res: json404("القضية غير موجودة.") };
   }
 
-  if (c.userId !== auth.user.id) {
+  // نفس نموذج الوصول المستخدم في الواجهة: WRITE للمالك/المدير/المكلّف.
+  // (الرؤية ORG/BRANCH تمنح READ فقط — لا تكفي للكتابة عبر هذه المسارات.)
+  const access = await getCaseAccess(auth.user.id, false, c);
+  if (access !== "WRITE") {
     return {
       ok: false as const,
-      res: json403("ليست لديك صلاحية الوصول إلى هذه القضية."),
+      res: json403("ليست لديك صلاحية التعديل على هذه القضية."),
     };
   }
 
