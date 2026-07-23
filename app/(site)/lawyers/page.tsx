@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   User2, Mail, Phone, MapPin, Star, Briefcase,
-  CheckCircle2, XCircle, Building2, Globe, ChevronLeft,
+  Globe, ChevronLeft,
 } from "lucide-react";
 import AddFirmModal from "@/components/admin/AddFirmModal";
 
@@ -49,6 +49,7 @@ export default function LawyersPage() {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
   const isAdmin = role === "ADMIN";
+  const isLawyer = role === "LAWYER";
 
   const [activeTab, setActiveTab] = useState<TabKey>("list");
   const [showFirmModal, setShowFirmModal] = useState(false);
@@ -57,7 +58,6 @@ export default function LawyersPage() {
   const [q, setQ] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [location, setLocation] = useState("");
-  const [available, setAvailable] = useState<"" | "true" | "false">("");
   const [data, setData] = useState<LawyersResponse>({ items: [], total: 0, page: 1, pageSize: 12 });
   const [loading, setLoading] = useState(false);
 
@@ -68,7 +68,6 @@ export default function LawyersPage() {
       if (q) params.set("q", q);
       if (specialization) params.set("specialization", specialization);
       if (location) params.set("location", location);
-      if (available) params.set("available", available);
       const res = await fetch(`/api/lawyers?${params.toString()}`);
       if (!res.ok) return;
       setData(await res.json());
@@ -130,6 +129,13 @@ export default function LawyersPage() {
   const [reqLoading, setReqLoading] = useState(false);
   const [reqError, setReqError] = useState<string | null>(null);
 
+  // ── مودال تقديم العرض ─────────────────────────────────────────
+  const [offerFor, setOfferFor] = useState<number | null>(null);
+  const [offerFee, setOfferFee] = useState("");
+  const [offerNote, setOfferNote] = useState("");
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
+  const [offerErr, setOfferErr] = useState<string | null>(null);
+
   const fetchOpenRequests = async () => {
     try {
       setReqLoading(true); setReqError(null);
@@ -143,21 +149,26 @@ export default function LawyersPage() {
 
   useEffect(() => { if (activeTab === "requests") fetchOpenRequests(); }, [activeTab]);
 
-  async function handleOffer(requestId: number) {
+  function handleOffer(requestId: number) {
+    setOfferFor(requestId); setOfferFee(""); setOfferNote(""); setOfferErr(null);
+  }
+
+  async function submitOffer() {
+    if (offerFor == null) return;
+    const fee = Number(offerFee);
+    if (!fee || isNaN(fee) || fee <= 0) { setOfferErr("يرجى إدخال أجرة صحيحة أكبر من صفر."); return; }
+    setOfferSubmitting(true); setOfferErr(null);
     try {
-      const feeStr = prompt("أدخل أجرة الاستشارة (دينار عراقي):"); if (!feeStr) return;
-      const fee = Number(feeStr);
-      if (!fee || isNaN(fee) || fee <= 0) { alert("يرجى إدخال رقم صحيح أكبر من صفر."); return; }
-      const note = prompt("ملاحظة للمستفيد (اختياري):") || "";
-      const res = await fetch(`/api/lawyers/human-requests/${requestId}/offer`, {
+      const res = await fetch(`/api/lawyers/human-requests/${offerFor}/offer`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fee, note, currency: "IQD" }),
+        body: JSON.stringify({ fee, note: offerNote, currency: "IQD" }),
       });
       const json = await res.json();
-      if (!res.ok) { alert(json?.error || "فشل إرسال العرض."); return; }
-      alert(json?.message || "تم إرسال العرض بنجاح.");
+      if (!res.ok) { setOfferErr(json?.error || "فشل إرسال العرض."); return; }
+      setOfferFor(null);
       fetchOpenRequests();
-    } catch { alert("حدث خطأ غير متوقع."); }
+    } catch { setOfferErr("حدث خطأ غير متوقع."); }
+    finally { setOfferSubmitting(false); }
   }
 
   // ─── المكاتب المعتمدة ─────────────────────────────────────────
@@ -183,21 +194,6 @@ export default function LawyersPage() {
   };
 
   useEffect(() => { if (activeTab === "firms") fetchOrgs(); }, [activeTab]);
-
-  async function requestFirmConsult(org: Organization) {
-    const branchId = org.branches.length === 1
-      ? org.branches[0].id
-      : Number(prompt(`اختر رقم الفرع:\n${org.branches.map(b => `${b.id}: ${b.name} - ${b.city}`).join("\n")}`));
-    const subject = prompt("موضوع الاستشارة:"); if (!subject) return;
-    const details = prompt("تفاصيل الاستشارة:"); if (!details) return;
-    const res = await fetch("/api/firm-consult", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId: org.id, branchId, subject, details }),
-    });
-    const json = await res.json();
-    if (!res.ok) { alert(json?.error || "فشل إرسال الطلب."); return; }
-    alert("تم إرسال طلب الاستشارة بنجاح — سيردّ عليك المكتب خلال 24 ساعة.");
-  }
 
   // ─── طلبات المراجعة (أدمن) ───────────────────────────────────
   const [pending, setPending] = useState<PendingItem[]>([]);
@@ -234,10 +230,44 @@ export default function LawyersPage() {
         />
       )}
 
+      {/* مودال تقديم العرض (للمحامي) */}
+      {offerFor !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !offerSubmitting && setOfferFor(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white">تقديم عرض للاستشارة</h3>
+            <div>
+              <label className="block text-sm text-zinc-300 mb-1">الأجرة (دينار عراقي)</label>
+              <input
+                type="number" min={1} value={offerFee}
+                onChange={(e) => setOfferFee(e.target.value)}
+                placeholder="مثال: 50000"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-300 mb-1">ملاحظة للمستفيد (اختياري)</label>
+              <textarea
+                rows={3} value={offerNote}
+                onChange={(e) => setOfferNote(e.target.value)}
+                placeholder="وضّح ما يشمله العرض ومدّته..."
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+              />
+            </div>
+            {offerErr && <p className="text-sm text-red-400">{offerErr}</p>}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setOfferFor(null)} disabled={offerSubmitting} className="px-4 py-2 rounded-lg border border-zinc-600 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50">إلغاء</button>
+              <button onClick={submitOffer} disabled={offerSubmitting} className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50">
+                {offerSubmitting ? "جارٍ الإرسال..." : "إرسال العرض"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">إدارة المحامين وطلبات الاستشارة</h1>
-          <p className="text-sm text-zinc-400">يمكنك من هنا إدارة قائمة المحامين والمكاتب المعتمدة وطلبات الاستشارة.</p>
+          <h1 className="text-2xl font-bold text-white">ابحث عن محامٍ معتمد</h1>
+          <p className="text-sm text-zinc-400">تصفّح المحامين والمكاتب المعتمدة، واطلب استشارتك عبر المنصة بأمان وتوثيق رسمي.</p>
         </div>
         {isAdmin && (
           <div className="flex gap-2 flex-wrap">
@@ -256,9 +286,11 @@ export default function LawyersPage() {
         <button onClick={() => setActiveTab("list")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "list" ? "bg-emerald-600 text-white border-emerald-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           📚 قائمة المحامين
         </button>
-        <button onClick={() => setActiveTab("requests")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "requests" ? "bg-blue-600 text-white border-blue-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
-          👨‍⚖️ طلبات الاستشارة للمحامين
-        </button>
+        {(isLawyer || isAdmin) && (
+          <button onClick={() => setActiveTab("requests")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "requests" ? "bg-blue-600 text-white border-blue-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
+            👨‍⚖️ طلبات استشارة متاحة للعرض
+          </button>
+        )}
         <button onClick={() => setActiveTab("firms")} className={`px-4 py-2 rounded-xl border text-sm transition-colors ${activeTab === "firms" ? "bg-amber-600 text-white border-amber-500" : "bg-zinc-900/60 text-zinc-200 border-zinc-700 hover:bg-zinc-800"}`}>
           🏛️ المكاتب المعتمدة
         </button>
@@ -277,11 +309,6 @@ export default function LawyersPage() {
             <input className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="بحث عام..." value={q} onChange={(e) => setQ(e.target.value)} />
             <input className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="الاختصاص" value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
             <input className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="الموقع" value={location} onChange={(e) => setLocation(e.target.value)} />
-            <select className="border border-zinc-700 bg-zinc-900/60 text-sm text-zinc-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500" value={available} onChange={(e) => setAvailable(e.target.value as "" | "true" | "false")}>
-              <option value="">التوفر (الكل)</option>
-              <option value="true">متاح</option>
-              <option value="false">غير متاح</option>
-            </select>
             <button onClick={() => fetchLawyers(1)} className="px-4 py-2 rounded-lg border border-emerald-600 text-sm text-emerald-300 hover:bg-emerald-600/10 transition-colors">تصفية</button>
           </section>
 
@@ -293,9 +320,6 @@ export default function LawyersPage() {
                     <div className="flex flex-col items-center text-center gap-2">
                       <div className="relative">
                         <img src={l.avatarUrl || "/default-lawyer.png"} className="w-20 h-20 rounded-full object-cover border border-white/10" alt={l.fullName} />
-                        <span className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] border border-zinc-900 ${l.available ? "bg-emerald-500 text-white" : "bg-zinc-600 text-white"}`}>
-                          {l.available ? "✔" : "⏸"}
-                        </span>
                         {isAdmin && (
                           <div className="mt-2 flex flex-col gap-1">
                             <AdminUploadAvatar lawyerId={l.id} onUploaded={() => fetchLawyers(data.page)} />
@@ -309,14 +333,15 @@ export default function LawyersPage() {
                       <div className="flex items-center gap-1 text-sm text-zinc-300"><Briefcase className="w-4 h-4 text-zinc-400" /><span>{l.specialization}</span></div>
                       <div className="flex items-center gap-1 text-xs text-zinc-400"><MapPin className="w-3 h-3" /><span>{l.location || "غير محدد"}</span></div>
                       <div className="flex items-center gap-1 text-sm mt-1"><Star className="w-4 h-4 text-yellow-400" /><span className="text-zinc-200">{l.rating?.toFixed(1) ?? "0.0"}</span></div>
-                      <div className={`mt-2 inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border ${l.available ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/50" : "bg-zinc-800 text-zinc-300 border-zinc-600"}`}>
-                        {l.available ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        <span>{l.available ? "متاح للاستشارة" : "غير متاح"}</span>
+                      <div className="mt-3 inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/50">
+                        عرض الملف وطلب استشارة ←
                       </div>
-                      <div className="mt-2 flex flex-col items-center gap-1 text-xs text-zinc-400">
-                        <div className="flex items-center gap-1"><Mail className="w-3 h-3" /><span>{l.email}</span></div>
-                        {l.phone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" /><span>{l.phone}</span></div>}
-                      </div>
+                      {isAdmin && (
+                        <div className="mt-2 flex flex-col items-center gap-1 text-xs text-zinc-400">
+                          {l.email && <div className="flex items-center gap-1"><Mail className="w-3 h-3" /><span>{l.email}</span></div>}
+                          {l.phone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" /><span>{l.phone}</span></div>}
+                        </div>
+                      )}
                     </div>
                   </a>
                 ))}
@@ -406,8 +431,8 @@ export default function LawyersPage() {
                     ))}
                   </div>
                 </div>
-                <button onClick={() => requestFirmConsult(selectedOrg)} className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition">
-                  طلب استشارة من {selectedOrg.name}
+                <button onClick={() => { window.location.href = "/consultations"; }} className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition">
+                  طلب استشارة من {selectedOrg.name} عبر صفحة الاستشارات ←
                 </button>
               </div>
             </div>

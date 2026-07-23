@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const runtime = "nodejs";
 
@@ -52,22 +54,28 @@ export async function GET(_req: Request, { params }: Params) {
       );
     }
 
+    // بيانات الاتصال تُكشف للمالك أو الأدمن فقط — الزائر يتواصل عبر المنصة
+    const session: any = await getServerSession(authOptions as any);
+    const viewerId = session?.user?.id ? Number(session.user.id) : null;
+    const isAdmin = session?.user?.role === "ADMIN";
+    const canSeeContact = isAdmin || viewerId === lawyerId;
+
     // 🔒 Mapping قراءة فقط
     const lawyer = {
       id: user.id,
       fullName: user.name || "",
-      email: user.email,
+      email: canSeeContact ? user.email : null,
       avatarUrl: user.image ?? null,
 
       bio: user.lawyerProfile.bio ?? "",
       specialization: user.lawyerProfile.specialties ?? "",
-      phone: user.lawyerProfile.phone ?? "",
+      phone: canSeeContact ? (user.lawyerProfile.phone ?? "") : "",
       location: user.lawyerProfile.city ?? "",
       rating: user.lawyerProfile.rating ?? 0,
 
       consultFee: user.lawyerProfile.consultFee ?? null,
       consultCurrency: user.lawyerProfile.consultCurrency ?? "IQD",
-      officeAddress: user.lawyerProfile.officeAddress ?? "",
+      officeAddress: canSeeContact ? (user.lawyerProfile.officeAddress ?? "") : "",
     };
 
     return NextResponse.json({ lawyer });

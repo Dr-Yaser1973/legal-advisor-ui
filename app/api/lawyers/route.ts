@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const runtime = "nodejs";
 
@@ -45,6 +47,10 @@ export async function GET(req: Request) {
       };
     }
 
+    // بيانات الاتصال (بريد/هاتف) تُكشف للأدمن فقط — العميل يتواصل عبر المنصة
+    const session: any = await getServerSession(authOptions as any);
+    const isAdmin = session?.user?.role === "ADMIN";
+
     const total = await prisma.user.count({ where });
 
     const users = await prisma.user.findMany({
@@ -70,8 +76,8 @@ export async function GET(req: Request) {
         return {
           id: u.id,
           fullName: u.name || "",
-          email: u.email || "",
-          phone: u.lawyerProfile?.phone || "",
+          email: isAdmin ? (u.email || "") : "",
+          phone: isAdmin ? (u.lawyerProfile?.phone || "") : "",
           specialization: u.lawyerProfile?.specialties || "",
           bio: u.lawyerProfile?.bio || "",
           experience: null as number | null,
@@ -93,6 +99,12 @@ export async function GET(req: Request) {
 // POST: لإنشاء محامٍ سريعاً من واجهة الإدارة
 export async function POST(req: Request) {
   try {
+    // إنشاء محامٍ مقصور على الأدمن (كان محمياً بالميدلوير فقط — نضيف تحقّق الدور)
+    const session: any = await getServerSession(authOptions as any);
+    if (session?.user?.role !== "ADMIN") {
+      return NextResponse.json({ error: "غير مخوّل. يتطلب صلاحيات ADMIN." }, { status: 403 });
+    }
+
     const body = await req.json();
     const { fullName, email, specialization, phone, bio, location } = body || {};
 

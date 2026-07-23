@@ -7,7 +7,7 @@ import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 
 type Lawyer = {
-  id: number; fullName: string; email: string; avatarUrl: string | null;
+  id: number; fullName: string; email: string | null; avatarUrl: string | null;
   bio: string; specialization: string; phone: string; location: string;
   rating: number; consultFee: number | null; consultCurrency: string;
   officeAddress: string;
@@ -172,10 +172,12 @@ type Lawyer = {
             <div className="font-semibold text-zinc-100">{lawyer.consultFee} {lawyer.consultCurrency}</div>
           </div>
         )}
-        <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-          <div className="text-zinc-400">البريد الإلكتروني</div>
-          <div className="font-semibold text-zinc-100 break-words">{lawyer.email}</div>
-        </div>
+        {lawyer.email && (
+          <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
+            <div className="text-zinc-400">البريد الإلكتروني</div>
+            <div className="font-semibold text-zinc-100 break-words">{lawyer.email}</div>
+          </div>
+        )}
         {lawyer.phone && (
           <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
             <div className="text-zinc-400">رقم الهاتف</div>

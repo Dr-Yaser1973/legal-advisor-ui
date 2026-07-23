@@ -61,10 +61,21 @@ export async function middleware(request: NextRequest) {
    // =========================
 // استثناءات API
 // =========================
+// قراءة عامة لدليل المحامين والمكاتب المعتمدة (القائمة + التفاصيل)
+// الإنشاء/التعديل (POST/غير GET) يبقى محمياً بالميدلوير + تحقّق داخلي
+if (
+  request.method === "GET" &&
+  (pathname === "/api/lawyers" ||
+    /^\/api\/lawyers\/\d+$/.test(pathname) ||
+    pathname === "/api/organizations")
+) {
+  return NextResponse.next();
+}
+
 if (
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/register") ||
-  pathname.startsWith("/api/mobile") || 
+  pathname.startsWith("/api/mobile") ||
    pathname.startsWith("/api/blog") ||
   pathname.startsWith("/api/library") ||
   pathname.startsWith("/api/contracts/templates") ||
