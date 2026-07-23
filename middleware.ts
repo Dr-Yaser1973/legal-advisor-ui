@@ -76,6 +76,7 @@ if (
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/register") ||
   pathname.startsWith("/api/mobile") ||
+  pathname.startsWith("/api/cron") ||
    pathname.startsWith("/api/blog") ||
   pathname.startsWith("/api/library") ||
   pathname.startsWith("/api/contracts/templates") ||

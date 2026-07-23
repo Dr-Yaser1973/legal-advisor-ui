@@ -53,6 +53,27 @@ function statusColor(status: string) {
   }
 }
 
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  HEARING: "جلسة",
+  DEADLINE: "موعد نهائي",
+  MEETING: "اجتماع موكّل",
+  TASK: "مهمة",
+  VERDICT: "حكم",
+  APPEAL: "طعن",
+  OTHER: "حدث",
+};
+
+function eventTypeColor(t: string) {
+  switch (t) {
+    case "HEARING": return "bg-blue-500/10 text-blue-300 border-blue-500/40";
+    case "DEADLINE": return "bg-red-500/10 text-red-300 border-red-500/40";
+    case "MEETING": return "bg-emerald-500/10 text-emerald-300 border-emerald-500/40";
+    case "VERDICT": return "bg-purple-500/10 text-purple-300 border-purple-500/40";
+    case "APPEAL": return "bg-amber-500/10 text-amber-300 border-amber-500/40";
+    default: return "bg-zinc-500/10 text-zinc-300 border-zinc-500/40";
+  }
+}
+
 export default async function CasePage({ params }: PageProps) {
   // 🔐 أولاً: التحقق من الجلسة والدور
   const session: any = await getServerSession(authOptions as any);
@@ -142,6 +163,41 @@ export default async function CasePage({ params }: PageProps) {
 
   const events = caseItem.events;
   const docs = caseItem.documents;
+
+  // تقسيم الأحداث: قادمة (لم يحن موعدها) وسابقة
+  const _now = Date.now();
+  const upcomingEvents = events
+    .filter((e) => new Date(e.date).getTime() >= _now)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const pastEvents = events
+    .filter((e) => new Date(e.date).getTime() < _now)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const renderEvent = (ev: (typeof events)[number]) => (
+    <div
+      key={ev.id}
+      className="rounded-2xl border border-white/10 bg-zinc-900/60 p-3 text-xs"
+    >
+      <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className={"inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] " + eventTypeColor(ev.type)}>
+            {EVENT_TYPE_LABEL[ev.type] ?? "حدث"}
+          </span>
+          <span className="font-semibold">{ev.title}</span>
+          {ev.notifyAt && !ev.notified && (
+            <span className="text-[10px] text-amber-300" title="تذكير مجدول">🔔</span>
+          )}
+        </div>
+        <span className="text-[11px] text-zinc-400">{formatDateTime(ev.date)}</span>
+      </div>
+      {ev.location && (
+        <div className="text-[11px] text-zinc-400 mb-1">📍 {ev.location}</div>
+      )}
+      {ev.note && (
+        <p className="text-[11px] text-zinc-300 whitespace-pre-wrap">{ev.note}</p>
+      )}
+    </div>
+  );
 
   return (
     <main className="container mx-auto px-4 py-8 space-y-6">
@@ -281,35 +337,27 @@ export default async function CasePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* الأحداث الزمنية */}
+      {/* المواعيد القادمة */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold">سجل الأحداث (الجلسات والإجراءات)</h2>
-        {events.length === 0 ? (
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          🗓️ المواعيد القادمة (الجلسات والمواعيد النهائية)
+        </h2>
+        {upcomingEvents.length === 0 ? (
           <p className="text-xs text-zinc-500">
-            لا توجد أحداث مسجّلة حتى الآن. يمكنك إضافة أول حدث من خلال النموذج
-            أعلاه.
+            لا توجد مواعيد قادمة مجدولة. أضف جلسة أو موعداً نهائياً من نموذج «إضافة حدث / موعد» أعلاه ليصلك تذكير في وقته.
           </p>
         ) : (
-          <div className="space-y-2">
-            {events.map((ev) => (
-              <div
-                key={ev.id}
-                className="rounded-2xl border border-white/10 bg-zinc-900/60 p-3 text-xs"
-              >
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="font-semibold">{ev.title}</span>
-                  <span className="text-[11px] text-zinc-400">
-                    {formatDateTime(ev.date)}
-                  </span>
-                </div>
-                {ev.note && (
-                  <p className="text-[11px] text-zinc-300 whitespace-pre-wrap">
-                    {ev.note}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+          <div className="space-y-2">{upcomingEvents.map(renderEvent)}</div>
+        )}
+      </section>
+
+      {/* سجل الأحداث السابقة */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">سجل الأحداث السابقة</h2>
+        {pastEvents.length === 0 ? (
+          <p className="text-xs text-zinc-500">لا توجد أحداث سابقة.</p>
+        ) : (
+          <div className="space-y-2">{pastEvents.map(renderEvent)}</div>
         )}
       </section>
 
