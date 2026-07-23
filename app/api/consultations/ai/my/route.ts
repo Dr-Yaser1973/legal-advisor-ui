@@ -17,10 +17,11 @@ export async function GET() {
 
     const userId = Number(session.user.id);
 
+    // نُرجع فقط استشارات الذكاء التي أُجيبت فعلاً؛ طلبات المحامين البشرية
+    // تُنشئ سجل Consultation بلا answer فنستبعدها من سجل الذكاء.
     const items = await prisma.consultation.findMany({
-      where: { userId },
+      where: { userId, answer: { not: null } },
       orderBy: { createdAt: "desc" },
-      // 🚫 لا نستخدم select هنا، نأخذ كل الحقول كما هي من الجدول
     });
 
     return NextResponse.json({ items });

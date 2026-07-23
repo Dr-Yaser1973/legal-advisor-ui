@@ -138,7 +138,7 @@ export async function POST(
         emailKind: "offer_accepted",
         emailData: {
           subject: result.subject,
-          chatPath: `/dashboard/chat/${result.room.id}`,
+          chatPath: `/chat/${result.room.id}`,
         },
       });
     } catch (notifyError) {

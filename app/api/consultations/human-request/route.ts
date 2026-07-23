@@ -70,7 +70,7 @@ export async function POST(req: Request) {
             emailKind: "new_request",
             emailData: {
               subject: topic,
-              consultUrl: "/dashboard/requests",
+              consultUrl: "/lawyers/my-consults",
             },
           })
         )

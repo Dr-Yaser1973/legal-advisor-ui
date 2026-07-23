@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { chatCompletion } from "@/lib/ai";
- import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
+ import { canPerformAction, consumePoints } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +73,7 @@ export async function POST(req: Request) {
     // ===============================
     let answerText =
       "عذراً، تعذر الحصول على إجابة في الوقت الحالي. يرجى المحاولة لاحقًا.";
+    let aiSucceeded = false;
 
     try {
       const completion = await chatCompletion([
@@ -103,22 +104,37 @@ export async function POST(req: Request) {
       ]);
 
       const content = completion?.choices?.[0]?.message?.content;
-      if (content && typeof content === "string") {
+      if (content && typeof content === "string" && content.trim()) {
         answerText = content.trim();
+        aiSucceeded = true;
       }
     } catch (err) {
       console.error("OpenAI error:", err);
     }
 
     // ===============================
-    // استهلاك النقاط بعد نجاح الاستشارة
+    // إن فشل توليد الإجابة: لا نخصم رصيداً ولا نحفظ إجابة، ونُبلغ العميل
     // ===============================
-     try {
-  await logAiUsage(userId, "AI_CONSULT");  // ← أضف هذا السطر
-  await consumePoints(userId, "AI_CONSULT");
-} catch (err) {
-  console.error("Points consumption error:", err);
-}
+    if (!aiSucceeded) {
+      return NextResponse.json(
+        {
+          id: created.id,
+          error:
+            "تعذّر توليد الإجابة الآن ولم يُخصم أي رصيد. يرجى المحاولة لاحقًا.",
+        },
+        { status: 503 }
+      );
+    }
+
+    // ===============================
+    // استهلاك النقاط بعد نجاح الاستشارة فعلاً
+    // (consumePoints يسجّل استخدام AI تلقائياً — لا نستدعي logAiUsage لتفادي العدّ المزدوج)
+    // ===============================
+    try {
+      await consumePoints(userId, "AI_CONSULT");
+    } catch (err) {
+      console.error("Points consumption error:", err);
+    }
 
     // ===============================
     // حفظ الإجابة

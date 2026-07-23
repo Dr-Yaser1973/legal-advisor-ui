@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const userId = Number(payload.sub);
 
     const consultations = await prisma.consultation.findMany({
-      where: { userId },
+      where: { userId, answer: { not: null } },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: {

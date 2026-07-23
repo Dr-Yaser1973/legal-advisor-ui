@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
 import { chatCompletion } from "@/lib/ai";
-import { canPerformAction, consumePoints, logAiUsage } from "@/lib/plans";
+import { canPerformAction, consumePoints } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     // استهلاك النقاط — فقط عند نجاح فعلي للإجابة
     if (aiSucceeded) {
       try {
-        await logAiUsage(userId, "AI_CONSULT");
+        // consumePoints يسجّل استخدام AI تلقائياً — لا نستدعي logAiUsage لتفادي العدّ المزدوج
         await consumePoints(userId, "AI_CONSULT");
       } catch (err) {
         console.error("Points error:", err);

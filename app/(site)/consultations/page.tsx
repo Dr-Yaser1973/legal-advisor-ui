@@ -1,8 +1,16 @@
  "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSession, signIn } from "next-auth/react";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Upload, X, FileText, ChevronLeft } from "lucide-react";
+
+// تسجيل دخول بنقرة عبر Google مع العودة لنفس الصفحة
+function loginWithGoogle() {
+  signIn("google", {
+    callbackUrl: typeof window !== "undefined" ? window.location.href : "/consultations",
+  });
+}
 
 type TabKey = "ai" | "human" | "firm" | "history";
 
@@ -172,6 +180,8 @@ function AcceptOfferButton({ requestId, offerId, disabled, onAccepted }: AcceptO
 }
 
 export default function ConsultationsPage() {
+  const { status } = useSession();
+  const isGuest = status === "unauthenticated";
   const [activeTab, setActiveTab] = useState<TabKey>("ai");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
@@ -252,6 +262,7 @@ export default function ConsultationsPage() {
         body: JSON.stringify({ title: aiQuestion.trim().slice(0, 80) || "استشارة قانونية مختصرة", description: aiQuestion }),
       });
       const data = await res.json();
+      if (res.status === 401) { loginWithGoogle(); return; }
       if (res.status === 403 && data.upgradeRequired) { setUpgradeMessage(data.error); setUpgradeOpen(true); return; }
       if (!res.ok) throw new Error(data?.error || "فشل طلب الاستشارة بالذكاء.");
       setAiAnswer(data.answer || "تم استلام الاستشارة بنجاح.");
@@ -271,6 +282,7 @@ export default function ConsultationsPage() {
         body: JSON.stringify({ topic: humanTopic, details: humanDetails }),
       });
       const data = await res.json();
+      if (res.status === 401) { loginWithGoogle(); return; }
       if (res.status === 403 && data.upgradeRequired) { setUpgradeMessage(data.error); setUpgradeOpen(true); return; }
       if (!res.ok) throw new Error(data?.error || "فشل إرسال طلب الاستشارة.");
       setHumanSuccess("تم إرسال طلب الاستشارة بنجاح. سيتم عرض عروض المحامين في سجل الاستشارات.");
@@ -322,6 +334,7 @@ export default function ConsultationsPage() {
         }),
       });
       const data = await res.json();
+      if (res.status === 401) { loginWithGoogle(); return; }
       if (!res.ok) throw new Error(data?.error || "فشل إرسال الطلب.");
 
       setFirmSuccess(`تم إرسال طلب الاستشارة إلى ${selectedOrg.name} بنجاح.\nسيردّ عليك المكتب خلال 24 ساعة — ستصلك إشعار عند وصول العرض.`);
@@ -353,6 +366,31 @@ export default function ConsultationsPage() {
             يمكنك هنا طلب استشارة فورية بالذكاء الاصطناعي، أو إرسال طلب استشارة إلى محامٍ معتمد أو مكتب معتمد.
           </p>
         </header>
+
+        {/* بطاقة تحويل للزائر غير المسجّل */}
+        {isGuest && (
+          <div className="mb-5 rounded-2xl border border-emerald-500/40 bg-gradient-to-l from-emerald-500/10 to-sky-500/5 p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-right">
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-bold text-white">جرّب استشارتك القانونية الأولى مجاناً 🎁</h2>
+                <p className="text-sm text-zinc-300">
+                  سجّل الدخول بنقرة واحدة لتحصل على استشارة فورية بالذكاء الاصطناعي، أو ترسل طلبك إلى محامٍ أو مكتب معتمد.
+                </p>
+                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400 justify-end pt-1">
+                  <li>✓ استشارة أولى مجانية</li>
+                  <li>✓ بلا التزام</li>
+                  <li>✓ تبدأ فوراً</li>
+                </ul>
+              </div>
+              <button
+                onClick={loginWithGoogle}
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-zinc-900 transition hover:bg-zinc-100"
+              >
+                تسجيل الدخول عبر Google
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* التبويبات */}
         <div className="flex flex-wrap gap-2 justify-end mb-4">
