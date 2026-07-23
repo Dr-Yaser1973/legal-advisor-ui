@@ -77,14 +77,12 @@ export async function POST(_req: Request, context: RouteContext) {
     );
 
     // ===============================
-    // حفظ نتيجة التحليل
+    // حفظ نتيجة التحليل في حقل القضية المخصّص (لا كحدث — كي لا يلوّث الخط الزمني)
     // ===============================
-    await prisma.caseEvent.create({
+    await prisma.case.update({
+      where: { id },
       data: {
-        caseId: id,
-        title: "تحليل AI",
-        note: answer,
-        date: new Date(),
+        aiAnalysis: { text: answer, generatedAt: new Date().toISOString() },
       },
     });
 

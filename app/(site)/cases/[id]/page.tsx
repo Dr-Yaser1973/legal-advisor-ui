@@ -12,6 +12,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getCaseAccess } from "@/lib/caseAccess";
 import CaseAssignments from "./CaseAssignments";
 import ClientPortalPanel from "./ClientPortalPanel";
+import CaseNotes from "./CaseNotes";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,12 @@ export default async function CasePage({ params }: PageProps) {
       },
       client: { select: { id: true, name: true, email: true } },
       updates: { orderBy: { createdAt: "desc" } },
+      caseNotes: {
+        // الملاحظات الخاصة تظهر لصاحبها فقط؛ المشتركة للجميع
+        where: { OR: [{ isPrivate: false }, { userId: Number(user.id) }] },
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true } } },
+      },
     },
   });
 
@@ -156,11 +163,16 @@ export default async function CasePage({ params }: PageProps) {
       meRecord.branch.orgId === ownerOrg?.branch?.orgId);
 
   let aiText: string | null = null;
-  if (caseItem.aiAnalysis != null) {
-    if (typeof caseItem.aiAnalysis === "string") {
-      aiText = caseItem.aiAnalysis;
+  let aiGeneratedAt: string | null = null;
+  const _ai: any = caseItem.aiAnalysis;
+  if (_ai != null) {
+    if (typeof _ai === "string") {
+      aiText = _ai;
+    } else if (typeof _ai === "object" && typeof _ai.text === "string") {
+      aiText = _ai.text;
+      aiGeneratedAt = typeof _ai.generatedAt === "string" ? _ai.generatedAt : null;
     } else {
-      aiText = JSON.stringify(caseItem.aiAnalysis, null, 2);
+      aiText = JSON.stringify(_ai, null, 2);
     }
   }
 
@@ -323,6 +335,22 @@ export default async function CasePage({ params }: PageProps) {
         />
       )}
 
+      {/* ملاحظات الفريق الداخلية — للمحررين */}
+      {canWrite && (
+        <CaseNotes
+          caseId={caseItem.id}
+          currentUserId={Number(user.id)}
+          notes={caseItem.caseNotes.map((n) => ({
+            id: n.id,
+            content: n.content,
+            isPrivate: n.isPrivate,
+            createdAt: n.createdAt.toISOString(),
+            userId: n.userId,
+            authorName: n.user?.name ?? null,
+          }))}
+        />
+      )}
+
       {!canWrite && (
         <section>
           <p className="text-xs text-zinc-500 rounded-2xl border border-white/10 bg-zinc-900/40 p-3">
@@ -335,7 +363,13 @@ export default async function CasePage({ params }: PageProps) {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">تحليل الذكاء الاصطناعي</h2>
-          {!aiText && (
+          {aiText ? (
+            aiGeneratedAt && (
+              <span className="text-[11px] text-zinc-400">
+                آخر تحليل: {formatDateTime(new Date(aiGeneratedAt))}
+              </span>
+            )
+          ) : (
             <span className="text-[11px] text-zinc-400">
               لم يتم بعد إجراء تحليل؛ استخدم زر "تحليل القضية" أعلاه.
             </span>
@@ -343,9 +377,9 @@ export default async function CasePage({ params }: PageProps) {
         </div>
         <div className="rounded-2xl border border-dashed border-emerald-500/30 bg-zinc-900/60 p-4 min-h-[120px]">
           {aiText ? (
-            <pre className="text-xs whitespace-pre-wrap leading-relaxed text-zinc-100">
+            <div className="text-xs whitespace-pre-wrap leading-relaxed text-zinc-100 font-sans">
               {aiText}
-            </pre>
+            </div>
           ) : (
             <p className="text-xs text-zinc-500">
               عند إجراء التحليل ستظهر هنا ملخصات قانونية وملاحظات تساعد في فهم
@@ -392,8 +426,7 @@ export default async function CasePage({ params }: PageProps) {
               const d: any = cd.document;
               const label =
                 d?.title ||
-                d?.originalName ||
-                d?.fileName ||
+                d?.filename ||
                 `مستند رقم ${cd.documentId}`;
 
               return (
@@ -413,9 +446,9 @@ export default async function CasePage({ params }: PageProps) {
                       </span>
                     )}
                   </div>
-                  {d?.mimeType && (
+                  {d?.mimetype && (
                     <span className="text-[11px] text-zinc-500">
-                      النوع: {d.mimeType}
+                      النوع: {d.mimetype}
                     </span>
                   )}
                 </div>
