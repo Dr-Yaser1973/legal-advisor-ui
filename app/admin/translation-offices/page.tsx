@@ -35,14 +35,18 @@ export default async function AdminTranslationOfficesPage() {
       email: true,
       phone: true,
       location: true,
-      password: true, // نستعمله فقط لتحديد هل فُعّل الحساب (لا يُعرض)
+      password: true,     // لتحديد التفعيل فقط (لا يُعرض)
+      authProvider: true, // مستخدمو Google مفعّلون بلا كلمة مرور
       isApproved: true,
       createdAt: true,
       _count: { select: { OfficeTranslationRequests: true } },
     },
   });
 
-  const activated = offices.filter((o) => o.password).length;
+  // مُفعّل = له كلمة مرور (Credentials) أو يسجّل عبر Google
+  const activated = offices.filter(
+    (o) => !!o.password || o.authProvider === "GOOGLE"
+  ).length;
   const pending = offices.length - activated;
 
   return (
@@ -86,7 +90,8 @@ export default async function AdminTranslationOfficesPage() {
         ) : (
           <div className="space-y-3">
             {offices.map((o) => {
-              const isActivated = !!o.password;
+              // مُفعّل = له كلمة مرور (Credentials) أو يسجّل عبر Google
+              const isActivated = !!o.password || o.authProvider === "GOOGLE";
               return (
                 <div
                   key={o.id}
