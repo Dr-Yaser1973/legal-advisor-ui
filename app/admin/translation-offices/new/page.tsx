@@ -35,8 +35,8 @@ export default function NewTranslationOfficePage() {
       return;
     }
 
-    // ✅ نجاح → رجوع إلى القائمة
-    router.push("/translation-offices");
+    // ✅ نجاح → رجوع إلى قائمة الأدمن
+    router.push("/admin/translation-offices");
   }
 
   return (
