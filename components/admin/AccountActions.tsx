@@ -5,12 +5,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MessageSquare, Trash2, X } from "lucide-react";
 
-type Kind = "company" | "office" | "lawyer";
+type Kind = "company" | "office" | "lawyer" | "lawFirm";
 
 const KIND_LABEL: Record<Kind, string> = {
   company: "الشركة",
   office: "المكتب",
   lawyer: "المحامي",
+  lawFirm: "المكتب",
 };
 
 export default function AccountActions({

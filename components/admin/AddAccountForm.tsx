@@ -5,20 +5,38 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 
-type Role = "COMPANY" | "TRANSLATION_OFFICE" | "LAWYER";
+type Role = "COMPANY" | "TRANSLATION_OFFICE" | "LAWYER" | "LAW_FIRM";
 
 // نقطة النهاية المناسبة لكل دور
 const ENDPOINT: Record<Role, string> = {
   COMPANY: "/api/admin/companies",
   TRANSLATION_OFFICE: "/api/admin/translation-offices",
   LAWYER: "/api/admin/lawyers",
+  LAW_FIRM: "/api/admin/firms",
 };
 
 const NAME_LABEL: Record<Role, string> = {
   COMPANY: "اسم الشركة",
   TRANSLATION_OFFICE: "اسم المكتب",
   LAWYER: "اسم المحامي",
+  LAW_FIRM: "اسم المكتب",
 };
+
+// مسار الإنشاء لكل دور يقبل شكل حقول مختلف — نطابقه هنا
+function buildPayload(role: Role, form: { name: string; email: string; phone: string; location: string }) {
+  if (role === "LAW_FIRM") {
+    // مسار firms ينشئ مؤسسة كاملة ويتطلّب orgName
+    return {
+      orgName: form.name,
+      contactName: form.name,
+      email: form.email,
+      phone: form.phone,
+      city: form.location,
+    };
+  }
+  // بقية الأدوار: {name, email, phone, location}
+  return form;
+}
 
 export default function AddAccountForm({
   role,
@@ -50,7 +68,7 @@ export default function AddAccountForm({
       const res = await fetch(ENDPOINT[role], {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(buildPayload(role, form)),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok || !d.ok) { setError(d?.error || "تعذّر الإنشاء."); return; }

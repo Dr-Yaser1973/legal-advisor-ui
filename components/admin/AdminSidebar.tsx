@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, BookOpen, Users, MessageCircle,
-  FileText, BarChart3, ScanText, Database, Building2,
+  FileText, BarChart3, ScanText, Database, Building2, Building,
   Languages, Settings, ChevronRight, Scale,
 } from "lucide-react";
 
@@ -39,6 +39,7 @@ const groups: NavGroup[] = [
     links: [
       { href: "/admin/users",             label: "المستخدمون والأدوار", icon: Users },
       { href: "/admin/lawyers",           label: "المحامون",            icon: Scale },
+      { href: "/admin/law-firms",         label: "مكاتب المحاماة",      icon: Building },
       { href: "/admin/companies",         label: "الشركات",             icon: Building2 },
       { href: "/admin/translation-offices", label: "مكاتب الترجمة",     icon: Languages },
       { href: "/admin/consultations",     label: "الاستشارات",          icon: MessageCircle },
