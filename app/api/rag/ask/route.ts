@@ -1,6 +1,7 @@
  // app/api/rag/ask/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth/guards";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -9,8 +10,20 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// تحديد المعدّل لكل مستخدم (بلا Redis — عبر AiUsageLog)
+const RAG_ACTION = "RAG_ASK";
+const RATE_WINDOW_MIN = 10; // نافذة بالدقائق
+const RATE_MAX = 15;        // أقصى عدد استشارات ذكية لكل مستخدم داخل النافذة
+
 export async function POST(req: Request) {
   try {
+    // =========================
+    // 1) مصادقة إلزامية (منع استنزاف رصيد OpenAI من مجهولين)
+    // =========================
+    const auth = await requireUser();
+    if (!auth.ok) return auth.res;
+    const userId = auth.user.id;
+
     const body = await req.json();
     const questionRaw = body?.question ?? "";
     const lawDocId = body?.lawDocId as number | undefined;
@@ -21,6 +34,27 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "الرجاء إرسال سؤال قانوني للتحليل." },
         { status: 400 }
+      );
+    }
+
+    // =========================
+    // 2) تحديد المعدّل لكل مستخدم (نافذة زمنية عبر AiUsageLog)
+    // =========================
+    const windowStart = new Date(Date.now() - RATE_WINDOW_MIN * 60_000);
+    const recentCount = await prisma.aiUsageLog.count({
+      where: {
+        userId,
+        action: RAG_ACTION,
+        createdAt: { gte: windowStart },
+      },
+    });
+
+    if (recentCount >= RATE_MAX) {
+      return NextResponse.json(
+        {
+          error: `طلبات كثيرة خلال وقت قصير. يرجى المحاولة بعد ${RATE_WINDOW_MIN} دقائق.`,
+        },
+        { status: 429 }
       );
     }
 
@@ -104,6 +138,11 @@ export async function POST(req: Request) {
     const answer =
       completion.choices[0]?.message?.content?.trim() ??
       "تعذر توليد إجابة قانونية في هذه اللحظة.";
+
+    // تسجيل الاستخدام (يغذّي حدّ المعدّل ولا يُحتسب إلا بعد نجاح التوليد)
+    await prisma.aiUsageLog
+      .create({ data: { userId, action: RAG_ACTION } })
+      .catch(() => {});
 
     return NextResponse.json({
       answer,
