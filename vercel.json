@@ -1,6 +1,56 @@
 {
+  /**
+   * تكوين Cron Jobs لـ Vercel
+   * ═══════════════════════════════════════════════════════════════════════════
+   *
+   * **الغرض:**
+   * تشغيل المهام المجدولة تلقائياً على الخادم (serverless functions)
+   *
+   * **ملاحظات مهمة:**
+   * 1. Hobby (plan مجاني) = كرون يومي فقط
+   *    Pro (مدفوع) = كرون كل ساعة (عدّل schedule إذا ترقّيت)
+   *
+   * 2. CRON_SECRET يجب أن يُضاف في:
+   *    Project Settings → Environment Variables (في dashboard Vercel)
+   *
+   * 3. Vercel سيضيف تلقائياً:
+   *    Authorization: Bearer <CRON_SECRET>
+   *    في كل طلب Cron
+   */
   "crons": [
     {
+      /**
+       * نظام تذكيرات القضايا — «الرقيب»
+       * ───────────────────────────────────
+       *
+       * **المسار:** GET /api/cron/case-reminders
+       * **الجدول:** يومياً الساعة 03:00 UTC (صباح الخليج)
+       *
+       * **صيغة الجدول (cron syntax):**
+       * 0 3 * * *
+       * └ دقيقة (0-59): 0 = الدقيقة صفر
+       *   └ ساعة (0-23): 3 = الساعة 3 صباحاً UTC
+       *     └ يوم الشهر (1-31): * = كل يوم
+       *       └ الشهر (1-12): * = كل شهر
+       *         └ يوم الأسبوع (0-6): * = كل يوم
+       *
+       * **الآثار:**
+       * 1. البحث عن CaseEvent حيث notified=false و notifyAt<=NOW()
+       * 2. إرسال Push Notification لكل صاحب قضية والمكلّفين
+       * 3. تعيين notified=true (منع التكرار)
+       *
+       * **جداول بديلة:**
+       * - كل ساعة (Pro plan): "0 * * * *"
+       * - كل 30 دقيقة (Pro): "*/30 * * * *"
+       * - كل يوم الساعة 6 صباحاً: "0 6 * * *"
+       *
+       * **استكشاف الأخطاء:**
+       * - لا تذكيرات ترسل؟
+       *   1. تحقّق من CRON_SECRET في Vercel env
+       *   2. شغّل test يدوي: curl -H "Authorization: Bearer ..." https://yoursite/api/cron/case-reminders
+       *   3. افحص Vercel logs
+       * - Hobby plan لا يرسل بتكرار أعلى؟ ترقّ لـ Pro
+       */
       "path": "/api/cron/case-reminders",
       "schedule": "0 3 * * *"
     }

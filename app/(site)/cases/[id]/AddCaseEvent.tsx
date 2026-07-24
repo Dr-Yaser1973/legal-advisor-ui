@@ -1,8 +1,35 @@
+/**
+ * مكوّن إضافة حدث جديد لقضية — نموذج نظام الرقيب
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * **المسؤولية:**
+ * جمع بيانات الحدث من المستخدم (عنوان، نوع، تاريخ، موقع، فترة التذكير)
+ * ثم إرسالها إلى POST /api/cases/[id]/events
+ *
+ * **سير العمل:**
+ * 1. المستخدم يملأ النموذج
+ * 2. عند الإرسال: تحويل التاريخ المحلي إلى ISO8601
+ * 3. إرسال POST مع remindBefore (بالدقائق)
+ * 4. الخادم يحسب notifyAt = date - (remindBefore * 60_000 ms)
+ * 5. بعد النجاح: تحديث الصفحة (router.refresh)
+ *
+ * **ملاحظات مهمة:**
+ * - remindBefore بالدقائق، ليس الساعات
+ *   60 = ساعة واحدة
+ *   1440 = يوم واحد (24 * 60)
+ *   10080 = أسبوع واحد (7 * 24 * 60)
+ * - يجب أن تطابق EVENT_TYPES CaseEventType enum من schema.prisma
+ * - datetime-local يُحفظ في المناطق الزمنية المحلية للمستخدم
+ */
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+/// أنواع الأحداث المدعومة
+/// يجب أن تطابق CaseEventType enum في prisma/schema.prisma
+/// (تُرسل بنفس القيم للخادم)
 const EVENT_TYPES: { value: string; label: string }[] = [
   { value: "HEARING", label: "جلسة" },
   { value: "DEADLINE", label: "موعد نهائي" },
@@ -13,14 +40,21 @@ const EVENT_TYPES: { value: string; label: string }[] = [
   { value: "OTHER", label: "أخرى" },
 ];
 
+/// خيارات فترة التذكير بالدقائق
+/// ⚠️ CRITICAL: هذه بالدقائق، ليس الساعات!
+/// الخادم سيحسب: notifyAt = date - (value * 60_000 milliseconds)
 const REMIND_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: "بلا تذكير" },
-  { value: 60, label: "قبل ساعة" },
-  { value: 1440, label: "قبل يوم" },
-  { value: 2880, label: "قبل يومين" },
-  { value: 10080, label: "قبل أسبوع" },
+  { value: 60, label: "قبل ساعة" },           // 60 دقيقة = 1 ساعة
+  { value: 1440, label: "قبل يوم" },          // 1440 دقيقة = 24 ساعة = 1 يوم
+  { value: 2880, label: "قبل يومين" },        // 2880 دقيقة = 48 ساعة = 2 يوم
+  { value: 10080, label: "قبل أسبوع" },       // 10080 دقيقة = 7 * 1440
 ];
 
+/**
+ * مكوّن النموذج
+ * @param caseId - معرّف القضية المرتبطة
+ */
 export function AddCaseEvent({ caseId }: { caseId: number }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -32,9 +66,16 @@ export function AddCaseEvent({ caseId }: { caseId: number }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  /// معالج الإرسال الرئيسي
+  /// 1. التحقّق من البيانات
+  /// 2. تحويل التاريخ المحلي إلى ISO8601
+  /// 3. إرسال POST إلى /api/cases/[id]/events
+  /// 4. تحديث الصفحة عند النجاح
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
+
+    // التحقّق من المدخلات
     if (!title.trim()) {
       setErr("يرجى إدخال عنوان الحدث.");
       return;
@@ -46,15 +87,19 @@ export function AddCaseEvent({ caseId }: { caseId: number }) {
 
     try {
       setLoading(true);
+
+      // ⚠️ تحويل التاريخ المحلي (من datetime-local) إلى ISO8601
+      // datetime-local يعطي: "2026-08-15T10:00"
+      // new Date().toISOString() يحوّله لـ: "2026-08-15T10:00:00.000Z"
       const res = await fetch(`/api/cases/${caseId}/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
           type,
-          date: new Date(date).toISOString(),
+          date: new Date(date).toISOString(),  // يجب أن يكون ISO8601 للخادم
           location: location.trim() || null,
-          remindBefore,
+          remindBefore,  // بالدقائق! الخادم سيحسب notifyAt منه
           note: note.trim() || null,
         }),
       });
@@ -65,8 +110,15 @@ export function AddCaseEvent({ caseId }: { caseId: number }) {
         return;
       }
 
-      setTitle(""); setType("HEARING"); setDate(""); setLocation("");
-      setRemindBefore(1440); setNote("");
+      // تنظيف النموذج بعد النجاح
+      setTitle("");
+      setType("HEARING");
+      setDate("");
+      setLocation("");
+      setRemindBefore(1440); // الافتراضي: تذكير يوم واحد
+      setNote("");
+
+      // تحديث الصفحة لإظهار الحدث الجديد
       router.refresh();
     } catch {
       setErr("حدث خطأ غير متوقع أثناء إضافة الحدث.");

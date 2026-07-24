@@ -859,24 +859,74 @@ model CaseUpdate {
   @@index([caseId])
 }
 
+/// نموذج أحداث القضية — «الرقيب»
+///
+/// يسجّل الأحداث المهمة في القضية (جلسات، مواعيد نهائية، إلخ) ويُرسل تذكيرات تلقائية.
+///
+/// التدفق:
+/// 1. المستخدم ينشئ حدث عبر POST /api/cases/[id]/events مع remindBefore (بالدقائق)
+/// 2. API يحسب notifyAt تلقائياً: date - (remindBefore * 60 seconds)
+/// 3. Vercel Cron يستدعي GET /api/cron/case-reminders يومياً (03:00 UTC)
+/// 4. الخادم يبحث عن CaseEvent.notifyAt <= NOW() ثم يُرسل Push Notification
+/// 5. يعيّن notified=true (منع التكرار)
 model CaseEvent {
+  /// معرّف الحدث الفريد
   id        Int           @id @default(autoincrement())
+
+  /// معرّف القضية المرتبطة
   caseId    Int
+
+  /// عنوان الحدث (مثل: "جلسة الاستئناف"، "تقديم المستندات")
   title     String
+
+  /// تاريخ ووقت الحدث الفعليان
+  /// مثال: 2026-08-15T10:00:00Z (جلسة في 15 أغسطس الساعة 10 صباحاً)
   date      DateTime
+
+  /// ملاحظات داخلية (لا يُرسل للعميل)
   note      String?
+
+  /// نوع الحدث: HEARING, DEADLINE, MEETING, TASK, VERDICT, APPEAL, OTHER
+  /// انظر enum CaseEventType أدناه للتفاصيل
   type      CaseEventType @default(OTHER)
+
+  /// موقع الحدث (مثل: "قاعة المحكمة رقم 5")
   location  String?
+
+  /// معرّف المستخدم الذي أنشأ الحدث
   createdBy Int?
+
+  /// ⚠️ CRITICAL: موعد إرسال التذكير (محسوب تلقائياً)
+  ///
+  /// **الصيغة الرياضية:**
+  /// notifyAt = date - (remindBefore * 60 * 1000 milliseconds)
+  ///
+  /// **مثال:**
+  /// - date = 2026-08-15T10:00:00Z
+  /// - remindBefore = 1440 دقيقة (يوم واحد = 24 * 60 دقيقة)
+  /// - notifyAt = 2026-08-14T10:00:00Z
+  /// - الـ Cron سيُرسل تذكيراً في 2026-08-14 10:00 UTC
+  ///
+  /// **الحالات الخاصة:**
+  /// - null: لا تذكير مطلوب (remindBefore كان 0)
+  /// - يُستخدم في: SELECT * WHERE notifyAt <= NOW()
   notifyAt  DateTime?
+
+  /// هل تمّ إرسال التذكير بالفعل؟
+  /// - false: لم يُرسل (سيُرسل في Cron القادمة)
+  /// - true: تمّ الإرسال (بدون تكرار)
+  /// يُعيّن إلى true بعد notifyUser() بنجاح
   notified  Boolean       @default(false)
 
   case      Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
   creator   User?         @relation("CaseEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
+  // Indexes للبحث السريع
+  // notifyAt: البحث اليومي عن الأحداث المستحقّة للتذكير
+  // notified: تصفية الأحداث التي لم تُبلّغ بعد
   @@index([caseId])
   @@index([date])
-  @@index([notifyAt, notified])
+  @@index([notifyAt, notified]) // الأهم: Cron queries
 }
 
 model CaseNote {
@@ -1293,13 +1343,37 @@ enum OrgRole {
   VIEWER        // مطّلع فقط (للحكومة / الإدارة)
 }
 
+/// أنواع أحداث القضية
+///
+/// الاستخدام: في CaseEvent.type
+/// يُستخدم لتحديد نوع التذكير وتنسيق الرسالة المُرسلة للمستخدم.
+/// انظر: TYPE_LABEL في app/api/cron/case-reminders/route.ts للترجمة العربية
 enum CaseEventType {
-  HEARING      // جلسة
-  DEADLINE     // موعد نهائي
-  MEETING      // اجتماع موكل
-  TASK         // مهمة داخلية
-  VERDICT      // حكم
-  APPEAL       // طعن
+  /// جلسة قضائية (أمام المحكمة)
+  /// مثال: "جلسة في محكمة بداية بغداد"
+  HEARING
+
+  /// موعد نهائي لإنجاز عمل (تقديم مستندات، دفاع، إلخ)
+  /// مثال: "تقديم المستندات المطلوبة"
+  DEADLINE
+
+  /// اجتماع مع الموكّل (العميل)
+  /// مثال: "اجتماع مع الموكّل لمراجعة الحالة"
+  MEETING
+
+  /// مهمة داخلية للمحامي/الفريق
+  /// مثال: "صياغة دعوى جديدة" (لا يُرسل للموكّل)
+  TASK
+
+  /// صدور حكم من المحكمة
+  /// مثال: "صدور حكم الاستئناف"
+  VERDICT
+
+  /// تقديم طعن
+  /// مثال: "تاريخ تقديم الطعن"
+  APPEAL
+
+  /// أحداث أخرى غير مصنّفة
   OTHER
 }
 
