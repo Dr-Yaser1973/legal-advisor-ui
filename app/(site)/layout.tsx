@@ -1,6 +1,7 @@
  //app/(site)/layout.tsx
 import type { ReactNode } from "react";
 import AuthButton from "@/components/AuthButton";
+import NotificationBell from "@/components/NotificationBell";
 import BetaAnnouncementModal from "@/components/BetaAnnouncementModal";
 import Sidebar from "@/components/Sidebar";
 
@@ -13,7 +14,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         <Sidebar />
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-end">
+          <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-end gap-3">
+            <NotificationBell />
             <AuthButton />
           </header>
 
