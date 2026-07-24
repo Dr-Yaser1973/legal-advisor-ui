@@ -38,6 +38,7 @@ const groups: NavGroup[] = [
     label: "إدارة المستخدمين",
     links: [
       { href: "/admin/users",             label: "المستخدمون والأدوار", icon: Users },
+      { href: "/admin/companies",         label: "الشركات",             icon: Building2 },
       { href: "/admin/consultations",     label: "الاستشارات",          icon: MessageCircle },
     ],
   },
