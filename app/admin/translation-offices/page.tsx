@@ -5,8 +5,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Languages, Plus, CheckCircle2, Clock, BarChart3 } from "lucide-react";
+import { Languages, CheckCircle2, Clock, BarChart3 } from "lucide-react";
 import ResendInviteButton from "./ResendInviteButton";
+import AccountActions from "@/components/admin/AccountActions";
+import AddAccountForm from "@/components/admin/AddAccountForm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,20 +60,12 @@ export default async function AdminTranslationOfficesPage() {
               الموجّهة إليها.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/admin/translation-stats"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 text-zinc-300 hover:bg-zinc-800 px-3 py-2 text-xs"
-            >
-              <BarChart3 className="w-3.5 h-3.5" /> الإحصاءات
-            </Link>
-            <Link
-              href="/admin/translation-offices/new"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 text-xs font-medium"
-            >
-              <Plus className="w-3.5 h-3.5" /> إضافة مكتب
-            </Link>
-          </div>
+          <Link
+            href="/admin/translation-stats"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 text-zinc-300 hover:bg-zinc-800 px-3 py-2 text-xs"
+          >
+            <BarChart3 className="w-3.5 h-3.5" /> الإحصاءات
+          </Link>
         </header>
 
         {/* KPIs */}
@@ -81,14 +75,13 @@ export default async function AdminTranslationOfficesPage() {
           <KpiCard title="بانتظار التفعيل" value={pending} accent="amber" />
         </div>
 
+        {/* إضافة يدوية */}
+        <AddAccountForm role="TRANSLATION_OFFICE" title="إضافة مكتب ترجمة يدوياً" />
+
         {/* القائمة */}
         {offices.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-zinc-900/60 px-4 py-12 text-center text-sm text-zinc-400">
-            لا توجد مكاتب ترجمة مسجّلة بعد.{" "}
-            <Link href="/admin/translation-offices/new" className="text-emerald-400 hover:underline">
-              أضف أول مكتب
-            </Link>
-            .
+            لا توجد مكاتب ترجمة مسجّلة بعد.
           </div>
         ) : (
           <div className="space-y-3">
@@ -134,6 +127,13 @@ export default async function AdminTranslationOfficesPage() {
                       {!isActivated && o.email && (
                         <ResendInviteButton email={o.email} />
                       )}
+                      <AccountActions
+                        userId={o.id}
+                        email={o.email}
+                        name={o.name || `مكتب #${o.id}`}
+                        isApproved={o.isApproved}
+                        kind="office"
+                      />
                     </div>
                   </div>
                 </div>
