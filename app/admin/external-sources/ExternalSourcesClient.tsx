@@ -57,8 +57,6 @@ export default function ExternalSourcesClient() {
  
   // 🔹 تحويل إلى مادة في المكتبة
   async function handleConvert(externalItemId: number) {
-    console.log("CONVERT CLICKED:", externalItemId, typeof externalItemId);
-
     setLoading(true);
     setError(null);
 
@@ -166,7 +164,7 @@ export default function ExternalSourcesClient() {
                       ✅ تم التحويل (#{p.lawUnitId})
                     </span>
                     <a
-                      href={`/library/${p.lawUnitId}`}
+                      href={`/library/view/${p.lawUnitId}`}
                       className="rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs hover:bg-zinc-900"
                     >
                       فتح المادة

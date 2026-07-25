@@ -16,11 +16,18 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // دوال مساعدة للتصنيفات
+// ملاحظة: أصناف Tailwind ثابتة (لا تُبنى ديناميكياً) حتى يولّدها المُجمّع
 const categoryLabels = {
-  LAW: { ar: "قانون", color: "blue" },
-  FIQH: { ar: "فقه", color: "emerald" },
-  ACADEMIC: { ar: "دراسة أكاديمية", color: "purple" },
-  CONTRACT: { ar: "قرار دستوري", color: "amber" }
+  LAW:      { ar: "قانون",           icon: "⚖️", iconCls: "bg-blue-500/15 text-blue-300",     badgeCls: "bg-blue-500/10 text-blue-300 border border-blue-500/20" },
+  FIQH:     { ar: "فقه",             icon: "📜", iconCls: "bg-emerald-500/15 text-emerald-300", badgeCls: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" },
+  ACADEMIC: { ar: "دراسة أكاديمية",  icon: "🎓", iconCls: "bg-purple-500/15 text-purple-300", badgeCls: "bg-purple-500/10 text-purple-300 border border-purple-500/20" },
+  CONTRACT: { ar: "قرار دستوري",     icon: "🏛️", iconCls: "bg-amber-500/15 text-amber-300",    badgeCls: "bg-amber-500/10 text-amber-300 border border-amber-500/20" },
+} as const;
+
+const FALLBACK_CATEGORY = {
+  ar: "أخرى", icon: "📁",
+  iconCls: "bg-zinc-700 text-zinc-300",
+  badgeCls: "bg-zinc-700/40 text-zinc-300 border border-zinc-600",
 };
 
 const itemTypeLabels = {
@@ -42,8 +49,8 @@ export default async function AdminLibraryPage() {
   // التحقق من الصلاحية
   if (!session || role !== "ADMIN") {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-right">
-        <h1 className="text-2xl font-bold mb-4">إدارة المكتبة القانونية</h1>
+      <div className="max-w-4xl mx-auto px-4 py-8 text-right" dir="rtl">
+        <h1 className="text-2xl font-bold mb-4 text-white">إدارة المكتبة القانونية</h1>
         <p className="text-sm text-red-400">
           هذه الصفحة متاحة لمدير النظام (ADMIN) فقط.
         </p>
@@ -82,12 +89,12 @@ export default async function AdminLibraryPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 text-right" dir="rtl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-bold text-white">
           إدارة المكتبة القانونية (النظام الجديد)
         </h1>
-        <Link 
-          href="/library" 
-          className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        <Link
+          href="/library"
+          className="px-4 py-2 rounded-lg border border-white/10 text-zinc-300 hover:bg-zinc-800 transition-colors"
           target="_blank"
         >
           معاينة المكتبة ←
@@ -106,76 +113,73 @@ export default async function AdminLibraryPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* رفع PDF */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-red-500">📄</span> رفع ملف PDF جديد
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+            <span className="text-red-400">📄</span> رفع ملف PDF جديد
           </h2>
           <UploadPDFNew />
         </div>
 
         {/* إضافة نص */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span className="text-blue-500">📝</span> إضافة ملف وورد
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+            <span className="text-blue-400">📝</span> إضافة ملف وورد
           </h2>
           <NewLibraryItemForm />
         </div>
       </div>
 
       {/* قائمة المواد */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-xl font-bold">
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 overflow-hidden">
+        <div className="p-4 border-b border-white/10 bg-zinc-900/80">
+          <h2 className="text-xl font-bold text-white">
             أحدث المواد القانونية ({items.length})
           </h2>
         </div>
 
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-white/5">
           {items.map((item) => {
-            const category = categoryLabels[item.mainCategory as keyof typeof categoryLabels] || { ar: "أخرى", color: "gray" };
+            const category = categoryLabels[item.mainCategory as keyof typeof categoryLabels] || FALLBACK_CATEGORY;
             const itemType = itemTypeLabels[item.itemType as keyof typeof itemTypeLabels] || item.itemType;
-            
+
             return (
               <div
                 key={item.id}
-                className="flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors"
+                className="flex items-start gap-4 p-4 hover:bg-zinc-800/40 transition-colors"
               >
                 {/* أيقونة */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-${category.color}-100 text-${category.color}-600`}>
-                  {item.mainCategory === "LAW" && "⚖️"}
-                  {item.mainCategory === "FIQH" && "📜"}
-                  {item.mainCategory === "ACADEMIC" && "🎓"}
-                  {item.mainCategory === "CONTRACT" && "🏛️"}
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${category.iconCls}`}>
+                  {category.icon}
                 </div>
 
                 {/* المحتوى */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                    <span className={`px-2 py-0.5 bg-${category.color}-50 text-${category.color}-600 rounded-full`}>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500 mb-1 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-full ${category.badgeCls}`}>
                       {category.ar}
                     </span>
-                    <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                    <span className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded-full text-zinc-300">
                       {itemType}
                     </span>
-                    {item.hasPDF && <span className="text-red-500">📄 PDF</span>}
-                    {item.hasWord && <span className="text-blue-500">📝 Word</span>}
+                    {item.hasPDF && <span className="text-red-400">📄 PDF</span>}
+                    {item.hasWord && <span className="text-blue-400">📝 Word</span>}
                     <span>· {new Date(item.createdAt).toLocaleDateString("ar-IQ")}</span>
                   </div>
 
                   <Link
                     href={`/library/view/${item.id}`}
-                    className="font-medium hover:text-blue-600 transition-colors block mb-1"
+                    className="font-medium text-zinc-100 hover:text-emerald-400 transition-colors block mb-1"
                     target="_blank"
                   >
                     {item.titleAr}
                   </Link>
 
                   {item.titleEn && (
-                    <p className="text-sm text-gray-400">{item.titleEn}</p>
+                    <p className="text-sm text-zinc-500">{item.titleEn}</p>
                   )}
 
                   {/* إحصائيات */}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500">
                     <span>👁️ {item.views}</span>
                     <span>⬇️ {item.downloads}</span>
                     <span>⭐ {item.rating.toFixed(1)}</span>
@@ -185,19 +189,19 @@ export default async function AdminLibraryPage() {
                   </div>
 
                   {/* مؤشرات الشروحات */}
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 flex-wrap">
                     {item.basicExplanation && (
-                      <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                         📘 شرح مبسط
                       </span>
                     )}
                     {item.professionalExplanation && (
-                      <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2 py-0.5 rounded-full">
                         📚 شرح احترافي
                       </span>
                     )}
                     {item.commercialExplanation && (
-                      <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-full">
                         💼 شرح تجاري
                       </span>
                     )}
@@ -207,11 +211,8 @@ export default async function AdminLibraryPage() {
                 {/* أزرار التحكم */}
                 <div className="flex items-center gap-2">
                   <EditLibraryItemButton item={item} />
-                  
-                  
-
-                  <DeleteLibraryItemButton 
-                    id={item.id} 
+                  <DeleteLibraryItemButton
+                    id={item.id}
                     title={item.titleAr}
                     hasPDF={item.hasPDF}
                     pdfUrl={item.pdfUrl}
@@ -222,7 +223,7 @@ export default async function AdminLibraryPage() {
           })}
 
           {items.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-zinc-500">
               لا توجد مواد في المكتبة بعد. أضف أول مادة الآن!
             </div>
           )}
