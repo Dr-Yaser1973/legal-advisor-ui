@@ -8,10 +8,28 @@ export const runtime = "nodejs";
 // ===============================
 // POST — إضافة تعليق
 // ===============================
+// حدّ معدّل إضافة التعليقات (لغير الأدمن) — مكافحة السبام
+const COMMENT_RATE_WINDOW_MIN = 5;
+const COMMENT_RATE_MAX = 10;
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await requireUser();
     if (!auth.ok) return auth.res;
+
+    // حدّ معدّل: أقصى COMMENT_RATE_MAX تعليقات لكل نافذة (الأدمن مُستثنى)
+    if (auth.user.role !== "ADMIN") {
+      const since = new Date(Date.now() - COMMENT_RATE_WINDOW_MIN * 60_000);
+      const recent = await prisma.blogComment.count({
+        where: { authorId: auth.user.id, createdAt: { gte: since } },
+      });
+      if (recent >= COMMENT_RATE_MAX) {
+        return NextResponse.json(
+          { ok: false, error: `تعليقات كثيرة خلال وقت قصير. حاول بعد ${COMMENT_RATE_WINDOW_MIN} دقائق.` },
+          { status: 429 }
+        );
+      }
+    }
 
     const { postId, content } = await req.json();
 

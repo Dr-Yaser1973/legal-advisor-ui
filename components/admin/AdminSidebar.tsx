@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, BookOpen, Users, MessageCircle,
   FileText, BarChart3, ScanText, Database, Building2, Building,
-  Languages, Settings, ChevronRight, Scale,
+  Languages, Settings, ChevronRight, Scale, Newspaper,
 } from "lucide-react";
 
 type NavLink = {
@@ -31,6 +31,7 @@ const groups: NavGroup[] = [
     label: "إدارة المحتوى",
     links: [
       { href: "/admin/library",          label: "المكتبة القانونية",    icon: BookOpen },
+      { href: "/admin/blog",             label: "المدونة",              icon: Newspaper },
       { href: "/admin/external-sources", label: "المصادر الخارجية",     icon: Database },
     ],
   },

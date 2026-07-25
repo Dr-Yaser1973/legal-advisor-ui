@@ -83,10 +83,28 @@ export async function GET(req: NextRequest) {
 // ===============================
 // POST — إنشاء مقال جديد
 // ===============================
+// حدّ معدّل إنشاء المقالات (لغير الأدمن) — مكافحة السبام
+const POST_RATE_WINDOW_MIN = 10;
+const POST_RATE_MAX = 5;
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await requireUser();
     if (!auth.ok) return auth.res;
+
+    // حدّ معدّل: أقصى POST_RATE_MAX مقالات لكل نافذة (الأدمن مُستثنى)
+    if (auth.user.role !== "ADMIN") {
+      const since = new Date(Date.now() - POST_RATE_WINDOW_MIN * 60_000);
+      const recent = await prisma.blogPost.count({
+        where: { authorId: auth.user.id, createdAt: { gte: since } },
+      });
+      if (recent >= POST_RATE_MAX) {
+        return NextResponse.json(
+          { ok: false, error: `لقد أنشأت مقالات كثيرة مؤخراً. حاول بعد ${POST_RATE_WINDOW_MIN} دقائق.` },
+          { status: 429 }
+        );
+      }
+    }
 
     const { title, content, excerpt, coverImage, categoryIds, tagIds } = await req.json();
 

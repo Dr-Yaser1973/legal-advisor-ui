@@ -10,45 +10,8 @@ interface RouteContext {
   params: Promise<{ slug: string }>;
 }
 
-// ===============================
-// GET — جلب مقال واحد
-// ===============================
-export async function GET(_req: NextRequest, context: RouteContext) {
-  try {
-    const { slug } = await context.params;
-
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
-      include: {
-        author: { select: { id: true, name: true, image: true } },
-        categories: { select: { category: true } },
-        tags: { select: { tag: true } },
-        comments: {
-          where: { status: "APPROVED" },
-          orderBy: { createdAt: "desc" },
-          include: {
-            author: { select: { id: true, name: true, image: true } },
-          },
-        },
-      },
-    });
-
-    if (!post || post.status !== "PUBLISHED") {
-      return NextResponse.json({ ok: false, error: "المقال غير موجود." }, { status: 404 });
-    }
-
-    // زيادة عداد المشاهدات
-    await prisma.blogPost.update({
-      where: { slug },
-      data: { views: { increment: 1 } },
-    });
-
-    return NextResponse.json({ ok: true, post });
-  } catch (err) {
-    console.error("BLOG_POST_GET_ERROR", err);
-    return NextResponse.json({ ok: false, error: "حدث خطأ غير متوقع." }, { status: 500 });
-  }
-}
+// ملاحظة: لا GET هنا — صفحة المقال (Server Component) تقرأ من Prisma مباشرةً،
+// واللوحة تستخدم PATCH/DELETE فقط.
 
 // ===============================
 // PATCH — تعديل مقال
