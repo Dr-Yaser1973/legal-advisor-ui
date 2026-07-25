@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/guards";
+import { sanitizeBlogHtml } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -76,7 +77,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       where: { slug },
       data: {
         title:       body.title       ?? undefined,
-        content:     body.content     ?? undefined,
+        content:     body.content != null ? sanitizeBlogHtml(body.content) : undefined,
         excerpt:     body.excerpt     ?? undefined,
         coverImage:  body.coverImage  ?? undefined,
         status:      isAdmin ? (body.status ?? undefined) : "PENDING",

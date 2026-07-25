@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Eye, MessageCircle, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { sanitizeBlogHtml } from "@/lib/sanitize";
 import BlogComments from "./BlogComments";
 
 export const dynamic = "force-dynamic";
@@ -125,16 +128,30 @@ export default async function BlogPostPage({
   const slug = safeDecode(rawSlug);
   const post = await getPost(slug);
 
-  if (!post || post.status !== "PUBLISHED") notFound();
+  if (!post) notFound();
 
-  // زيادة عداد المشاهدات (لا يوقف الصفحة إن فشل)
-  try {
-    await prisma.blogPost.update({
-      where: { slug },
-      data: { views: { increment: 1 } },
-    });
-  } catch {
-    /* تجاهل */
+  // معاينة المقالات غير المنشورة مسموحة للكاتب أو الأدمن فقط
+  const isPublished = post.status === "PUBLISHED";
+  let isPreview = false;
+  if (!isPublished) {
+    const session: any = await getServerSession(authOptions as any);
+    const viewer = session?.user;
+    const canPreview =
+      viewer && (viewer.role === "ADMIN" || Number(viewer.id) === post.authorId);
+    if (!canPreview) notFound();
+    isPreview = true;
+  }
+
+  // زيادة عداد المشاهدات للمنشور فقط (لا نحسب معاينات الأدمن)
+  if (isPublished) {
+    try {
+      await prisma.blogPost.update({
+        where: { slug },
+        data: { views: { increment: 1 } },
+      });
+    } catch {
+      /* تجاهل */
+    }
   }
 
   const comments = post.comments.map((c) => ({
@@ -159,6 +176,14 @@ export default async function BlogPostPage({
           <ArrowRight className="w-4 h-4" />
           العودة للمدونة
         </Link>
+
+        {/* شارة المعاينة — يراها الكاتب/الأدمن للمقال غير المنشور */}
+        {isPreview && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            👁️ معاينة — هذا المقال <span className="font-semibold">غير منشور</span> بعد
+            (الحالة: {post.status}). يراه المحرّرون فقط.
+          </div>
+        )}
 
         {/* التصنيفات */}
         {post.categories.length > 0 && (
@@ -209,10 +234,10 @@ export default async function BlogPostPage({
           </div>
         )}
 
-        {/* المحتوى — مُخدَّم من الخادم (قابل للأرشفة) */}
+        {/* المحتوى — مُعقَّم خادمياً (يمنع XSS) ومُخدَّم للأرشفة */}
         <div
           className="prose prose-invert prose-zinc max-w-none text-zinc-300 leading-loose text-sm"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
         />
 
         {/* الوسوم */}

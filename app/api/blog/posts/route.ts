@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/guards";
+import { sanitizeBlogHtml } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
       data: {
         title,
         slug,
-        content,
+        content: sanitizeBlogHtml(content),
         excerpt: excerpt || null,
         coverImage: coverImage || null,
         status,
