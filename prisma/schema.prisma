@@ -76,6 +76,7 @@ model User {
   TranslationOffers          TranslationOffer[]
   ClientTranslationRequests  TranslationRequest[]  @relation("ClientTranslationRequests")
   OfficeTranslationRequests  TranslationRequest[]  @relation("OfficeTranslationRequests")
+  TranslationMessages        TranslationMessage[]  @relation("TranslationMessageSender")
 
 
   // Library
@@ -549,6 +550,7 @@ model TranslationRequest {
   translatedFilePath String?
   translatedFileUrl  String?
   offers             TranslationOffer[]
+  messages           TranslationMessage[]
   client             User               @relation("ClientTranslationRequests", fields: [clientId], references: [id], onDelete: Cascade)
   office             User?              @relation("OfficeTranslationRequests", fields: [officeId], references: [id])
   sourceDoc          LegalDocument      @relation(fields: [sourceDocId], references: [id], onDelete: Cascade)
@@ -556,6 +558,20 @@ model TranslationRequest {
   @@index([clientId])
   @@index([officeId])
   @@index([status, createdAt])
+}
+
+// رسائل تفاوض بين العميل ومكتب الترجمة بعد تسعير المكتب (للاتفاق على طريقة الدفع)
+model TranslationMessage {
+  id        Int                @id @default(autoincrement())
+  requestId Int
+  senderId  Int
+  text      String
+  createdAt DateTime           @default(now())
+  request   TranslationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender    User               @relation("TranslationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([senderId])
 }
 
 model TranslationOffer {

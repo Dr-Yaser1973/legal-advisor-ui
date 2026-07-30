@@ -2,8 +2,12 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
+import TranslationChat from "@/components/TranslationChat";
 
 export const dynamic = "force-dynamic";
+
+// الحالات التي تُفتح فيها المراسلة مع المكتب (بعد التسعير/القبول)
+const CHAT_OPEN_STATUSES = ["ACCEPTED", "IN_PROGRESS", "COMPLETED"];
 
 type TranslationRequestItem = {
   id: number;
@@ -90,6 +94,14 @@ const user = session?.user as any;
                   <div className="text-xs text-yellow-400">
                     لم يتم قبول الطلب من أي مكتب ترجمة بعد.
                   </div>
+                )}
+
+                {r.office && CHAT_OPEN_STATUSES.includes(r.status) && (
+                  <TranslationChat
+                    requestId={r.id}
+                    meId={Number(user.id)}
+                    counterpartLabel={r.office.name || "مكتب الترجمة"}
+                  />
                 )}
 
                 {/* هنا يمكن لاحقًا إضافة زر لرفع/إعادة رفع الملف أو مرفقات أخرى */}
