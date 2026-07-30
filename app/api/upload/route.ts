@@ -5,6 +5,9 @@ import { fileToText } from "@/lib/fileToText";
 
 export const runtime = "nodejs";
 
+// أقصى حجم للملف المرفوع (بايت) — يمنع إغراق التخزين/المعالجة بملفات ضخمة.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15MB
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -21,6 +24,13 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "يرجى رفع ملف بصيغة PDF فقط" },
         { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "حجم الملف كبير جداً. الحد الأقصى 15 ميغابايت." },
+        { status: 413 }
       );
     }
 

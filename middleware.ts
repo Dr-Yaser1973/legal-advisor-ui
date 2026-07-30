@@ -118,17 +118,15 @@ if (
     | undefined;
 
   const status = (token as any).status as "ACTIVE" | "PENDING" | "SUSPENDED" | "EXPIRED" | undefined;
-if (status === "SUSPENDED") {
 
   // =========================
   // حساب محظور
   // =========================
- if (status === "SUSPENDED") {
-  const url = request.nextUrl.clone();
-  url.pathname = "/account-blocked";
-  return NextResponse.redirect(url);
-}
-}
+  if (status === "SUSPENDED") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/account-blocked";
+    return NextResponse.redirect(url);
+  }
 
   // =========================
   // صلاحيات القضايا
