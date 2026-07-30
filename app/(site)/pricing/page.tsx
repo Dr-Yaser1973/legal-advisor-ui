@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 };
 
 const WHATSAPP_NUMBER = "9647719183785";
-const SUPPORT_EMAIL = "support@legal-advisor.iq";
+const SUPPORT_EMAIL = "yaseralzbadi@googlemail.com";
 
 const formatIQD = (n: number) => new Intl.NumberFormat("ar-IQ").format(n);
 

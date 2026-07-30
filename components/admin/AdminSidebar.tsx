@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, BookOpen, Users, MessageCircle,
   FileText, BarChart3, ScanText, Database, Building2, Building,
-  Languages, Settings, ChevronRight, Scale, Newspaper,
+  Languages, Settings, ChevronRight, Scale, Newspaper, Inbox,
 } from "lucide-react";
 
 type NavLink = {
@@ -44,6 +44,7 @@ const groups: NavGroup[] = [
       { href: "/admin/companies",         label: "الشركات",             icon: Building2 },
       { href: "/admin/translation-offices", label: "مكاتب الترجمة",     icon: Languages },
       { href: "/admin/consultations",     label: "الاستشارات",          icon: MessageCircle },
+      { href: "/admin/support",           label: "رسائل الدعم",         icon: Inbox },
     ],
   },
   {

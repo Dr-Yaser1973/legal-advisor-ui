@@ -78,6 +78,10 @@ model User {
   OfficeTranslationRequests  TranslationRequest[]  @relation("OfficeTranslationRequests")
   TranslationMessages        TranslationMessage[]  @relation("TranslationMessageSender")
 
+  // Support (تواصل مع الإدارة)
+  SupportThreadMessages      SupportMessage[]      @relation("SupportThreadUser")
+  SupportSentMessages        SupportMessage[]      @relation("SupportSender")
+
 
   // Library
   libraryItems               LibraryItem[]
@@ -558,6 +562,23 @@ model TranslationRequest {
   @@index([clientId])
   @@index([officeId])
   @@index([status, createdAt])
+}
+
+// محادثة تواصل ثنائية بين أي مستخدم والإدارة (أدمن). المحادثة تُعرّف بصاحبها (threadUserId).
+model SupportMessage {
+  id           Int      @id @default(autoincrement())
+  threadUserId Int      // صاحب المحادثة (المستخدم غير الأدمن)
+  senderId     Int      // من أرسل الرسالة فعلاً (المستخدم أو أدمن)
+  fromAdmin    Boolean  @default(false)
+  body         String
+  readByAdmin  Boolean  @default(false)
+  readByUser   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  threadUser   User     @relation("SupportThreadUser", fields: [threadUserId], references: [id], onDelete: Cascade)
+  sender       User     @relation("SupportSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([threadUserId, createdAt])
+  @@index([senderId])
 }
 
 // رسائل تفاوض بين العميل ومكتب الترجمة بعد تسعير المكتب (للاتفاق على طريقة الدفع)

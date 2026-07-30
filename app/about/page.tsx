@@ -71,7 +71,7 @@ export default function AboutPage() {
 
           <h2 className="text-2xl font-semibold mt-4">تواصل معنا</h2>
           <p>نرحّب بملاحظاتكم واقتراحاتكم عبر البريد:</p>
-          <p className="font-mono text-blue-400">support@legal-advisor.iq</p>
+          <p className="font-mono text-blue-400">yaseralzbadi@googlemail.com</p>
         </div>
       ) : (
         <div className="space-y-6 leading-8 text-lg">
@@ -126,7 +126,7 @@ export default function AboutPage() {
 
           <h2 className="text-2xl font-semibold mt-4">Contact Us</h2>
           <p>We welcome your feedback and suggestions at:</p>
-          <p className="font-mono text-blue-500">support@legal-advisor.iq</p>
+          <p className="font-mono text-blue-500">yaseralzbadi@googlemail.com</p>
         </div>
       )}
 

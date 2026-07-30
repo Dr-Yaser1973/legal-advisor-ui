@@ -8,7 +8,7 @@ import { useSession } from "next-auth/react";
   Scale, BookOpen, Newspaper, MessageSquare, FileText,
   Gavel, Languages, Users, DollarSign, Briefcase,
   Building2, PenTool, Settings, ChevronLeft, ChevronRight,
-  LayoutDashboard, FileEdit, Shield, Globe, HelpCircle
+  LayoutDashboard, FileEdit, Shield, Globe, HelpCircle, LifeBuoy
 } from "lucide-react";
 
 interface NavItem {
@@ -124,7 +124,13 @@ export default function Sidebar() {
     isCompany     ? companyLinks     :
     clientLinks;
 
-  const allLinks = [...commonLinks, ...roleLinks];
+  // رابط «تواصل مع الإدارة» لكل مستخدم مسجّل (عدا الزائر والأدمن — الأدمن لديه وارد الدعم في لوحته)
+  const supportLink: NavItem[] =
+    !isGuest && !isAdmin
+      ? [{ href: "/support", label: "تواصل مع الإدارة", icon: <LifeBuoy className="w-5 h-5" /> }]
+      : [];
+
+  const allLinks = [...commonLinks, ...roleLinks, ...supportLink];
 
   // ── مكوّن رابط واحد ──────────────────────────────
   function SidebarLink({ item }: { item: NavItem }) {
