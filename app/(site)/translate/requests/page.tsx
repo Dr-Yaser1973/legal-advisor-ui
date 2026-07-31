@@ -4,8 +4,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import AcceptOfferButton from "./AcceptOfferButton";
+import TranslationChat from "@/components/TranslationChat";
 
 export const dynamic = "force-dynamic";
+
+// الحالات التي تُفتح فيها المراسلة مع المكتب (بعد التسعير/القبول)
+const CHAT_OPEN_STATUSES = ["ACCEPTED", "IN_PROGRESS", "COMPLETED"];
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -159,6 +163,15 @@ export default async function MyTranslationRequestsPage() {
                       📥 تحميل الترجمة الرسمية (PDF)
                     </a>
                   </div>
+                )}
+
+                {/* التفاوض على طريقة الدفع مع المكتب (بعد التسعير) */}
+                {r.office && CHAT_OPEN_STATUSES.includes(r.status) && (
+                  <TranslationChat
+                    requestId={r.id}
+                    meId={clientId}
+                    counterpartLabel={r.office.name || "مكتب الترجمة"}
+                  />
                 )}
               </div>
             ))}
