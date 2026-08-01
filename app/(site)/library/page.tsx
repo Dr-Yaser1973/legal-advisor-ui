@@ -1,6 +1,7 @@
  import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import PromoBanner from "@/components/PromoBanner";
 
 type Props = {
   searchParams?: Promise<{ lang?: string }>;
@@ -165,6 +166,11 @@ export default async function LibraryPage({ searchParams }: Props) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* الشريط الإعلاني المتحرك */}
+        <div className="mb-12">
+          <PromoBanner lang={locale} />
+        </div>
+
         {/* الأقسام الرئيسية */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">{texts.sections}</h2>

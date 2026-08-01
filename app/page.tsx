@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
 import AuthButton from "@/components/AuthButton";
+import PromoBanner from "@/components/PromoBanner";
 type Lang = "ar" | "en";
 
 type Service = {
@@ -503,6 +504,11 @@ export default function HomeGovPortal() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* PROMO BANNER (شريط إعلاني متحرك) */}
+      <section className="mx-auto max-w-6xl px-4 pt-6">
+        <PromoBanner lang={lang} />
       </section>
 
       {/* SERVICES DIRECTORY */}

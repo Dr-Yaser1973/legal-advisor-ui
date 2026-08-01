@@ -16,3 +16,39 @@ body { background: #0b1220; color: #e5e7eb; }
 
 /* خلفية الهرّو (من التكوين) */
 .hero-bg { background-image: theme('backgroundImage.hero-gradient'); }
+
+/* ── الشريط الإعلاني المتحرك (PromoBanner) ── */
+/* لمعة ضوئية تمرّ عبر البطاقة */
+.promo-sheen {
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: promoSheen 4.5s ease-in-out infinite;
+}
+@keyframes promoSheen {
+  0% { transform: translateX(-100%); }
+  55%, 100% { transform: translateX(100%); }
+}
+
+/* حركة عائمة خفيفة للأيقونة */
+.promo-float { animation: promoFloat 3s ease-in-out infinite; }
+@keyframes promoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* توهّج نابض على زر الدعوة */
+.promo-glow { animation: promoGlow 2.6s ease-in-out infinite; }
+@keyframes promoGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  50% { box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.5); }
+}
+
+/* احترام تفضيل تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  .promo-sheen, .promo-float, .promo-glow { animation: none; }
+}
