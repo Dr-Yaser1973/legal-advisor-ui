@@ -12,6 +12,7 @@ import {
   Home,
   Briefcase,
   Scale,
+  Megaphone,
 } from "lucide-react";
 
 type ServiceItem = {
@@ -32,6 +33,11 @@ export default function AdminServiceBar() {
       href: "/admin/external-sources",
       label: "مصادر خارجية",
       icon: Database,
+    },
+    {
+      href: "/admin/promo-banners",
+      label: "الإعلانات",
+      icon: Megaphone,
     },
     {
       href: "/admin/users",

@@ -67,7 +67,8 @@ if (
   request.method === "GET" &&
   (pathname === "/api/lawyers" ||
     /^\/api\/lawyers\/\d+$/.test(pathname) ||
-    pathname === "/api/organizations")
+    pathname === "/api/organizations" ||
+    pathname === "/api/promo-banners")
 ) {
   return NextResponse.next();
 }

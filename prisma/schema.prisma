@@ -1418,3 +1418,26 @@ enum CaseAssignRole {
   LEAD
   ASSISTANT
 }
+
+// ─── الشريط الإعلاني (يُدار من لوحة الأدمن) ──────────────────────────────
+model PromoBanner {
+  id         Int      @id @default(autoincrement())
+  enabled    Boolean  @default(true)
+  /// ترتيب الظهور (الأصغر أولاً)
+  sortOrder  Int      @default(0)
+  href       String
+  external   Boolean  @default(false)
+  emoji      String   @default("📣")
+  /// خلفية البطاقة — تدرّج CSS عادي
+  gradient   String   @default("linear-gradient(135deg,#4f46e5,#7c3aed)")
+  titleAr    String
+  subtitleAr String   @default("")
+  ctaAr      String   @default("اعرف المزيد")
+  titleEn    String   @default("")
+  subtitleEn String   @default("")
+  ctaEn      String   @default("Learn more")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([enabled, sortOrder])
+}

@@ -2,9 +2,63 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { promoBanners } from "@/data/promoBanners";
+import { promoBanners as fallbackConfig } from "@/data/promoBanners";
 
 const ROTATE_MS = 5000;
+
+type Slide = {
+  id: string | number;
+  href: string;
+  external?: boolean;
+  emoji: string;
+  gradient: string;
+  ar: { title: string; subtitle: string; cta: string };
+  en: { title: string; subtitle: string; cta: string };
+};
+
+// شكل السجل القادم من /api/promo-banners (حقول مسطّحة)
+type ApiBanner = {
+  id: number;
+  href: string;
+  external: boolean;
+  emoji: string;
+  gradient: string;
+  titleAr: string;
+  subtitleAr: string;
+  ctaAr: string;
+  titleEn: string;
+  subtitleEn: string;
+  ctaEn: string;
+};
+
+function fromApi(b: ApiBanner): Slide {
+  return {
+    id: b.id,
+    href: b.href,
+    external: b.external,
+    emoji: b.emoji,
+    gradient: b.gradient,
+    ar: { title: b.titleAr, subtitle: b.subtitleAr, cta: b.ctaAr },
+    en: {
+      title: b.titleEn || b.titleAr,
+      subtitle: b.subtitleEn || b.subtitleAr,
+      cta: b.ctaEn || b.ctaAr,
+    },
+  };
+}
+
+// احتياط: قائمة الملف الثابت (تُستخدم لو فشل الجلب من القاعدة)
+const FALLBACK: Slide[] = fallbackConfig
+  .filter((b) => b.enabled)
+  .map((b) => ({
+    id: b.id,
+    href: b.href,
+    external: b.external,
+    emoji: b.emoji,
+    gradient: b.gradient,
+    ar: b.ar,
+    en: b.en,
+  }));
 
 export default function PromoBanner({
   lang = "ar",
@@ -13,12 +67,35 @@ export default function PromoBanner({
   lang?: "ar" | "en";
   className?: string;
 }) {
-  const items = useMemo(() => promoBanners.filter((b) => b.enabled), []);
+  const [items, setItems] = useState<Slide[]>(FALLBACK);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  // تبديل تلقائي بين الشرائح (يتوقف عند المرور بالماوس أو مع تقليل الحركة)
+  // جلب الإعلانات الحيّة من القاعدة
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/promo-banners", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!alive || !data?.ok || !Array.isArray(data.banners)) return;
+        const slides = (data.banners as ApiBanner[]).map(fromApi);
+        if (slides.length > 0) {
+          setItems(slides);
+          setIndex(0);
+        } else {
+          setItems([]); // لا إعلانات مفعّلة → أخفِ الشريط
+        }
+      })
+      .catch(() => {
+        /* نُبقي الاحتياط */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // تبديل تلقائي (يتوقف عند المرور بالماوس أو مع تقليل الحركة)
   useEffect(() => {
     if (items.length <= 1 || paused) return;
     const reduce =
@@ -32,10 +109,11 @@ export default function PromoBanner({
     return () => clearInterval(id);
   }, [items.length, paused]);
 
-  // إعادة الفهرس لحدوده لو قلّ عدد الإعلانات بعد التعديل
-  useEffect(() => {
-    if (index > items.length - 1) setIndex(0);
-  }, [items.length, index]);
+  // إبقاء الفهرس ضمن الحدود
+  const safeIndex = useMemo(
+    () => (items.length ? index % items.length : 0),
+    [index, items.length]
+  );
 
   if (items.length === 0) return null;
 
@@ -52,7 +130,7 @@ export default function PromoBanner({
       <div className="relative min-h-[92px] sm:min-h-[104px]">
         {items.map((b, i) => {
           const c = b[lang];
-          const active = i === index;
+          const active = i === safeIndex;
           return (
             <Link
               key={b.id}
@@ -77,9 +155,11 @@ export default function PromoBanner({
                 <div className="text-sm sm:text-xl font-extrabold leading-tight drop-shadow-sm">
                   {c.title}
                 </div>
-                <div className="mt-0.5 hidden text-xs text-white/85 line-clamp-1 sm:block sm:text-sm">
-                  {c.subtitle}
-                </div>
+                {c.subtitle ? (
+                  <div className="mt-0.5 hidden text-xs text-white/85 line-clamp-1 sm:block sm:text-sm">
+                    {c.subtitle}
+                  </div>
+                ) : null}
               </div>
 
               <span className="promo-glow inline-flex shrink-0 items-center gap-1 rounded-xl bg-white/95 px-3 py-2 text-xs font-bold text-zinc-900 shadow transition-transform group-hover:scale-105 sm:px-4 sm:text-sm">
@@ -101,12 +181,10 @@ export default function PromoBanner({
               key={b.id}
               type="button"
               onClick={() => setIndex(i)}
-              aria-label={
-                (lang === "ar" ? "إعلان " : "Slide ") + (i + 1)
-              }
-              aria-current={i === index}
+              aria-label={(lang === "ar" ? "إعلان " : "Slide ") + (i + 1)}
+              aria-current={i === safeIndex}
               className={`h-1.5 rounded-full transition-all ${
-                i === index
+                i === safeIndex
                   ? "w-5 bg-white"
                   : "w-1.5 bg-white/50 hover:bg-white/80"
               }`}
