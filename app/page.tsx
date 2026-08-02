@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
 import AuthButton from "@/components/AuthButton";
-import PromoBanner from "@/components/PromoBanner";
+import HeroShowcase from "@/components/HeroShowcase";
 type Lang = "ar" | "en";
 
 type Service = {
@@ -468,47 +468,47 @@ export default function HomeGovPortal() {
               </div>
             </div>
 
-            {/* Right card: Official quick guide */}
-            <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/60 px-4 py-3">
-                <div className="text-sm font-bold">{t.quickActionsTitle}</div>
-                <div className="text-xs text-zinc-400">Portal</div>
-              </div>
+            {/* Right card: بطاقة طولية تتناوب بين الخدمات والإعلانات */}
+            <HeroShowcase
+              lang={lang}
+              services={
+                <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/60 px-4 py-3">
+                    <div className="text-sm font-bold">{t.quickActionsTitle}</div>
+                    <div className="text-xs text-zinc-400">Portal</div>
+                  </div>
 
-              <p className="mt-4 text-sm text-zinc-300 leading-7">
-                {t.quickActionsHint}
-              </p>
+                  <p className="mt-4 text-sm text-zinc-300 leading-7">
+                    {t.quickActionsHint}
+                  </p>
 
-              <div className="mt-4 grid gap-3">
-                {services.slice(0, 3).map((s) => (
-                  <QuickRow
-                    key={s.title}
-                    title={s.title}
-                    desc={s.desc}
-                    Icon={s.icon}
-                    href={s.href}
-                  />
-                ))}
-              </div>
+                  <div className="mt-4 grid gap-3">
+                    {services.slice(0, 3).map((s) => (
+                      <QuickRow
+                        key={s.title}
+                        title={s.title}
+                        desc={s.desc}
+                        Icon={s.icon}
+                        href={s.href}
+                      />
+                    ))}
+                  </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/50 p-4">
-                <div className="text-xs text-zinc-400">
-                  {lang === "ar" ? "مثال استخدام:" : "Example:"}
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/50 p-4">
+                    <div className="text-xs text-zinc-400">
+                      {lang === "ar" ? "مثال استخدام:" : "Example:"}
+                    </div>
+                    <div className="mt-2 text-sm leading-7 text-zinc-200">
+                      {lang === "ar"
+                        ? "تصفح مادة قانونية → اقرأ PDF الأصلي → اطلب شرحًا مبسطًا/عمليًا/مهنيًا عند الحاجة."
+                        : "Browse a legal unit → open the original PDF → request a simplified/practical/pro explanation when needed."}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-2 text-sm leading-7 text-zinc-200">
-                  {lang === "ar"
-                    ? "تصفح مادة قانونية → اقرأ PDF الأصلي → اطلب شرحًا مبسطًا/عمليًا/مهنيًا عند الحاجة."
-                    : "Browse a legal unit → open the original PDF → request a simplified/practical/pro explanation when needed."}
-                </div>
-              </div>
-            </div>
+              }
+            />
           </div>
         </div>
-      </section>
-
-      {/* PROMO BANNER (شريط إعلاني متحرك) */}
-      <section className="mx-auto max-w-6xl px-4 pt-6">
-        <PromoBanner lang={lang} />
       </section>
 
       {/* SERVICES DIRECTORY */}
