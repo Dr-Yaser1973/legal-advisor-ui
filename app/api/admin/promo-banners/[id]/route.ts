@@ -44,6 +44,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const n = Number(body.sortOrder);
     if (Number.isFinite(n)) data.sortOrder = Math.trunc(n);
   }
+  // تصفير عدّادات الأداء
+  if (body.resetStats === true) {
+    data.impressions = 0;
+    data.clicks = 0;
+  }
 
   // منع تفريغ الحقول الإلزامية
   if (data.titleAr !== undefined && !data.titleAr) {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { promoBanners as fallbackConfig } from "@/data/promoBanners";
+import { trackPromo } from "@/lib/trackPromo";
 
 const ROTATE_MS = 5000;
 
@@ -115,6 +116,18 @@ export default function PromoBanner({
     [index, items.length]
   );
 
+  // تسجيل ظهور الشريحة النشطة (مرّة واحدة لكل إعلان في هذا التحميل)
+  const seen = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    const b = items[safeIndex];
+    if (!b) return;
+    const nid = Number(b.id);
+    if (Number.isFinite(nid) && !seen.current.has(nid)) {
+      seen.current.add(nid);
+      trackPromo(nid, "impression");
+    }
+  }, [safeIndex, items]);
+
   if (items.length === 0) return null;
 
   return (
@@ -137,6 +150,10 @@ export default function PromoBanner({
               href={b.href}
               target={b.external ? "_blank" : undefined}
               rel={b.external ? "noopener noreferrer" : undefined}
+              onClick={() => {
+                const nid = Number(b.id);
+                if (Number.isFinite(nid)) trackPromo(nid, "click");
+              }}
               aria-hidden={!active}
               tabIndex={active ? 0 : -1}
               style={{ background: b.gradient }}

@@ -16,9 +16,11 @@ type Banner = {
   titleEn: string;
   subtitleEn: string;
   ctaEn: string;
+  impressions: number;
+  clicks: number;
 };
 
-type Draft = Omit<Banner, "id" | "sortOrder">;
+type Draft = Omit<Banner, "id" | "sortOrder" | "impressions" | "clicks">;
 
 const GRADIENT_PRESETS: { label: string; value: string }[] = [
   { label: "زمرّي", value: "linear-gradient(135deg,#059669 0%,#0d9488 50%,#0891b2 100%)" },
@@ -265,6 +267,19 @@ export default function PromoBannersClient() {
     }
   }
 
+  async function resetStats(b: Banner) {
+    if (!confirm(`تصفير إحصاءات «${b.titleAr}»؟`)) return;
+    setBusyId(b.id);
+    try {
+      const updated = await patchBanner(b.id, { resetStats: true } as any);
+      setBanners((prev) => prev.map((x) => (x.id === b.id ? updated : x)));
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function move(b: Banner, dir: -1 | 1) {
     const sorted = [...banners].sort((a, c) => a.sortOrder - c.sortOrder);
     const idx = sorted.findIndex((x) => x.id === b.id);
@@ -352,6 +367,35 @@ export default function PromoBannersClient() {
                 }`}
               >
                 <Preview b={b} />
+
+                {/* إحصاءات الأداء */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="rounded-lg bg-zinc-800 px-2.5 py-1 text-zinc-300" title="مرات الظهور">
+                    👁 {b.impressions.toLocaleString("ar-EG")} ظهور
+                  </span>
+                  <span className="rounded-lg bg-zinc-800 px-2.5 py-1 text-zinc-300" title="النقرات">
+                    🖱 {b.clicks.toLocaleString("ar-EG")} نقرة
+                  </span>
+                  <span
+                    className="rounded-lg bg-indigo-600/20 px-2.5 py-1 font-medium text-indigo-300"
+                    title="معدّل النقر = النقرات ÷ الظهور"
+                  >
+                    CTR{" "}
+                    {b.impressions > 0
+                      ? ((b.clicks / b.impressions) * 100).toFixed(1)
+                      : "0.0"}
+                    ٪
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busyId === b.id}
+                    onClick={() => resetStats(b)}
+                    className="rounded-lg border border-zinc-700 px-2.5 py-1 text-zinc-400 hover:bg-zinc-800"
+                  >
+                    تصفير
+                  </button>
+                </div>
+
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                   <button
                     type="button"

@@ -73,6 +73,11 @@ if (
   return NextResponse.next();
 }
 
+// تتبّع أداء الإعلانات (POST beacon عام) — مسارات فرعية فقط، لا تشمل /api/admin
+if (/^\/api\/promo-banners\/\d+\/track$/.test(pathname)) {
+  return NextResponse.next();
+}
+
 if (
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/register") ||

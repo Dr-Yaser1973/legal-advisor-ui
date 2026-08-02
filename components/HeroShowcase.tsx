@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { trackPromo } from "@/lib/trackPromo";
 
 type ApiBanner = {
   id: number;
@@ -72,6 +73,15 @@ export default function HeroShowcase({
 
   const ad = safe > 0 ? ads[safe - 1] : null;
 
+  // تسجيل ظهور الإعلان عند عرضه (مرّة لكل إعلان في هذا التحميل)
+  const seen = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (ad && !seen.current.has(ad.id)) {
+      seen.current.add(ad.id);
+      trackPromo(ad.id, "impression");
+    }
+  }, [ad]);
+
   return (
     <div
       dir={dir}
@@ -87,6 +97,7 @@ export default function HeroShowcase({
                 href={ad.href}
                 target={ad.external ? "_blank" : undefined}
                 rel={ad.external ? "noopener noreferrer" : undefined}
+                onClick={() => trackPromo(ad.id, "click")}
                 style={{ background: ad.gradient }}
                 className="group relative flex min-h-[420px] flex-col justify-center gap-4 overflow-hidden rounded-3xl border border-white/10 p-8 text-white shadow-lg"
               >
