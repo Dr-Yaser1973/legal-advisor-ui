@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   "/about",
   "/privacy",
   "/terms",
+  "/disclaimer",
   "/login",
   "/register",
   "/unauthorized",
