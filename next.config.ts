@@ -11,8 +11,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
-    // خط Almarai يُقرأ وقت التشغيل لتوليد صورة OG — نضمّه في حزمة الدالة على Vercel
-    "/api/blog/og": ["./public/fonts/Almarai/**/*"],
+    // توليد صورة OG يحتاج وقت التشغيل: خط Almarai + ثنائيّات Chromium المضغوطة (brotli).
+    // بدون ضمّ مجلد bin تفشل chromium.executablePath() على Vercel.
+    "/api/blog/og": [
+      "./public/fonts/Almarai/**/*",
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+    ],
   },
 
   experimental: {
