@@ -81,13 +81,16 @@ export async function generateMetadata({
 
   const url = `${BASE_URL}/blog/${slug}`;
 
-  // صورة المشاركة: غلاف المقال إن وُجد، وإلا صورة مولّدة بهوية المنصّة
+  // صورة المشاركة: غلاف المقال إن وُجد، وإلا صورة مولّدة بهوية المنصّة.
+  // نضيف رقم إصدار (v) إلى الرابط لإجبار فيسبوك/الزواحف على تجاهل أي نسخة
+  // فاشلة مخزّنة سابقاً (كانت تُخزَّن أثناء فترة عطل توليد الصورة) وجلبها من جديد.
+  const OG_VERSION = "2";
   const firstCategory = post.categories[0]?.category?.name ?? "";
   const ogImage =
     post.coverImage ||
     `${BASE_URL}/api/blog/og?title=${encodeURIComponent(
       post.title
-    )}&category=${encodeURIComponent(firstCategory)}`;
+    )}&category=${encodeURIComponent(firstCategory)}&v=${OG_VERSION}`;
 
   const keywords = [
     ...post.tags.map((t) => t.tag.name),
