@@ -11,15 +11,24 @@ export const runtime = "nodejs";
 // خط Almarai ثابت — متوافق مع Satori (Noto Naskh يستخدم جداول تشكيل لا يدعمها Satori)
 const FONT_DIR = "public/fonts/Almarai";
 
-// Satori يرسم الفراغ العادي (U+0020) بعرض مبالغ فيه مع العربية، فتتباعد الكلمات.
+// Satori يرسم الفراغ العادي (U+0020) بعرض مبالغ فيه مع العربية فتتباعد الكلمات؛
 // استبداله بفراغ رفيع (U+2009) يعيد التباعد إلى وضعه الطبيعي.
-const sp = (s: string) => s.replace(/ /g, " ");
+// (أما خلل ترتيب النقطتين فيُعالَج بتقسيم العنوان إلى سطرين — انظر titleMain/titleSub.)
+const sp = (s: string) => s.replace(/ /g, " ");
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const rawTitle = searchParams.get("title") || "المدوّنة القانونية";
   const title = rawTitle.slice(0, 120);
   const category = searchParams.get("category") || "";
+
+  // Satori يخلط ترتيب العبارتين حول النقطتين في النص العربي (خلل bidi).
+  // نتفادى ذلك بتقسيم العنوان عند أول ":" إلى سطرين: العنوان الرئيسي (بالنقطتين)
+  // والعنوان الفرعي — فيصبح كل سطر تشكيلة عربية نقية تُرسم باتجاه صحيح.
+  const ci = title.indexOf(":");
+  const titleMain = ci >= 0 ? title.slice(0, ci + 1) : title;
+  const titleSub = ci >= 0 ? title.slice(ci + 1).trim() : "";
+  const mainSize = titleMain.length > 42 ? 52 : 62;
 
   // تحميل خط عربي ثابت (Satori لا يدعم الخطوط المتغيّرة)
   const [bold, regular] = await Promise.all([
@@ -101,14 +110,36 @@ export async function GET(req: Request) {
           )}
           <div
             style={{
-              fontSize: title.length > 60 ? 54 : 64,
-              fontWeight: 700,
-              lineHeight: 1.3,
-              color: "#ffffff",
-              textAlign: "right",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 10,
             }}
           >
-            {sp(title)}
+            <div
+              style={{
+                fontSize: mainSize,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                color: "#ffffff",
+                textAlign: "right",
+              }}
+            >
+              {sp(titleMain)}
+            </div>
+            {titleSub ? (
+              <div
+                style={{
+                  fontSize: 34,
+                  fontWeight: 400,
+                  lineHeight: 1.35,
+                  color: "#aeb8c2",
+                  textAlign: "right",
+                }}
+              >
+                {sp(titleSub)}
+              </div>
+            ) : null}
           </div>
         </div>
 
