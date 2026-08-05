@@ -5,6 +5,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   turbopack: {},
 
+  // حزم أصيلة لا يجوز حزمها (bundling) — تُحمَّل وقت التشغيل لتوليد صور OG عبر Chrome
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
+
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
