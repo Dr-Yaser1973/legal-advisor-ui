@@ -2,6 +2,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, Eye, MessageCircle, Tag, AlertCircle, RefreshCw } from "lucide-react";
+import ShareButtons from "./[slug]/ShareButtons";
+
+// أصل الموقع لبناء روابط مشاركة مطلقة (يعمل في الإنتاج والتطوير)
+function siteOrigin() {
+  const env = process.env.NEXT_PUBLIC_BASE_URL;
+  if (env) return env.replace(/\/$/, "");
+  if (typeof window !== "undefined") return window.location.origin;
+  return "https://smartlegaladvisor.com";
+}
 
 interface Post {
   id: number;
@@ -315,13 +324,14 @@ function ScaleIcon() {
 
 function PostCard({ post, index }: { post: Post; index: number }) {
   const categoryName = post.categories[0]?.category.name ?? "قانون";
+  const shareUrl = `${siteOrigin()}/blog/${post.slug}`;
 
   return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group relative rounded-2xl overflow-hidden transition-all duration-300"
+    <div
+      className="group relative rounded-2xl overflow-hidden transition-all duration-300 flex flex-col"
       style={{ background: "#16222e", border: "1px solid #24323f" }}
     >
+      <Link href={`/blog/${post.slug}`} className="block">
       {/* غلاف مولّد بهوية المنصّة — لا صور خارجية */}
       <div
         className="relative h-44 w-full overflow-hidden flex items-center justify-center"
@@ -423,12 +433,18 @@ function PostCard({ post, index }: { post: Post; index: number }) {
           </span>
         </div>
       </div>
+      </Link>
+
+      {/* أزرار المشاركة — خارج الرابط لتفادي تداخل الروابط */}
+      <div className="px-5 pb-4 mt-auto">
+        <ShareButtons url={shareUrl} title={post.title} compact />
+      </div>
 
       {/* خط ذهبي/أخضر سفلي يظهر عند المرور */}
       <div
         className="absolute bottom-0 right-0 left-0 h-0.5 origin-right scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
         style={{ background: "linear-gradient(to left, #c9a84c, #4caf82)" }}
       />
-    </Link>
+    </div>
   );
 }

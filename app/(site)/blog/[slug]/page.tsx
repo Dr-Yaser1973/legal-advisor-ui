@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { sanitizeBlogHtml } from "@/lib/sanitize";
 import BlogComments from "./BlogComments";
+import ShareButtons from "./ShareButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,14 @@ export async function generateMetadata({
 
   const url = `${BASE_URL}/blog/${slug}`;
 
+  // صورة المشاركة: غلاف المقال إن وُجد، وإلا صورة مولّدة بهوية المنصّة
+  const firstCategory = post.categories[0]?.category?.name ?? "";
+  const ogImage =
+    post.coverImage ||
+    `${BASE_URL}/api/blog/og?title=${encodeURIComponent(
+      post.title
+    )}&category=${encodeURIComponent(firstCategory)}`;
+
   const keywords = [
     ...post.tags.map((t) => t.tag.name),
     ...post.categories.map((c) => c.category.name),
@@ -104,13 +113,14 @@ export async function generateMetadata({
       url,
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt?.toISOString(),
-      images: post.coverImage ? [{ url: post.coverImage }] : undefined,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
       tags: post.tags.map((t) => t.tag.name),
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description,
+      images: [ogImage],
     },
     robots: { index: true, follow: true },
   };
@@ -239,6 +249,9 @@ export default async function BlogPostPage({
           className="prose prose-invert prose-zinc max-w-none text-zinc-300 leading-loose text-sm"
           dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
         />
+
+        {/* أزرار المشاركة على وسائل التواصل */}
+        <ShareButtons url={`${BASE_URL}/blog/${slug}`} title={post.title} />
 
         {/* الوسوم */}
         {post.tags.length > 0 && (
