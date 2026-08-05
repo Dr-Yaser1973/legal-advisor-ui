@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/**/*": ["./node_modules/.prisma/client/**/*"],
     "/*": ["./node_modules/.prisma/client/**/*"],
+    // خط Almarai يُقرأ وقت التشغيل لتوليد صورة OG — نضمّه في حزمة الدالة على Vercel
+    "/api/blog/og": ["./public/fonts/Almarai/**/*"],
   },
 
   experimental: {
