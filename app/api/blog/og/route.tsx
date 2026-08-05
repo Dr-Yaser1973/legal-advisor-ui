@@ -160,7 +160,12 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     console.error("OG image generation failed:", err);
-    return new Response("OG image error", { status: 500 });
+    // تشخيص مؤقت: نكشف الرسالة لمعرفة سبب فشل Chromium على Vercel
+    const msg = err instanceof Error ? `${err.message}\n\n${err.stack}` : String(err);
+    return new Response(`OG image error:\n${msg}`, {
+      status: 500,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   } finally {
     if (browser) await browser.close();
   }
