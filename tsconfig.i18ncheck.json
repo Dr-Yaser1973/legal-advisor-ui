@@ -1,0 +1,23 @@
+{
+  "//": "ملف مؤقت للتحقق من الأنواع في نطاق تعديلات i18n فقط. آمن للحذف.",
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    "types/**/*.d.ts",
+    "lib/i18n/**/*.ts",
+    "lib/hooks/useLocale.ts",
+    "app/page.tsx",
+    "app/layout.tsx",
+    "app/providers.tsx",
+    "app/(site)/layout.tsx",
+    "middleware.ts",
+    "components/home/*.tsx",
+    "components/i18n/*.tsx",
+    "components/HeroShowcase.tsx",
+    "components/AuthButton.tsx",
+    "components/PlatformVisitorsCounter.tsx",
+    "components/ui/LanguageSwitcher.tsx",
+    "components/library/LibraryTabs.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

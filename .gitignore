@@ -48,3 +48,4 @@ next-env.d.ts
 /public/contracts/
 /public/uploads/
 uploads/
+.claude/

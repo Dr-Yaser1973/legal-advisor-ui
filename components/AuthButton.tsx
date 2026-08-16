@@ -1,11 +1,22 @@
  // components/AuthButton.tsx
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { getCommon } from "@/lib/i18n";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
-export default function AuthButton() {
+/**
+ * `locale` اختياري ويعود للعربية افتراضياً، حتى تبقى الاستخدامات القائمة
+ * (مثل app/(site)/layout.tsx) تعمل بلا تعديل.
+ */
+export default function AuthButton({
+  locale = DEFAULT_LOCALE,
+}: {
+  locale?: Locale;
+}) {
   const { data: session, status } = useSession();
+  const t = getCommon(locale).actions;
 
   // أثناء التحميل فقط نعرض نص بسيط
   if (status === "loading") {
@@ -14,7 +25,7 @@ export default function AuthButton() {
         className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-300"
         disabled
       >
-        جارٍ التحميل...
+        {t.loading}
       </button>
     );
   }
@@ -25,31 +36,31 @@ export default function AuthButton() {
       <div className="flex items-center gap-2">
         <Link
           href="/login"
-          className="rounded-full border border-emerald-500/70 px-3 py-1 text-xs sm:text-sm text-emerald-300 hover:bg-emerald-500/10 transition"
+          className="rounded-full border border-emerald-500/70 px-3 py-1 text-xs text-emerald-300 transition hover:bg-emerald-500/10 sm:text-sm"
         >
-          تسجيل الدخول
+          {t.signIn}
         </Link>
         <Link
           href="/register"
-          className="hidden sm:inline-block rounded-full border border-zinc-600 px-3 py-1 text-xs sm:text-sm text-zinc-200 hover:bg-zinc-800 transition"
+          className="hidden rounded-full border border-zinc-600 px-3 py-1 text-xs text-zinc-200 transition hover:bg-zinc-800 sm:inline-block sm:text-sm"
         >
-          إنشاء حساب
+          {t.register}
         </Link>
       </div>
     );
   }
 
-  // لو المستخدم مسجَّل دخول
+  // لو المستخدم مسجَّل دخول
   return (
     <div className="flex items-center gap-2 text-xs sm:text-sm">
-      <span className="hidden sm:inline text-zinc-300">
-        أهلاً، {session.user.name || session.user.email}
+      <span className="hidden text-zinc-300 sm:inline">
+        {t.greeting} {session.user.name || session.user.email}
       </span>
       <button
         onClick={() => signOut({ callbackUrl: "/" })}
-        className="rounded-full border border-red-500/70 px-3 py-1 text-xs sm:text-sm text-red-300 hover:bg-red-500/10 transition"
+        className="rounded-full border border-red-500/70 px-3 py-1 text-xs text-red-300 transition hover:bg-red-500/10 sm:text-sm"
       >
-        تسجيل الخروج
+        {t.signOut}
       </button>
     </div>
   );

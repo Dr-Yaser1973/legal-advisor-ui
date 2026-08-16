@@ -31,10 +31,16 @@ const ar = {
   actions: {
     signIn: "تسجيل الدخول",
     signInShort: "دخول",
+    signOut: "تسجيل الخروج",
+    greeting: "أهلاً،",
     register: "إنشاء حساب",
     explore: "استكشف",
     openService: "الدخول للخدمة",
     loading: "جارٍ التحميل...",
+  },
+
+  stats: {
+    visitors: "عدد زوّار المنصّة",
   },
 
   a11y: {
@@ -78,10 +84,16 @@ const en: CommonDict = {
   actions: {
     signIn: "Sign In",
     signInShort: "Sign In",
+    signOut: "Sign Out",
+    greeting: "Welcome,",
     register: "Create Account",
     explore: "Explore",
     openService: "Open service",
     loading: "Loading...",
+  },
+
+  stats: {
+    visitors: "Platform visitors",
   },
 
   a11y: {

@@ -2,8 +2,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { getCommon } from "@/lib/i18n";
+import { DEFAULT_LOCALE, dirFor, type Locale } from "@/lib/i18n/config";
 
-export default function PlatformVisitorsCounter() {
+export default function PlatformVisitorsCounter({
+  locale = DEFAULT_LOCALE,
+}: {
+  locale?: Locale;
+}) {
   const [target, setTarget] = useState<number | null>(null);
   const [display, setDisplay] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -56,20 +62,23 @@ export default function PlatformVisitorsCounter() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target]);
 
+  const c = getCommon(locale);
+
   if (target === null) {
     return (
-      <div className="inline-flex items-center gap-2 text-zinc-400 text-sm">
-        <span className="animate-pulse">جارٍ التحميل...</span>
+      <div className="inline-flex items-center gap-2 text-sm text-zinc-300">
+        <span className="animate-pulse">{c.actions.loading}</span>
       </div>
     );
   }
 
   return (
-    <div className="inline-flex flex-col items-center gap-1" dir="rtl">
-      <span className="text-4xl font-bold text-emerald-400 tabular-nums">
-        {display.toLocaleString("ar-EG")}
+    <div className="inline-flex flex-col items-center gap-1" dir={dirFor(locale)}>
+      <span className="text-4xl font-bold tabular-nums text-emerald-400">
+        {/* الأرقام الهندية (٥,٥٤٧) للعربية فقط — الإنجليزية تستخدم 5,547 */}
+        {display.toLocaleString(locale === "ar" ? "ar-EG" : "en-US")}
       </span>
-      <span className="text-sm text-zinc-400">عدد زوّار المنصّة</span>
+      <span className="text-sm text-zinc-300">{c.stats.visitors}</span>
     </div>
   );
 }

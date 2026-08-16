@@ -1,8 +1,10 @@
  // app/layout.tsx
  import Providers from "./providers";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getLocale } from "@/lib/i18n/server";
 import { dirFor } from "@/lib/i18n/config";
+import HtmlLangSync from "@/components/i18n/HtmlLangSync";
 import "./globals.css";
 
 const SITE_URL = "https://smartlegaladvisor.com";
@@ -164,6 +166,10 @@ export default async function RootLayout({
          <body className="font-sans antialiased bg-[#0b1220] text-gray-200">
         {/* ✅ التحديث التلقائي عند deploy جديد */}
         <ServiceWorkerUpdater />
+        {/* يصحّح <html lang dir> بعد التنقّل الناعم — الـ layout لا يُعاد تصييره حينها */}
+        <Suspense fallback={null}>
+          <HtmlLangSync />
+        </Suspense>
         <Providers>{children}</Providers>
       </body>
     </html>
