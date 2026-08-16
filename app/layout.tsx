@@ -1,20 +1,50 @@
  // app/layout.tsx
  import Providers from "./providers";
 import type { Metadata } from "next";
+import { getLocale } from "@/lib/i18n/server";
+import { dirFor } from "@/lib/i18n/config";
 import "./globals.css";
 
 const SITE_URL = "https://smartlegaladvisor.com";
 
-export const metadata: Metadata = {
+// روابط اللغة: العربية على المسار النظيف، والإنجليزية على ?lang=en
+// (تجنّب إنشاء "/" و "/?lang=ar" كنسختين من نفس الصفحة)
+const HREFLANG = {
+  ar: "/",
+  en: "/?lang=en",
+  "x-default": "/",
+} as const;
+
+const META = {
+  ar: {
+    title: "منصة المستشار القانوني الذكي | بوابة رقمية للخدمات القانونية",
+    template: "%s | المستشار القانوني الذكي",
+    description:
+      "بوابة قانونية رقمية ثنائية اللغة تقدم مكتبة قانونية ذكية، توليد عقود PDF، ترجمة قانونية، واستشارات مهنية للمستخدمين والمحامين والشركات.",
+    canonical: "/",
+  },
+  en: {
+    title: "Smart Legal Advisor Platform | Digital Legal Services Portal",
+    template: "%s | Smart Legal Advisor",
+    description:
+      "A bilingual digital legal portal offering a smart legal library, PDF contract generation, legal translation, and professional consultations for individuals, lawyers, and companies.",
+    canonical: "/?lang=en",
+  },
+} as const;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const m = META[locale];
+
+  return {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "منصة المستشار القانوني الذكي | بوابة رقمية للخدمات القانونية",
-    template: "%s | المستشار القانوني الذكي",
+    default: m.title,
+    template: m.template,
   },
 
-  description:
-    "بوابة قانونية رقمية ثنائية اللغة تقدم مكتبة قانونية ذكية، توليد عقود PDF، ترجمة قانونية، واستشارات مهنية للمستخدمين والمحامين والشركات.",
+  description: m.description,
 
   keywords: [
     "مكتبة قانونية",
@@ -33,13 +63,10 @@ export const metadata: Metadata = {
   category: "legal services",
 
   alternates: {
-    canonical: "/",
-    languages: {
-      ar: "/?lang=ar",
-      en: "/?lang=en",
-    },
+    canonical: m.canonical,
+    languages: HREFLANG,
   },
- 
+
 
   icons: {
     icon: "/favicon-32.png",
@@ -52,11 +79,12 @@ export const metadata: Metadata = {
 
   openGraph: {
     type: "website",
-    url: SITE_URL,
-    title: "Smart Legal Advisor Platform",
-    description:
-      "Digital legal services portal offering a smart legal library, contract generation, legal translation, and professional consultations.",
-    siteName: "المستشار القانوني الذكي",
+    url: locale === "ar" ? SITE_URL : `${SITE_URL}/?lang=en`,
+    locale: locale === "ar" ? "ar_AR" : "en_US",
+    alternateLocale: locale === "ar" ? "en_US" : "ar_AR",
+    title: m.title,
+    description: m.description,
+    siteName: locale === "ar" ? "المستشار القانوني الذكي" : "Smart Legal Advisor",
     images: [
       {
         url: "/icons/og-cover.png",
@@ -69,9 +97,8 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "المستشار القانوني الذكي",
-    description:
-      "بوابة رقمية للخدمات القانونية: مكتبة ذكية، عقود PDF، ترجمة قانونية، واستشارات مهنية.",
+    title: m.title,
+    description: m.description,
     images: ["/icons/og-cover.png"],
   },
 
@@ -86,20 +113,24 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-};
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const dir = dirFor(locale);
+
   return (
-    <html lang="ar" dir="rtl" className="dark">
+    <html lang={locale} dir={dir} className="dark">
       <head>
-        {/* Hreflang */}
-        <link rel="alternate" hrefLang="ar" href={`${SITE_URL}/?lang=ar`} />
-        <link rel="alternate" hrefLang="en" href={`${SITE_URL}/?lang=en`} />
-        <link rel="alternate" hrefLang="x-default" href={SITE_URL} />
+        {/*
+          hreflang تُولَّد تلقائياً من alternates.languages في generateMetadata.
+          الوسوم اليدوية هنا كانت تُنتج نسخة مكرّرة من نفس الروابط، فحُذفت.
+        */}
 
         {/* PWA / Mobile */}
         <meta name="theme-color" content="#0b1220" />

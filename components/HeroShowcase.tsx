@@ -88,7 +88,8 @@ export default function HeroShowcase({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div key={safe} className="hero-fade">
+      {/* min-h ثابت: يمنع قفزة التخطيط (CLS) عند وصول أول إعلان وعند كل دوران */}
+      <div key={safe} className="hero-fade min-h-[420px]">
         {ad ? (
           (() => {
             const c = text(ad);
@@ -132,9 +133,10 @@ export default function HeroShowcase({
         )}
       </div>
 
-      {total > 1 && (
-        <div className="mt-3 flex items-center justify-center gap-2">
-          {Array.from({ length: total }).map((_, k) => (
+      {/* الارتفاع محجوز دائماً حتى لا تقفز البطاقة عند ظهور النقاط بعد تحميل الإعلانات */}
+      <div className="mt-3 flex h-1.5 items-center justify-center gap-2">
+        {total > 1 &&
+          Array.from({ length: total }).map((_, k) => (
             <button
               key={k}
               type="button"
@@ -152,8 +154,7 @@ export default function HeroShowcase({
               }`}
             />
           ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,32 +1,54 @@
 'use client';
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_PARAM,
+  oppositeLocale,
+  resolveLocale,
+} from '@/lib/i18n/config';
 
-export default function LanguageSwitcher() {
-  const router = useRouter();
+/**
+ * مبدّل اللغة المشترك.
+ * - رابط <Link> وليس زر onClick: يعمل بلا JS، وقابل للفهرسة والمشاركة وفتحه في تبويب جديد.
+ * - ألوان الوضع الداكن (كان سابقاً bg-gray-100 على موقع داكن).
+ */
+export default function LanguageSwitcher({
+  className = '',
+}: {
+  className?: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentLang = searchParams.get('lang') === 'en' ? 'en' : 'ar';
-  const newLang = currentLang === 'ar' ? 'en' : 'ar';
+  const currentLang = resolveLocale(searchParams.get(LOCALE_PARAM));
+  const newLang = oppositeLocale(currentLang);
 
-  const switchLanguage = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('lang', newLang);
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  const params = new URLSearchParams(searchParams.toString());
+  if (newLang === DEFAULT_LOCALE) params.delete(LOCALE_PARAM);
+  else params.set(LOCALE_PARAM, newLang);
+
+  const qs = params.toString();
+  const href = qs ? `${pathname}?${qs}` : pathname;
+
+  const label = currentLang === 'ar' ? 'English' : 'العربية';
+  const title =
+    currentLang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية';
 
   return (
-    <button
-      onClick={switchLanguage}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-      title={currentLang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+    <Link
+      href={href}
+      prefetch={false}
+      hrefLang={newLang}
+      lang={newLang}
+      title={title}
+      aria-label={title}
+      className={`inline-flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-900/60 px-3 py-2 text-zinc-200 transition-colors hover:bg-zinc-800 ${className}`}
     >
-      <GlobeAltIcon className="h-5 w-5 text-gray-700" />
-      <span className="text-sm font-medium text-gray-700">
-        {currentLang === 'ar' ? 'English' : 'العربية'}
-      </span>
-    </button>
+      <GlobeAltIcon className="h-5 w-5 text-amber-300" aria-hidden="true" />
+      <span className="text-sm font-medium">{label}</span>
+    </Link>
   );
 }

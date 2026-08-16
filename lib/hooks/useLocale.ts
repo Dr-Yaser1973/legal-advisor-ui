@@ -1,38 +1,77 @@
 // lib/hooks/useLocale.ts
- 'use client';
+'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  LOCALE_COOKIE_MAX_AGE,
+  LOCALE_PARAM,
+  dirFor,
+  resolveLocale,
+  type Dir,
+  type Locale,
+} from '@/lib/i18n/config';
 
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(
+    new RegExp('(?:^|; )' + name + '=([^;]*)'),
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeCookie(name: string, value: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+/**
+ * واجهة الهوك لم تتغيّر: { locale, dir, setLocale }
+ * ما تغيّر هو مصدر الحقيقة — صار نفس مصدر الخادم و middleware:
+ *   ?lang=  →  cookie  →  الافتراضي
+ *
+ * سابقاً كان يقرأ من localStorage ولغة المتصفح فقط، فينتج عنه اختلاف
+ * بين ما يصيّره الخادم وما يعرضه العميل.
+ */
 export function useLocale() {
   const router = useRouter();
-  const [locale, setLocaleState] = useState<'ar' | 'en'>('ar');
-  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl');
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const fromUrl = searchParams.get(LOCALE_PARAM);
+
+  // التصيير الأول يطابق الخادم عند وجود الـ param، وإلا الافتراضي.
+  const [locale, setLocaleState] = useState<Locale>(() =>
+    fromUrl ? resolveLocale(fromUrl) : DEFAULT_LOCALE,
+  );
 
   useEffect(() => {
-    // قراءة اللغة من localStorage أو المتصفح
-    const savedLocale = localStorage.getItem('locale') as 'ar' | 'en' | null;
-    const browserLang = navigator.language.startsWith('ar') ? 'ar' : 'en';
-    const initialLocale = savedLocale || browserLang;
-    
-    setLocaleState(initialLocale);
-    setDir(initialLocale === 'ar' ? 'rtl' : 'ltr');
-    
-    document.documentElement.dir = initialLocale === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = initialLocale;
-  }, []);
+    const next = resolveLocale(fromUrl ?? readCookie(LOCALE_COOKIE));
+    setLocaleState(next);
+    writeCookie(LOCALE_COOKIE, next);
+  }, [fromUrl]);
 
-  const setLocale = (newLocale: 'ar' | 'en') => {
-    setLocaleState(newLocale);
-    setDir(newLocale === 'ar' ? 'rtl' : 'ltr');
-    localStorage.setItem('locale', newLocale);
-    
-    document.documentElement.dir = newLocale === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLocale;
-    
-    // إعادة تحميل الصفحة لتطبيق التغييرات
-    router.refresh();
-  };
+  const setLocale = useCallback(
+    (newLocale: Locale) => {
+      const next = resolveLocale(newLocale);
+      setLocaleState(next);
+      writeCookie(LOCALE_COOKIE, next);
+
+      // نعكس الاختيار في الرابط ليكون قابلاً للمشاركة والفهرسة،
+      // ويعيد الخادم تصيير <html lang dir> بالقيمة الصحيحة.
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === DEFAULT_LOCALE) params.delete(LOCALE_PARAM);
+      else params.set(LOCALE_PARAM, next);
+
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [pathname, router, searchParams],
+  );
+
+  const dir: Dir = dirFor(locale);
 
   return { locale, dir, setLocale };
 }

@@ -2,6 +2,45 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import {
+  LOCALE_COOKIE,
+  LOCALE_COOKIE_MAX_AGE,
+  LOCALE_HEADER,
+  LOCALE_PARAM,
+  resolveLocale,
+  type Locale,
+} from "@/lib/i18n/config";
+
+// =========================
+// اللغة
+// =========================
+// نقرأ اللغة من ?lang= ثم من الكوكي، ونمرّرها للخادم كترويسة request
+// حتى يستطيع app/layout.tsx ضبط <html lang dir> أثناء التصيير على الخادم.
+// هذا ما يجعل النسخة الإنجليزية قابلة للفهرسة فعلياً.
+function detectLocale(request: NextRequest): Locale {
+  return resolveLocale(
+    request.nextUrl.searchParams.get(LOCALE_PARAM) ??
+      request.cookies.get(LOCALE_COOKIE)?.value,
+  );
+}
+
+function withLocale(request: NextRequest, locale: Locale) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(LOCALE_HEADER, locale);
+
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+
+  // نثبّت الاختيار في كوكي ليصمد عبر التنقّل والزيارات اللاحقة
+  if (request.cookies.get(LOCALE_COOKIE)?.value !== locale) {
+    res.cookies.set(LOCALE_COOKIE, locale, {
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+    });
+  }
+
+  return res;
+}
 
 
 
@@ -95,10 +134,15 @@ if (
 
 
   // =========================
+  // اللغة (صفحات فقط — لا تمسّ مسارات API أعلاه)
+  // =========================
+  const locale = detectLocale(request);
+
+  // =========================
   // صفحات عامة
   // =========================
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return withLocale(request, locale);
   }
 
   // =========================
@@ -220,7 +264,7 @@ if (pathname.startsWith("/blog/new")) {
     return NextResponse.redirect(url);
   }
 }
-  return NextResponse.next();
+  return withLocale(request, locale);
 }
 
 // =========================
