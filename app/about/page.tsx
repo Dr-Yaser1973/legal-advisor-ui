@@ -1,10 +1,15 @@
- // app/(site)/about/page.tsx
+ // app/about/page.tsx
 "use client";
 
-import { useState } from "react";
- 
+import { useEffect, useState } from "react";
+import { useLocale } from "@/lib/hooks/useLocale";
+
 export default function AboutPage() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
+  // نبدأ باللغة المختارة عالمياً (?lang / الكوكي) بدل الافتراض الثابت على العربية،
+  // مع إبقاء الأزرار للتبديل اليدوي — فهذه الصفحة خارج هيكل الموقع فلا يظهر فيها مبدّل اللغة العام.
+  const { locale } = useLocale();
+  const [lang, setLang] = useState<"ar" | "en">(locale);
+  useEffect(() => setLang(locale), [locale]);
   const isArabic = lang === "ar";
 
   return (

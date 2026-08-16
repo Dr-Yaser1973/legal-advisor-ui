@@ -467,7 +467,7 @@ function LocaleSwitch({ locale, label }: { locale: Locale; label: string }) {
       className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1 text-xs"
     >
       <Link
-        href="/"
+        href={`/?${LOCALE_PARAM}=ar`}
         hrefLang="ar"
         lang="ar"
         aria-current={locale === "ar" ? "true" : undefined}

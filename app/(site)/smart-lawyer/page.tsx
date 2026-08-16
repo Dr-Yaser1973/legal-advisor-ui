@@ -15,6 +15,7 @@ import {
   ScrollText,
   CheckCircle2,
 } from "lucide-react";
+import { useLocale } from "@/lib/hooks/useLocale";
 
 interface RagSource {
   id?: number;
@@ -23,7 +24,88 @@ interface RagSource {
   documentId?: number;
 }
 
+const T = {
+  ar: {
+    title: "المستشار القانوني الذكي",
+    subtitle:
+      "ارفع مستندك القانوني (عقد، حكم، مذكرة…) واطرح أسئلتك — يحلّله الذكاء الاصطناعي ويجيبك مستنداً إلى نصّ المستند نفسه.",
+    chips: ["تحليل مستندات PDF", "إجابات مستندة للنص", "بالعربية الفصحى"],
+    step1: "رفع مستند قانوني",
+    pickPdf: "اضغط لاختيار ملف PDF",
+    pdfHint: "عقد • حكم • مذكرة — PDF فقط",
+    uploading: "جارٍ الرفع والمعالجة…",
+    uploadBtn: "رفع ومعالجة المستند",
+    uploadDoneMsg: "تمّت معالجة المستند وربطه بالتحليل الذكي.",
+    step2: "اطرح سؤالك القانوني",
+    placeholder: "مثال: ما المخاطر القانونية في هذا العقد؟ وما بنوده المجحفة؟",
+    asking: "جارٍ التحليل…",
+    askBtn: "استشارة قانونية ذكية",
+    askHint: "يمكنك السؤال دون رفع مستند — أو رفع مستند أولاً لإجابة مستندة إليه.",
+    autofillQuestion:
+      "أريد رأيًا قانونيًا شاملًا في هذا المستند المرفوع من جميع النواحي القانونية.",
+    resultTitle: "نتيجة الاستشارة",
+    copied: "تم النسخ",
+    copy: "نسخ الإجابة",
+    analyzing: "يحلّل المستشار الذكي سؤالك…",
+    sourcesLabel: (n: number) => `📎 المقاطع المرجعية من المستند (${n})`,
+    disclaimer1:
+      "⚖️ هذه الاستشارة الذكية للاسترشاد فقط ولا تُغني عن استشارة محامٍ بشري مختص. يمكنك طلب استشارة موثّقة عبر ",
+    consultLink: "صفحة الاستشارات",
+    disclaimer2: ".",
+    errPickFile: "الرجاء اختيار ملف أولاً.",
+    errUploadLogin: "يجب تسجيل الدخول لاستخدام المستشار الذكي.",
+    errLoginFirst: "يجب تسجيل الدخول أولاً لاستخدام هذه الخدمة.",
+    errUploadFail: "فشل رفع الملف.",
+    errUploadUnexpected: "حدث خطأ غير متوقع أثناء رفع الملف.",
+    errEnterQuestion: "الرجاء إدخال السؤال القانوني.",
+    errAskLogin: "يجب تسجيل الدخول لطرح استشارة ذكية.",
+    errAnalyzeFail: "فشل التحليل الذكي للسؤال.",
+    errAskUnexpected: "حدث خطأ أثناء استدعاء المستشار الذكي.",
+  },
+  en: {
+    title: "Smart Legal Advisor",
+    subtitle:
+      "Upload your legal document (a contract, ruling, memo…) and ask your questions — AI analyzes it and answers based on the document’s own text.",
+    chips: ["PDF document analysis", "Text-grounded answers", "In clear Arabic"],
+    step1: "Upload a legal document",
+    pickPdf: "Click to choose a PDF file",
+    pdfHint: "Contract • ruling • memo — PDF only",
+    uploading: "Uploading and processing…",
+    uploadBtn: "Upload and process the document",
+    uploadDoneMsg: "The document was processed and linked to the smart analysis.",
+    step2: "Ask your legal question",
+    placeholder: "Example: What are the legal risks in this contract? Which clauses are unfair?",
+    asking: "Analyzing…",
+    askBtn: "Smart legal consultation",
+    askHint: "You can ask without uploading a document — or upload one first for a grounded answer.",
+    autofillQuestion:
+      "I want a comprehensive legal opinion on this uploaded document from all legal aspects.",
+    resultTitle: "Consultation result",
+    copied: "Copied",
+    copy: "Copy answer",
+    analyzing: "The smart advisor is analyzing your question…",
+    sourcesLabel: (n: number) => `📎 Reference passages from the document (${n})`,
+    disclaimer1:
+      "⚖️ This smart consultation is for guidance only and is not a substitute for a qualified human lawyer. You can request a documented consultation via the ",
+    consultLink: "consultations page",
+    disclaimer2: ".",
+    errPickFile: "Please choose a file first.",
+    errUploadLogin: "You must sign in to use the smart advisor.",
+    errLoginFirst: "You must sign in first to use this service.",
+    errUploadFail: "Failed to upload the file.",
+    errUploadUnexpected: "An unexpected error occurred while uploading the file.",
+    errEnterQuestion: "Please enter your legal question.",
+    errAskLogin: "You must sign in to ask a smart consultation.",
+    errAnalyzeFail: "The smart analysis of the question failed.",
+    errAskUnexpected: "An error occurred while calling the smart advisor.",
+  },
+} as const;
+
 export default function SmartLawyerPage() {
+  const { locale, dir } = useLocale();
+  const t = T[locale];
+  const chipIcons = [ScrollText, ShieldCheck, Bot];
+
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
@@ -48,7 +130,7 @@ export default function SmartLawyerPage() {
     e.preventDefault();
     setUploadErr(null);
     if (!file) {
-      setUploadErr("الرجاء اختيار ملف أولاً.");
+      setUploadErr(t.errPickFile);
       return;
     }
 
@@ -62,7 +144,7 @@ export default function SmartLawyerPage() {
       const res = await fetch("/api/upload", { method: "POST", body: form });
 
       if (authRedirected(res)) {
-        setUploadErr("يجب تسجيل الدخول لاستخدام المستشار الذكي.");
+        setUploadErr(t.errUploadLogin);
         return;
       }
 
@@ -70,12 +152,12 @@ export default function SmartLawyerPage() {
       try {
         data = await res.json();
       } catch {
-        setUploadErr("يجب تسجيل الدخول أولاً لاستخدام هذه الخدمة.");
+        setUploadErr(t.errLoginFirst);
         return;
       }
 
       if (!res.ok || data.ok === false) {
-        setUploadErr(data.error || "فشل رفع الملف.");
+        setUploadErr(data.error || t.errUploadFail);
         return;
       }
 
@@ -83,12 +165,10 @@ export default function SmartLawyerPage() {
       if (typeof data.lawDocId === "number") setLawDocId(data.lawDocId);
 
       if (!question.trim()) {
-        setQuestion(
-          "أريد رأيًا قانونيًا شاملًا في هذا المستند المرفوع من جميع النواحي القانونية."
-        );
+        setQuestion(t.autofillQuestion);
       }
     } catch {
-      setUploadErr("حدث خطأ غير متوقع أثناء رفع الملف.");
+      setUploadErr(t.errUploadUnexpected);
     } finally {
       setIsUploading(false);
     }
@@ -99,7 +179,7 @@ export default function SmartLawyerPage() {
     e.preventDefault();
     setAskErr(null);
     if (!question.trim()) {
-      setAskErr("الرجاء إدخال السؤال القانوني.");
+      setAskErr(t.errEnterQuestion);
       return;
     }
 
@@ -118,7 +198,7 @@ export default function SmartLawyerPage() {
       });
 
       if (authRedirected(res)) {
-        setAskErr("يجب تسجيل الدخول لطرح استشارة ذكية.");
+        setAskErr(t.errAskLogin);
         return;
       }
 
@@ -126,19 +206,19 @@ export default function SmartLawyerPage() {
       try {
         data = await res.json();
       } catch {
-        setAskErr("يجب تسجيل الدخول أولاً لاستخدام هذه الخدمة.");
+        setAskErr(t.errLoginFirst);
         return;
       }
 
       if (!res.ok || !data.answer) {
-        setAskErr(data.error || "فشل التحليل الذكي للسؤال.");
+        setAskErr(data.error || t.errAnalyzeFail);
         return;
       }
 
       setAnswer(data.answer);
       setSources(data.sources || []);
     } catch {
-      setAskErr("حدث خطأ أثناء استدعاء المستشار الذكي.");
+      setAskErr(t.errAskUnexpected);
     } finally {
       setIsAsking(false);
     }
@@ -151,7 +231,7 @@ export default function SmartLawyerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-100" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-100" dir={dir}>
       <div className="max-w-5xl mx-auto px-4 py-10">
 
         {/* ── الهيرو ── */}
@@ -163,23 +243,19 @@ export default function SmartLawyerPage() {
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white">المستشار القانوني الذكي</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-white">{t.title}</h1>
             </div>
-            <p className="text-zinc-300 max-w-2xl leading-relaxed">
-              ارفع مستندك القانوني (عقد، حكم، مذكرة…) واطرح أسئلتك — يحلّله الذكاء الاصطناعي
-              ويجيبك مستنداً إلى نصّ المستند نفسه.
-            </p>
+            <p className="text-zinc-300 max-w-2xl leading-relaxed">{t.subtitle}</p>
             <div className="flex flex-wrap gap-2 mt-5">
-              {[
-                { icon: ScrollText, label: "تحليل مستندات PDF" },
-                { icon: ShieldCheck, label: "إجابات مستندة للنص" },
-                { icon: Bot, label: "بالعربية الفصحى" },
-              ].map((c) => (
-                <span key={c.label} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-300">
-                  <c.icon className="w-3.5 h-3.5 text-emerald-400" />
-                  {c.label}
-                </span>
-              ))}
+              {t.chips.map((label, i) => {
+                const Icon = chipIcons[i];
+                return (
+                  <span key={label} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-300">
+                    <Icon className="w-3.5 h-3.5 text-emerald-400" />
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </header>
@@ -193,7 +269,7 @@ export default function SmartLawyerPage() {
               <span className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-sm font-bold">1</span>
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <FileText className="w-5 h-5 text-emerald-400" />
-                رفع مستند قانوني
+                {t.step1}
               </h2>
             </div>
 
@@ -201,9 +277,9 @@ export default function SmartLawyerPage() {
               <label className="group block cursor-pointer rounded-xl border-2 border-dashed border-zinc-700 hover:border-emerald-500/60 bg-zinc-950/40 px-4 py-8 text-center transition">
                 <UploadCloud className="w-9 h-9 mx-auto mb-2 text-zinc-500 group-hover:text-emerald-400 transition" />
                 <div className="text-sm text-zinc-300">
-                  {file ? file.name : "اضغط لاختيار ملف PDF"}
+                  {file ? file.name : t.pickPdf}
                 </div>
-                <div className="text-xs text-zinc-500 mt-1">عقد • حكم • مذكرة — PDF فقط</div>
+                <div className="text-xs text-zinc-500 mt-1">{t.pdfHint}</div>
                 <input
                   type="file"
                   accept=".pdf"
@@ -218,7 +294,7 @@ export default function SmartLawyerPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-                {isUploading ? "جارٍ الرفع والمعالجة…" : "رفع ومعالجة المستند"}
+                {isUploading ? t.uploading : t.uploadBtn}
               </button>
 
               {uploadErr && (
@@ -228,7 +304,7 @@ export default function SmartLawyerPage() {
               {uploadDone && (
                 <div className="flex items-center gap-2 text-sm text-emerald-300 border border-emerald-500/40 bg-emerald-950/20 rounded-lg px-3 py-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  تمّت معالجة المستند وربطه بالتحليل الذكي.
+                  {t.uploadDoneMsg}
                 </div>
               )}
             </form>
@@ -240,14 +316,14 @@ export default function SmartLawyerPage() {
               <span className="w-8 h-8 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 flex items-center justify-center text-sm font-bold">2</span>
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <HelpCircle className="w-5 h-5 text-blue-400" />
-                اطرح سؤالك القانوني
+                {t.step2}
               </h2>
             </div>
 
             <form onSubmit={handleAsk} className="space-y-4">
               <textarea
                 className="w-full border border-zinc-700 bg-zinc-950/60 text-sm text-zinc-100 rounded-xl px-3 py-3 min-h-[140px] leading-7 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                placeholder="مثال: ما المخاطر القانونية في هذا العقد؟ وما بنوده المجحفة؟"
+                placeholder={t.placeholder}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
               />
@@ -258,7 +334,7 @@ export default function SmartLawyerPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isAsking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-                {isAsking ? "جارٍ التحليل…" : "استشارة قانونية ذكية"}
+                {isAsking ? t.asking : t.askBtn}
               </button>
 
               {askErr && (
@@ -266,7 +342,7 @@ export default function SmartLawyerPage() {
               )}
               <p className="text-xs text-zinc-500 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-blue-400" />
-                يمكنك السؤال دون رفع مستند — أو رفع مستند أولاً لإجابة مستندة إليه.
+                {t.askHint}
               </p>
             </form>
           </section>
@@ -278,7 +354,7 @@ export default function SmartLawyerPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Bot className="w-5 h-5 text-emerald-400" />
-                نتيجة الاستشارة
+                {t.resultTitle}
               </h3>
               {answer && (
                 <button
@@ -286,7 +362,7 @@ export default function SmartLawyerPage() {
                   className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-zinc-300 hover:bg-white/5 transition"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Clipboard className="w-3.5 h-3.5" />}
-                  {copied ? "تم النسخ" : "نسخ الإجابة"}
+                  {copied ? t.copied : t.copy}
                 </button>
               )}
             </div>
@@ -294,7 +370,7 @@ export default function SmartLawyerPage() {
             {isAsking && !answer ? (
               <div className="flex items-center gap-3 text-zinc-400 text-sm py-6 justify-center">
                 <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                يحلّل المستشار الذكي سؤالك…
+                {t.analyzing}
               </div>
             ) : (
               <p className="whitespace-pre-wrap leading-8 text-zinc-100 text-sm">{answer}</p>
@@ -304,11 +380,11 @@ export default function SmartLawyerPage() {
             {sources.length > 0 && (
               <details className="mt-5 group">
                 <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-200 select-none">
-                  📎 المقاطع المرجعية من المستند ({sources.length})
+                  {t.sourcesLabel(sources.length)}
                 </summary>
                 <ul className="mt-3 space-y-2 text-[12px] leading-6 max-h-60 overflow-y-auto pr-1">
                   {sources.map((s, idx) => (
-                    <li key={idx} className="border-r-2 border-emerald-500/40 bg-zinc-950/40 rounded-lg px-3 py-2 text-zinc-300 whitespace-pre-wrap">
+                    <li key={idx} className="border-s-2 border-emerald-500/40 bg-zinc-950/40 rounded-lg px-3 py-2 text-zinc-300 whitespace-pre-wrap">
                       {s.text}
                     </li>
                   ))}
@@ -320,8 +396,9 @@ export default function SmartLawyerPage() {
 
         {/* ── تنبيه قانوني ── */}
         <p className="mt-8 text-center text-xs text-zinc-500 leading-6 max-w-2xl mx-auto">
-          ⚖️ هذه الاستشارة الذكية للاسترشاد فقط ولا تُغني عن استشارة محامٍ بشري مختص.
-          يمكنك طلب استشارة موثّقة عبر <a href="/consultations" className="text-emerald-400 hover:underline">صفحة الاستشارات</a>.
+          {t.disclaimer1}
+          <a href="/consultations" className="text-emerald-400 hover:underline">{t.consultLink}</a>
+          {t.disclaimer2}
         </p>
       </div>
     </div>

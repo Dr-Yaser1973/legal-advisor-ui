@@ -58,6 +58,7 @@ const PUBLIC_PATHS = [
   "/smart-lawyer",
   "/lawyers",
   "/pricing",
+  "/how-to-use",
   "/about",
   "/privacy",
   "/terms",

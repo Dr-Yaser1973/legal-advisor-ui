@@ -321,7 +321,7 @@ export default function LibraryItemViewClient({
               </nav>
             </div>
             <div className="flex items-center gap-2">
-               <LanguageSwitcher />
+               <LanguageSwitcher currentLocale={locale} />
               <button
                 onClick={shareItem}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-all hover:scale-105"

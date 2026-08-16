@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
   Building2, PenTool, Settings, ChevronLeft, ChevronRight,
   LayoutDashboard, FileEdit, Shield, Globe, HelpCircle, LifeBuoy, Home
 } from "lucide-react";
+import { useLocale } from "@/lib/hooks/useLocale";
 
 interface NavItem {
   href: string;
@@ -18,9 +19,36 @@ interface NavItem {
   highlight?: boolean;
 }
 
+const L = {
+  ar: {
+    brand: "المستشار القانوني", brandSub: "منصة قانونية ذكية",
+    home: "الصفحة الرئيسية", library: "المكتبة القانونية", blog: "المدونة", howToUse: "كيف تستخدم المنصة",
+    consultations: "الاستشارات", smartContracts: "العقود الذكية", smartLawyer: "المحامي الذكي",
+    myCases: "قضاياي", translation: "الترجمة القانونية", lawyers: "المحامون", pricing: "الأسعار",
+    manageCases: "إدارة القضايا", myConsults: "استشاراتي كمحامٍ", writeArticle: "كتابة مقال",
+    firmDashboard: "لوحة المكتب", translationDashboard: "لوحة الترجمة", newRequests: "الطلبات الجديدة",
+    companyDashboard: "لوحة الشركة", contracts: "العقود", cases: "القضايا", offices: "المكاتب",
+    translationOffices: "مكاتب الترجمة", manageBlog: "إدارة المدونة", adminPanel: "لوحة الأدمن",
+    contactAdmin: "تواصل مع الإدارة", expand: "توسيع القائمة", collapse: "طي القائمة",
+  },
+  en: {
+    brand: "Smart Legal Advisor", brandSub: "A smart legal platform",
+    home: "Home", library: "Legal library", blog: "Blog", howToUse: "How to use the platform",
+    consultations: "Consultations", smartContracts: "Smart contracts", smartLawyer: "Smart lawyer",
+    myCases: "My cases", translation: "Legal translation", lawyers: "Lawyers", pricing: "Pricing",
+    manageCases: "Case management", myConsults: "My consultations as a lawyer", writeArticle: "Write an article",
+    firmDashboard: "Firm dashboard", translationDashboard: "Translation dashboard", newRequests: "New requests",
+    companyDashboard: "Company dashboard", contracts: "Contracts", cases: "Cases", offices: "Offices",
+    translationOffices: "Translation offices", manageBlog: "Manage blog", adminPanel: "Admin panel",
+    contactAdmin: "Contact the admin", expand: "Expand menu", collapse: "Collapse menu",
+  },
+} as const;
+
 export default function Sidebar() {
   const { data: session }        = useSession();
   const pathname                 = usePathname();
+  const { locale, dir }          = useLocale();
+  const t                        = L[locale];
   const user: any                = session?.user;
   const role: string | undefined = user?.role;
 
@@ -55,65 +83,65 @@ export default function Sidebar() {
 
   // ── روابط حسب الدور ──────────────────────────────
   const commonLinks: NavItem[] = [
-    { href: "/",         label: "الصفحة الرئيسية",   icon: <Home className="w-5 h-5" /> },
-    { href: "/library",  label: "المكتبة القانونية", icon: <BookOpen className="w-5 h-5" /> },
-    { href: "/blog",     label: "المدونة",            icon: <Newspaper className="w-5 h-5" /> },
-        { href: "/how-to-use", label: "كيف تستخدم المنصة", icon: <HelpCircle className="w-5 h-5" /> },
+    { href: "/",         label: t.home,     icon: <Home className="w-5 h-5" /> },
+    { href: "/library",  label: t.library,  icon: <BookOpen className="w-5 h-5" /> },
+    { href: "/blog",     label: t.blog,     icon: <Newspaper className="w-5 h-5" /> },
+    { href: "/how-to-use", label: t.howToUse, icon: <HelpCircle className="w-5 h-5" /> },
   ];
 
   const clientLinks: NavItem[] = [
-    { href: "/consultations", label: "الاستشارات",       icon: <MessageSquare className="w-5 h-5" /> },
-    { href: "/contracts",     label: "العقود الذكية",    icon: <FileText className="w-5 h-5" /> },
-    { href: "/smart-lawyer",  label: "المحامي الذكي",    icon: <Gavel className="w-5 h-5" /> },
-    { href: "/my-cases",      label: "قضاياي",           icon: <Briefcase className="w-5 h-5" /> },
-    { href: "/translate",     label: "الترجمة القانونية", icon: <Languages className="w-5 h-5" /> },
-    { href: "/lawyers",       label: "المحامون",          icon: <Users className="w-5 h-5" /> },
-    { href: "/pricing",       label: "الأسعار",           icon: <DollarSign className="w-5 h-5" /> },
+    { href: "/consultations", label: t.consultations,  icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/contracts",     label: t.smartContracts, icon: <FileText className="w-5 h-5" /> },
+    { href: "/smart-lawyer",  label: t.smartLawyer,    icon: <Gavel className="w-5 h-5" /> },
+    { href: "/my-cases",      label: t.myCases,        icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/translate",     label: t.translation,    icon: <Languages className="w-5 h-5" /> },
+    { href: "/lawyers",       label: t.lawyers,        icon: <Users className="w-5 h-5" /> },
+    { href: "/pricing",       label: t.pricing,        icon: <DollarSign className="w-5 h-5" /> },
   ];
 
   const lawyerLinks: NavItem[] = [
-    { href: "/consultations",       label: "الاستشارات",        icon: <MessageSquare className="w-5 h-5" /> },
-    { href: "/contracts",           label: "العقود الذكية",     icon: <FileText className="w-5 h-5" /> },
-    { href: "/cases",               label: "إدارة القضايا",     icon: <Briefcase className="w-5 h-5" /> },
-    { href: "/lawyers",             label: "المحامون",           icon: <Users className="w-5 h-5" /> },
-    { href: "/lawyers/my-consults", label: "استشاراتي كمحامٍ",  icon: <Gavel className="w-5 h-5" /> },
-    { href: "/blog/new",            label: "كتابة مقال",        icon: <PenTool className="w-5 h-5" />, highlight: true },
+    { href: "/consultations",       label: t.consultations,  icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/contracts",           label: t.smartContracts, icon: <FileText className="w-5 h-5" /> },
+    { href: "/cases",               label: t.manageCases,    icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/lawyers",             label: t.lawyers,        icon: <Users className="w-5 h-5" /> },
+    { href: "/lawyers/my-consults", label: t.myConsults,     icon: <Gavel className="w-5 h-5" /> },
+    { href: "/blog/new",            label: t.writeArticle,   icon: <PenTool className="w-5 h-5" />, highlight: true },
   ];
 
   const lawFirmLinks: NavItem[] = [
-    { href: "/consultations",  label: "الاستشارات",    icon: <MessageSquare className="w-5 h-5" /> },
-    { href: "/contracts",      label: "العقود الذكية", icon: <FileText className="w-5 h-5" /> },
-    { href: "/cases",          label: "إدارة القضايا", icon: <Briefcase className="w-5 h-5" /> },
-    { href: "/firm-dashboard", label: "لوحة المكتب",   icon: <Building2 className="w-5 h-5" />, highlight: true },
-    { href: "/blog/new",       label: "كتابة مقال",    icon: <PenTool className="w-5 h-5" />,   highlight: true },
+    { href: "/consultations",  label: t.consultations,  icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/contracts",      label: t.smartContracts, icon: <FileText className="w-5 h-5" /> },
+    { href: "/cases",          label: t.manageCases,    icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/firm-dashboard", label: t.firmDashboard,  icon: <Building2 className="w-5 h-5" />, highlight: true },
+    { href: "/blog/new",       label: t.writeArticle,   icon: <PenTool className="w-5 h-5" />,   highlight: true },
   ];
 
   const translationLinks: NavItem[] = [
-    { href: "/translation-office",          label: "لوحة الترجمة",   icon: <LayoutDashboard className="w-5 h-5" />, highlight: true },
-    { href: "/translation-office/requests", label: "الطلبات الجديدة", icon: <Globe className="w-5 h-5" /> },
+    { href: "/translation-office",          label: t.translationDashboard, icon: <LayoutDashboard className="w-5 h-5" />, highlight: true },
+    { href: "/translation-office/requests", label: t.newRequests,          icon: <Globe className="w-5 h-5" /> },
   ];
 
   const companyLinks: NavItem[] = [
-    { href: "/company-dashboard", label: "لوحة الشركة",    icon: <Building2 className="w-5 h-5" />,    highlight: true },
-    { href: "/consultations",     label: "الاستشارات",     icon: <MessageSquare className="w-5 h-5" /> },
-    { href: "/contracts",         label: "العقود",          icon: <FileText className="w-5 h-5" /> },
-    { href: "/cases",             label: "القضايا",         icon: <Briefcase className="w-5 h-5" /> },
-    { href: "/smart-lawyer",      label: "المحامي الذكي",   icon: <Gavel className="w-5 h-5" /> },
+    { href: "/company-dashboard", label: t.companyDashboard, icon: <Building2 className="w-5 h-5" />,    highlight: true },
+    { href: "/consultations",     label: t.consultations,    icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/contracts",         label: t.contracts,        icon: <FileText className="w-5 h-5" /> },
+    { href: "/cases",             label: t.cases,            icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/smart-lawyer",      label: t.smartLawyer,      icon: <Gavel className="w-5 h-5" /> },
   ];
 
   const adminLinks: NavItem[] = [
-    { href: "/consultations",      label: "الاستشارات",       icon: <MessageSquare className="w-5 h-5" /> },
-    { href: "/contracts",          label: "العقود الذكية",    icon: <FileText className="w-5 h-5" /> },
-    { href: "/smart-lawyer",       label: "المحامي الذكي",    icon: <Gavel className="w-5 h-5" /> },
-    { href: "/cases",              label: "إدارة القضايا",    icon: <Briefcase className="w-5 h-5" /> },
-    { href: "/translate",          label: "الترجمة القانونية", icon: <Languages className="w-5 h-5" /> },
-    { href: "/lawyers",            label: "المحامون",          icon: <Users className="w-5 h-5" /> },
-    { href: "/firm-dashboard",     label: "المكاتب",           icon: <Building2 className="w-5 h-5" /> },
-    { href: "/translation-office", label: "مكاتب الترجمة",    icon: <Globe className="w-5 h-5" /> },
-    { href: "/pricing",            label: "الأسعار",           icon: <DollarSign className="w-5 h-5" /> },
-    { href: "/blog/new",           label: "كتابة مقال",        icon: <PenTool className="w-5 h-5" />,   highlight: true },
-    { href: "/admin/blog",         label: "إدارة المدونة",     icon: <FileEdit className="w-5 h-5" />,  highlight: true },
-    { href: "/admin",              label: "لوحة الأدمن",       icon: <Shield className="w-5 h-5" />,    highlight: true },
+    { href: "/consultations",      label: t.consultations,      icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/contracts",          label: t.smartContracts,     icon: <FileText className="w-5 h-5" /> },
+    { href: "/smart-lawyer",       label: t.smartLawyer,        icon: <Gavel className="w-5 h-5" /> },
+    { href: "/cases",              label: t.manageCases,        icon: <Briefcase className="w-5 h-5" /> },
+    { href: "/translate",          label: t.translation,        icon: <Languages className="w-5 h-5" /> },
+    { href: "/lawyers",            label: t.lawyers,            icon: <Users className="w-5 h-5" /> },
+    { href: "/firm-dashboard",     label: t.offices,            icon: <Building2 className="w-5 h-5" /> },
+    { href: "/translation-office", label: t.translationOffices, icon: <Globe className="w-5 h-5" /> },
+    { href: "/pricing",            label: t.pricing,            icon: <DollarSign className="w-5 h-5" /> },
+    { href: "/blog/new",           label: t.writeArticle,       icon: <PenTool className="w-5 h-5" />,   highlight: true },
+    { href: "/admin/blog",         label: t.manageBlog,         icon: <FileEdit className="w-5 h-5" />,  highlight: true },
+    { href: "/admin",              label: t.adminPanel,         icon: <Shield className="w-5 h-5" />,    highlight: true },
   ];
 
   // تحديد الروابط حسب الدور
@@ -128,7 +156,7 @@ export default function Sidebar() {
   // رابط «تواصل مع الإدارة» لكل مستخدم مسجّل (عدا الزائر والأدمن — الأدمن لديه وارد الدعم في لوحته)
   const supportLink: NavItem[] =
     !isGuest && !isAdmin
-      ? [{ href: "/support", label: "تواصل مع الإدارة", icon: <LifeBuoy className="w-5 h-5" /> }]
+      ? [{ href: "/support", label: t.contactAdmin, icon: <LifeBuoy className="w-5 h-5" /> }]
       : [];
 
   const allLinks = [...commonLinks, ...roleLinks, ...supportLink];
@@ -163,7 +191,7 @@ export default function Sidebar() {
   // ── الـ Sidebar الفعلي ────────────────────────────
   const sidebarContent = (
     <div className={`
-      flex flex-col h-full bg-zinc-900 border-l border-zinc-800
+      flex flex-col h-full bg-zinc-900 border-e border-zinc-800
       transition-all duration-300
       ${collapsed ? "w-16" : "w-60"}
     `}>
@@ -175,8 +203,8 @@ export default function Sidebar() {
         </div>
         {!collapsed && (
           <div className="flex flex-col leading-tight min-w-0">
-            <span className="text-sm font-semibold truncate">المستشار القانوني</span>
-            <span className="text-[10px] text-zinc-500 truncate">منصة قانونية ذكية</span>
+            <span className="text-sm font-semibold truncate">{t.brand}</span>
+            <span className="text-[10px] text-zinc-500 truncate">{t.brandSub}</span>
           </div>
         )}
       </div>
@@ -193,9 +221,10 @@ export default function Sidebar() {
         <button
           onClick={toggleCollapsed}
           className="w-full flex items-center justify-center p-2 rounded-xl text-zinc-500 hover:text-zinc-100 hover:bg-white/5 transition"
-          title={collapsed ? "توسيع القائمة" : "طي القائمة"}
+          title={collapsed ? t.expand : t.collapse}
         >
-          {collapsed
+          {/* اتجاه السهم يتبع اتجاه الصفحة */}
+          {(collapsed ? dir === "rtl" : dir !== "rtl")
             ? <ChevronLeft className="w-4 h-4" />
             : <ChevronRight className="w-4 h-4" />
           }

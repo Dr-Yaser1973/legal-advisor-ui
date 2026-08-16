@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import { getLocale } from "@/lib/i18n/server";
+import { resolveLocale } from "@/lib/i18n/config";
 
 type Props = {
   searchParams?: Promise<{ lang?: string }>;
@@ -8,7 +10,7 @@ type Props = {
 
 export default async function CategoriesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const locale = params?.lang === 'en' ? 'en' : 'ar';
+  const locale = params?.lang ? resolveLocale(params.lang) : await getLocale();
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   // جلب إحصائيات الأقسام
@@ -53,7 +55,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
           <Link href="/" className="text-xl font-bold text-blue-600">
             Legal Advisor
           </Link>
-          <LanguageSwitcher />
+          <LanguageSwitcher currentLocale={locale} />
         </div>
       </div>
 

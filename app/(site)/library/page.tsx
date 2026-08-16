@@ -2,6 +2,8 @@
 import Link from "next/link";
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import PromoBanner from "@/components/PromoBanner";
+import { getLocale } from "@/lib/i18n/server";
+import { resolveLocale } from "@/lib/i18n/config";
 
 type Props = {
   searchParams?: Promise<{ lang?: string }>;
@@ -22,9 +24,10 @@ export const metadata = {
 };
 
 export default async function LibraryPage({ searchParams }: Props) {
-  // قراءة اللغة من searchParams
+  // اللغة: ?lang الصريح يفوز، وإلا نرجع للكوكي (نفس مصدر <html> والـ middleware)
+  // بدل الافتراض الثابت على العربية — وإلا عادت الصفحة للعربية كلّما سقط الـ param.
   const params = await searchParams;
-  const locale = params?.lang === 'en' ? 'en' : 'ar';
+  const locale = params?.lang ? resolveLocale(params.lang) : await getLocale();
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   // الترجمات الكاملة
@@ -130,7 +133,7 @@ export default async function LibraryPage({ searchParams }: Props) {
           <Link href="/" className="text-xl font-bold text-blue-600">
             {texts.siteName}
           </Link>
-          <LanguageSwitcher />
+          <LanguageSwitcher currentLocale={locale} />
         </div>
       </div>
 

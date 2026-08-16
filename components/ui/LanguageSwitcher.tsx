@@ -4,31 +4,39 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
 import {
-  DEFAULT_LOCALE,
   LOCALE_PARAM,
   oppositeLocale,
   resolveLocale,
+  type Locale,
 } from '@/lib/i18n/config';
 
 /**
  * مبدّل اللغة المشترك.
  * - رابط <Link> وليس زر onClick: يعمل بلا JS، وقابل للفهرسة والمشاركة وفتحه في تبويب جديد.
  * - ألوان الوضع الداكن (كان سابقاً bg-gray-100 على موقع داكن).
+ *
+ * `currentLocale`: تمرّره صفحات الخادم بعد حسابه من (?lang ← الكوكي ← الافتراضي).
+ * بدونه كان الزر يعتمد على ?lang فقط، فيظنّ اللغة عربية متى غاب الـ param حتى
+ * لو كانت الكوكي إنجليزية — فيظهر زر خاطئ ويعكس اللغة عند التنقّل.
  */
 export default function LanguageSwitcher({
   className = '',
+  currentLocale,
 }: {
   className?: string;
+  currentLocale?: Locale;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentLang = resolveLocale(searchParams.get(LOCALE_PARAM));
+  const currentLang = currentLocale ?? resolveLocale(searchParams.get(LOCALE_PARAM));
   const newLang = oppositeLocale(currentLang);
 
   const params = new URLSearchParams(searchParams.toString());
-  if (newLang === DEFAULT_LOCALE) params.delete(LOCALE_PARAM);
-  else params.set(LOCALE_PARAM, newLang);
+  // نضبط ?lang صراحةً لكلا اللغتين (بما فيها العربية الافتراضية) حتى يُعيد
+  // الـ middleware كتابة الكوكي عند التبديل في الاتجاهين. لو حذفناه للعربية
+  // لبقيت الكوكي إنجليزية فلا يعود المستخدم للعربية أبداً.
+  params.set(LOCALE_PARAM, newLang);
 
   const qs = params.toString();
   const href = qs ? `${pathname}?${qs}` : pathname;
