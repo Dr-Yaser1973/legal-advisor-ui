@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useParams, notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/lib/hooks/useLocale";
 
 type Lawyer = {
   id: number; fullName: string; email: string | null; avatarUrl: string | null;
@@ -13,12 +14,63 @@ type Lawyer = {
   officeAddress: string;
 };
 
+const T = {
+  ar: {
+    loading: "جاري التحميل...",
+    notFound: "المحامي غير موجود.",
+    changePhoto: "تغيير الصورة",
+    aboutLawyer: "نبذة عن المحامي",
+    editBio: "✏️ تعديل النبذة",
+    bioPlaceholder: "اكتب نبذة تعريفية عنك (20-1000 حرف)...",
+    cancel: "إلغاء",
+    submitReview: "إرسال للمراجعة",
+    sending: "جارٍ الإرسال...",
+    noBioOwner: "لم تكتب نبذة بعد — اضغط تعديل النبذة لإضافتها.",
+    noBio: "لا توجد نبذة.",
+    ownerNote: "ℹ️ النبذة والصورة التي ترسلها ستظهر للزوار فقط بعد مراجعة وموافقة الإدارة.",
+    consultFee: "أجرة الاستشارة",
+    email: "البريد الإلكتروني",
+    phone: "رقم الهاتف",
+    officeAddress: "عنوان المكتب",
+    consultNoteBefore: "يتم طلب الاستشارة عبر ",
+    consultNoteLink: "صفحة الاستشارات القانونية",
+    consultNoteAfter: " لضمان توثيق الطلب وفتح غرفة محادثة رسمية عبر المنصة.",
+    backToList: "العودة لقائمة المحامين",
+    requestConsult: "طلب استشارة قانونية",
+  },
+  en: {
+    loading: "Loading...",
+    notFound: "Lawyer not found.",
+    changePhoto: "Change photo",
+    aboutLawyer: "About the lawyer",
+    editBio: "✏️ Edit bio",
+    bioPlaceholder: "Write a short bio about yourself (20–1000 characters)...",
+    cancel: "Cancel",
+    submitReview: "Submit for review",
+    sending: "Sending...",
+    noBioOwner: "You haven't written a bio yet — click Edit bio to add one.",
+    noBio: "No bio available.",
+    ownerNote: "ℹ️ The bio and photo you submit will be shown to visitors only after admin review and approval.",
+    consultFee: "Consultation fee",
+    email: "Email",
+    phone: "Phone number",
+    officeAddress: "Office address",
+    consultNoteBefore: "Consultations are requested through the ",
+    consultNoteLink: "legal consultations page",
+    consultNoteAfter: " to ensure the request is documented and an official chat room is opened on the platform.",
+    backToList: "Back to lawyers list",
+    requestConsult: "Request a legal consultation",
+  },
+} as const;
+
  export default function LawyerDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
+  const { locale, dir } = useLocale();
+  const t = T[locale];
+  const align = dir === "rtl" ? "text-right" : "text-left";
   const currentUser = (session?.user as any);
   const isOwner = Number(currentUser?.id) === Number(id);
-  const isAdmin = currentUser?.role === "ADMIN";
 
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,11 +124,11 @@ type Lawyer = {
     else setAvatarMsg({ type: "err", text: json.error });
   }
 
-  if (loading) return <p className="p-6 text-zinc-400">جاري التحميل...</p>;
-  if (!lawyer) return <p className="p-6 text-red-400">المحامي غير موجود.</p>;
+  if (loading) return <p className={`p-6 text-zinc-400 ${align}`} dir={dir}>{t.loading}</p>;
+  if (!lawyer) return <p className={`p-6 text-red-400 ${align}`} dir={dir}>{t.notFound}</p>;
 
   return (
-    <main className="p-6 max-w-3xl mx-auto space-y-6 text-right" dir="rtl">
+    <main className={`p-6 max-w-3xl mx-auto space-y-6 ${align}`} dir={dir}>
 
       {/* رأس الصفحة */}
       <header className="flex items-center gap-4">
@@ -88,7 +140,7 @@ type Lawyer = {
           />
           {/* زر رفع الصورة للمحامي */}
           {isOwner && (
-            <label className="absolute bottom-0 left-0 bg-zinc-800 border border-zinc-600 rounded-full w-7 h-7 flex items-center justify-center cursor-pointer hover:bg-zinc-700 transition" title="تغيير الصورة">
+            <label className="absolute bottom-0 end-0 bg-zinc-800 border border-zinc-600 rounded-full w-7 h-7 flex items-center justify-center cursor-pointer hover:bg-zinc-700 transition" title={t.changePhoto}>
               {avatarLoading ? "⏳" : "📷"}
               <input type="file" hidden accept="image/*" onChange={uploadAvatar} />
             </label>
@@ -111,13 +163,13 @@ type Lawyer = {
       {/* النبذة */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-lg text-white">نبذة عن المحامي</h2>
+          <h2 className="font-semibold text-lg text-white">{t.aboutLawyer}</h2>
           {isOwner && !editingBio && (
             <button
               onClick={() => { setEditingBio(true); setBioText(lawyer.bio || ""); setBioMsg(null); }}
               className="text-xs px-3 py-1 rounded-lg border border-blue-500/40 text-blue-300 hover:bg-blue-500/10 transition"
             >
-              ✏️ تعديل النبذة
+              {t.editBio}
             </button>
           )}
         </div>
@@ -129,24 +181,24 @@ type Lawyer = {
               onChange={(e) => setBioText(e.target.value)}
               rows={5}
               maxLength={1000}
-              placeholder="اكتب نبذة تعريفية عنك (20-1000 حرف)..."
+              placeholder={t.bioPlaceholder}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-zinc-500">{bioText.length}/1000</span>
               <div className="flex gap-2">
                 <button onClick={() => { setEditingBio(false); setBioMsg(null); }} className="text-xs px-3 py-1 rounded-lg border border-zinc-600 text-zinc-400 hover:bg-zinc-800 transition">
-                  إلغاء
+                  {t.cancel}
                 </button>
                 <button onClick={submitBio} disabled={bioLoading || bioText.trim().length < 20} className="text-xs px-4 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-50">
-                  {bioLoading ? "جارٍ الإرسال..." : "إرسال للمراجعة"}
+                  {bioLoading ? t.sending : t.submitReview}
                 </button>
               </div>
             </div>
           </div>
         ) : (
           <p className="whitespace-pre-wrap text-sm text-zinc-100">
-            {lawyer.bio || (isOwner ? "لم تكتب نبذة بعد — اضغط تعديل النبذة لإضافتها." : "لا توجد نبذة.")}
+            {lawyer.bio || (isOwner ? t.noBioOwner : t.noBio)}
           </p>
         )}
 
@@ -159,7 +211,7 @@ type Lawyer = {
         {/* تنبيه للمحامي */}
         {isOwner && (
           <p className="text-xs text-zinc-500 border border-zinc-700/50 rounded-lg px-3 py-2 bg-zinc-900/40">
-            ℹ️ النبذة والصورة التي ترسلها ستظهر للزوار فقط بعد مراجعة وموافقة الإدارة.
+            {t.ownerNote}
           </p>
         )}
       </section>
@@ -168,25 +220,25 @@ type Lawyer = {
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         {lawyer.consultFee && (
           <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-            <div className="text-zinc-400">أجرة الاستشارة</div>
+            <div className="text-zinc-400">{t.consultFee}</div>
             <div className="font-semibold text-zinc-100">{lawyer.consultFee} {lawyer.consultCurrency}</div>
           </div>
         )}
         {lawyer.email && (
           <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-            <div className="text-zinc-400">البريد الإلكتروني</div>
+            <div className="text-zinc-400">{t.email}</div>
             <div className="font-semibold text-zinc-100 break-words">{lawyer.email}</div>
           </div>
         )}
         {lawyer.phone && (
           <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-            <div className="text-zinc-400">رقم الهاتف</div>
+            <div className="text-zinc-400">{t.phone}</div>
             <div className="font-semibold text-zinc-100">{lawyer.phone}</div>
           </div>
         )}
         {lawyer.officeAddress && (
           <div className="border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-            <div className="text-zinc-400">عنوان المكتب</div>
+            <div className="text-zinc-400">{t.officeAddress}</div>
             <div className="font-semibold text-zinc-100">{lawyer.officeAddress}</div>
           </div>
         )}
@@ -195,21 +247,21 @@ type Lawyer = {
       {/* تنبيه الاستشارة */}
       <section className="border border-blue-500/40 rounded-lg p-4 bg-blue-500/5 text-sm text-zinc-100">
         <p>
-          يتم طلب الاستشارة عبر{" "}
+          {t.consultNoteBefore}
           <Link href="/consultations" className="underline text-blue-300 hover:text-blue-200">
-            صفحة الاستشارات القانونية
-          </Link>{" "}
-          لضمان توثيق الطلب وفتح غرفة محادثة رسمية عبر المنصة.
+            {t.consultNoteLink}
+          </Link>
+          {t.consultNoteAfter}
         </p>
       </section>
 
       {/* أزرار التنقل */}
       <div className="flex flex-wrap gap-2 justify-end">
         <Link href="/lawyers" className="px-4 py-2 rounded-lg border border-zinc-700 text-sm text-zinc-100 hover:bg-zinc-900">
-          العودة لقائمة المحامين
+          {t.backToList}
         </Link>
         <Link href="/consultations" className="px-4 py-2 rounded-lg bg-blue-600 text-sm text-white hover:bg-blue-700">
-          طلب استشارة قانونية
+          {t.requestConsult}
         </Link>
       </div>
 

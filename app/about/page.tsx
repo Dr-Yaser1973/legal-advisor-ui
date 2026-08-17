@@ -126,11 +126,11 @@ function AboutContent() {
 
           <h2 className="text-2xl font-semibold mt-4">About the Founder</h2>
           <p>
-            <strong>Dr. Yaser Hassan Hussein Al-Zubaidi</strong>,  
-            holds a PhD in Public Law,  
-            and a Bachelor's degree in Statistics and Information Systems.  
-            He is a legal and constitutional researcher, and currently works at the
-            Iraqi Ministry of Trade – Department of External Economic Relations.
+            <strong>Dr. Yaser Hassan Hussein Al-Zubaidi</strong>
+            <br />
+            He holds a PhD in Public Law and a Bachelor's degree in Statistics
+            and Information Systems, and is a researcher in constitutional,
+            administrative, and economic law.
           </p>
 
           <p>

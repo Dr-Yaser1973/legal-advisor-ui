@@ -5,6 +5,7 @@ import AuthButton from "@/components/AuthButton";
 import NotificationBell from "@/components/NotificationBell";
 import BetaAnnouncementModal from "@/components/BetaAnnouncementModal";
 import Sidebar from "@/components/Sidebar";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import { getLocale } from "@/lib/i18n/server";
 
 const FOOTER = {
@@ -41,13 +42,21 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           بـ Suspense وإلا فشل التوليد الثابت للصفحات مثل /blog/new.
         */}
         <Suspense fallback={null}>
-          <Sidebar />
+          <Sidebar initialLocale={locale} />
         </Suspense>
 
         <div className="flex flex-col flex-1 min-w-0">
           <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-end gap-3">
+            {/*
+              مبدّل اللغة المشترك لكل الصفحات العامة تحت (site). يعتمد useSearchParams
+              فيلزم حدّ Suspense. نمرّر اللغة المحسوبة على الخادم حتى يظهر الزر الصحيح
+              فوراً دون انتظار قراءة الكوكي على العميل.
+            */}
+            <Suspense fallback={null}>
+              <LanguageSwitcher currentLocale={locale} className="px-2 py-1.5" />
+            </Suspense>
             <NotificationBell />
-            <AuthButton />
+            <AuthButton locale={locale} />
           </header>
 
           <main className="flex-1 px-6 py-8">

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { getLocale } from "@/lib/i18n/server";
 import { dirFor } from "@/lib/i18n/config";
 import HtmlLangSync from "@/components/i18n/HtmlLangSync";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import "./globals.css";
 
 const SITE_URL = "https://smartlegaladvisor.com";
@@ -170,7 +171,13 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <HtmlLangSync />
         </Suspense>
-        <Providers>{children}</Providers>
+        {/*
+          يمرّر لغة الخادم لكل شجرة العميل كبذرة أولية لـ useLocale،
+          فيختفي وميض اللغة العربية على الجلسات الإنجليزية بلا ?lang.
+        */}
+        <LocaleProvider initialLocale={locale}>
+          <Providers>{children}</Providers>
+        </LocaleProvider>
       </body>
     </html>
   );

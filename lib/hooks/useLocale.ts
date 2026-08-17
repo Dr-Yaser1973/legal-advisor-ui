@@ -13,6 +13,7 @@ import {
   type Dir,
   type Locale,
 } from '@/lib/i18n/config';
+import { useInitialLocale } from '@/components/i18n/LocaleProvider';
 
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -28,23 +29,30 @@ function writeCookie(name: string, value: string) {
 }
 
 /**
- * واجهة الهوك لم تتغيّر: { locale, dir, setLocale }
- * ما تغيّر هو مصدر الحقيقة — صار نفس مصدر الخادم و middleware:
+ * واجهة الهوك: { locale, dir, setLocale }
+ * مصدر الحقيقة نفسه المستخدم في الخادم و middleware:
  *   ?lang=  →  cookie  →  الافتراضي
  *
- * سابقاً كان يقرأ من localStorage ولغة المتصفح فقط، فينتج عنه اختلاف
- * بين ما يصيّره الخادم وما يعرضه العميل.
+ * `initialLocale` (اختياري): اللغة المحسوبة على الخادم عبر getLocale. يمكن
+ * تمريرها صراحةً كـ prop، أو تُلتقط تلقائياً من <LocaleProvider> المثبَّت في
+ * الجذر (app/layout.tsx). الكوكي لا يمكن قراءته أثناء التصيير على الخادم ولا في
+ * أول تصيير على العميل (وإلا حدث عدم تطابق hydration)، لذا نستعمل لغة الخادم
+ * كقيمة أولية تمنع وميض اللغة الافتراضية (العربية) على الجلسات الإنجليزية بلا
+ * ?lang. الأولوية: الـ prop الصريح ثم قيمة المزوّد ثم الافتراضي.
  */
-export function useLocale() {
+export function useLocale(initialLocale?: Locale) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const providedLocale = useInitialLocale();
 
   const fromUrl = searchParams.get(LOCALE_PARAM);
+  const seedLocale = initialLocale ?? providedLocale ?? DEFAULT_LOCALE;
 
-  // التصيير الأول يطابق الخادم عند وجود الـ param، وإلا الافتراضي.
+  // التصيير الأول يطابق الخادم: ?lang إن وُجد، وإلا لغة الخادم (prop/مزوّد)،
+  // وإلا الافتراضي. لا نقرأ الكوكي هنا تجنّباً لعدم تطابق hydration.
   const [locale, setLocaleState] = useState<Locale>(() =>
-    fromUrl ? resolveLocale(fromUrl) : DEFAULT_LOCALE,
+    fromUrl ? resolveLocale(fromUrl) : seedLocale,
   );
 
   useEffect(() => {

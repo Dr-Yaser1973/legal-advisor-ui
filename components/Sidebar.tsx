@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
   LayoutDashboard, FileEdit, Shield, Globe, HelpCircle, LifeBuoy, Home
 } from "lucide-react";
 import { useLocale } from "@/lib/hooks/useLocale";
+import type { Locale } from "@/lib/i18n/config";
 
 interface NavItem {
   href: string;
@@ -44,10 +45,10 @@ const L = {
   },
 } as const;
 
-export default function Sidebar() {
+export default function Sidebar({ initialLocale }: { initialLocale?: Locale }) {
   const { data: session }        = useSession();
   const pathname                 = usePathname();
-  const { locale, dir }          = useLocale();
+  const { locale, dir }          = useLocale(initialLocale);
   const t                        = L[locale];
   const user: any                = session?.user;
   const role: string | undefined = user?.role;
