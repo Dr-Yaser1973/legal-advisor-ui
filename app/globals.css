@@ -3,8 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* اتجاه عربي */
-html { direction: rtl; }
+/*
+  الاتجاه يتبع سمة dir على <html> التي يضبطها app/layout.tsx (خادم) و
+  HtmlLangSync (عميل) حسب اللغة: rtl للعربية، ltr للإنجليزية.
+  كان هنا `html { direction: rtl }` ثابتاً يتغلّب على السمة، فيبقى النصّ
+  الإنجليزي في الصفحة الرئيسية معكوساً (RTL) رغم dir="ltr". أُزيل عمداً.
+*/
 
 /* وضع داكن افتراضي */
 :root { color-scheme: dark; }
