@@ -1,10 +1,20 @@
  // app/about/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useLocale } from "@/lib/hooks/useLocale";
 
+// هذه الصفحة خارج هيكل (site)، وتستخدم useLocale (المعتمِد على useSearchParams)،
+// لذا نلفّها بـ Suspense هنا حتى ينجح التوليد الثابت.
 export default function AboutPage() {
+  return (
+    <Suspense fallback={null}>
+      <AboutContent />
+    </Suspense>
+  );
+}
+
+function AboutContent() {
   // نبدأ باللغة المختارة عالمياً (?lang / الكوكي) بدل الافتراض الثابت على العربية،
   // مع إبقاء الأزرار للتبديل اليدوي — فهذه الصفحة خارج هيكل الموقع فلا يظهر فيها مبدّل اللغة العام.
   const { locale } = useLocale();

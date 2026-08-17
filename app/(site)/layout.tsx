@@ -1,5 +1,6 @@
  //app/(site)/layout.tsx
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import AuthButton from "@/components/AuthButton";
 import NotificationBell from "@/components/NotificationBell";
 import BetaAnnouncementModal from "@/components/BetaAnnouncementModal";
@@ -35,7 +36,13 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         هنا كان يبقي الهيكل يمينياً حتى في النسخة الإنجليزية.
       */}
       <div className="flex min-h-screen bg-zinc-950 text-zinc-50">
-        <Sidebar />
+        {/*
+          Sidebar يستخدم useLocale() (وهو يعتمد useSearchParams)، لذا يجب لفّه
+          بـ Suspense وإلا فشل التوليد الثابت للصفحات مثل /blog/new.
+        */}
+        <Suspense fallback={null}>
+          <Sidebar />
+        </Suspense>
 
         <div className="flex flex-col flex-1 min-w-0">
           <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-end gap-3">
@@ -44,7 +51,12 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           </header>
 
           <main className="flex-1 px-6 py-8">
-            {children}
+            {/*
+              نلفّ محتوى الصفحات بـ Suspense لأن صفحات العميل تحت (site) تستخدم
+              useLocale() (المعتمِد على useSearchParams)، فيلزم حدّ Suspense
+              فوقها حتى ينجح التوليد الثابت.
+            */}
+            <Suspense fallback={null}>{children}</Suspense>
           </main>
 
           <footer className="border-t border-white/10 py-6 px-6 text-center text-sm text-zinc-400 space-y-2">
