@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe,
-  CheckCircle2,
 } from "lucide-react";
 
 import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
@@ -348,41 +347,6 @@ export default async function HomePage() {
           </Link>
         </section>
 
-        {/* TRUST / RELIABILITY */}
-        <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-          <div className="text-start">
-            <h2 className="text-xl font-extrabold md:text-2xl">
-              {t.trustTitle}
-            </h2>
-            <p className="mt-2 text-sm text-zinc-300 md:text-base">
-              {t.trustSubtitle}
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {t.trust.map((x) => (
-              <InfoCard key={x.title} title={x.title} desc={x.desc} />
-            ))}
-          </div>
-        </section>
-
-        {/* AUDIENCES */}
-        <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-          <div className="text-start">
-            <h2 className="text-xl font-extrabold md:text-2xl">
-              {t.audiencesTitle}
-            </h2>
-            <p className="mt-2 text-sm text-zinc-300 md:text-base">
-              {t.audiencesSubtitle}
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-4">
-            {t.audience.map((a) => (
-              <AudienceCard key={a.title} title={a.title} points={a.points} />
-            ))}
-          </div>
-        </section>
       </main>
 
       {/* FOOTER */}
@@ -591,39 +555,3 @@ function ServiceCard({
   );
 }
 
-function InfoCard({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="h-5 w-5 text-amber-300" aria-hidden="true" />
-        <div className="text-sm font-extrabold">{title}</div>
-      </div>
-      <div className="mt-2 text-sm leading-7 text-zinc-300">{desc}</div>
-    </div>
-  );
-}
-
-function AudienceCard({
-  title,
-  points,
-}: {
-  title: string;
-  points: readonly string[];
-}) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-zinc-900/40 p-5">
-      <div className="text-sm font-extrabold">{title}</div>
-      <ul className="mt-3 space-y-2 text-sm text-zinc-300">
-        {points.map((p) => (
-          <li key={p} className="flex items-start gap-2">
-            <CheckCircle2
-              className="mt-0.5 h-4 w-4 shrink-0 text-amber-300"
-              aria-hidden="true"
-            />
-            <span>{p}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
