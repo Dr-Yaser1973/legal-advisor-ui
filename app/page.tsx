@@ -15,7 +15,6 @@ import {
   Scale,
   ChevronLeft,
   ChevronRight,
-  Globe,
 } from "lucide-react";
 
 import PlatformVisitorsCounter from "@/components/PlatformVisitorsCounter";
@@ -103,27 +102,6 @@ export default async function HomePage() {
         {c.a11y.skipToContent}
       </a>
 
-      {/* TOP BAR (Official) */}
-      <div className="border-b border-white/10 bg-zinc-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
-          <div className="flex items-center gap-2 text-xs text-zinc-300">
-            <Scale className="h-4 w-4 text-amber-300" aria-hidden="true" />
-            <span className="font-semibold text-zinc-100">{c.portal}</span>
-            <span className="opacity-40">•</span>
-            <span className="hidden sm:inline">{c.topNote}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2 text-xs text-zinc-300 sm:flex">
-              <Globe className="h-4 w-4" aria-hidden="true" />
-              <span>{c.a11y.language}</span>
-            </div>
-
-            <LocaleSwitch locale={locale} label={c.a11y.languageSwitcher} />
-          </div>
-        </div>
-      </div>
-
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
@@ -162,6 +140,7 @@ export default async function HomePage() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <LocaleSwitch locale={locale} label={c.a11y.languageSwitcher} />
             <AuthButton locale={locale} />
           </div>
         </div>
@@ -178,15 +157,7 @@ export default async function HomePage() {
           <div className="relative mx-auto max-w-6xl px-4 pt-10 pb-8 md:pt-16 md:pb-12">
             <div className="grid items-center gap-10 md:grid-cols-2">
               <div className="text-start">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/40 px-3 py-1 text-xs text-zinc-200">
-                  <BadgeCheck
-                    className="h-4 w-4 text-amber-300"
-                    aria-hidden="true"
-                  />
-                  <span>{c.topNote}</span>
-                </div>
-
-                <h1 className="mt-4 text-2xl font-extrabold leading-[1.2] sm:text-3xl md:text-5xl">
+                <h1 className="text-2xl font-extrabold leading-[1.2] sm:text-3xl md:text-5xl">
                   {t.heroTitle}
                 </h1>
 
@@ -259,20 +230,7 @@ export default async function HomePage() {
                       {t.quickActionsHint}
                     </p>
 
-                    <div className="mt-4 grid gap-3">
-                      {services.slice(0, 3).map((s) => (
-                        <QuickRow
-                          key={s.href}
-                          title={s.title}
-                          desc={s.desc}
-                          Icon={s.icon}
-                          href={s.href}
-                          Arrow={Arrow}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950/50 p-4">
+                    <div className="mt-4 flex-1 rounded-2xl border border-white/10 bg-zinc-950/50 p-4">
                       <div className="text-xs text-zinc-300">
                         {t.quickExampleLabel}
                       </div>
@@ -314,37 +272,6 @@ export default async function HomePage() {
               />
             ))}
           </div>
-        </section>
-
-        {/* GUIDE BANNER */}
-        <section className="mx-auto max-w-6xl px-4 pb-2">
-          <Link
-            href="/how-to-use"
-            className="block rounded-3xl border border-amber-400/30 bg-gradient-to-bl from-amber-400/10 to-zinc-900/40 p-6 transition hover:from-amber-400/15"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="rounded-2xl border border-amber-400/30 bg-zinc-950/40 p-3">
-                  <BadgeCheck
-                    className="h-6 w-6 text-amber-300"
-                    aria-hidden="true"
-                  />
-                </div>
-                <div className="text-start">
-                  <div className="text-base font-extrabold md:text-lg">
-                    {t.guideBannerTitle}
-                  </div>
-                  <div className="mt-1 text-sm text-zinc-300">
-                    {t.guideBannerDesc}
-                  </div>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-amber-400 px-5 py-3 text-sm font-extrabold text-zinc-900">
-                {t.guideBannerBtn}
-                <Arrow className="h-4 w-4" aria-hidden="true" />
-              </span>
-            </div>
-          </Link>
         </section>
 
       </main>
@@ -460,41 +387,6 @@ function TrustPill({ text, icon }: { text: string; icon: React.ReactNode }) {
       </span>
       <span>{text}</span>
     </div>
-  );
-}
-
-function QuickRow({
-  title,
-  desc,
-  Icon,
-  href,
-  Arrow,
-}: {
-  title: string;
-  desc: string;
-  Icon: React.ElementType;
-  href: string;
-  Arrow: React.ElementType;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group rounded-2xl border border-white/10 bg-zinc-950/50 p-4 transition hover:bg-zinc-950/70"
-    >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-xl border border-white/10 bg-zinc-900/40 p-2">
-          <Icon className="h-5 w-5 text-amber-300" aria-hidden="true" />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-bold text-zinc-100">{title}</div>
-          <div className="mt-1 text-xs leading-6 text-zinc-300">{desc}</div>
-        </div>
-        <Arrow
-          className="mt-2 h-4 w-4 text-zinc-400 group-hover:text-zinc-200"
-          aria-hidden="true"
-        />
-      </div>
-    </Link>
   );
 }
 
