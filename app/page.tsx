@@ -23,6 +23,9 @@ import HeroShowcase from "@/components/HeroShowcase";
 import HomeAuthCtas from "@/components/home/HomeAuthCtas";
 import HomeMobileCta from "@/components/home/HomeMobileCta";
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 import { getLocale } from "@/lib/i18n/server";
 import { getCommon, getHome } from "@/lib/i18n";
 import { LOCALE_PARAM, isRtl, type Locale } from "@/lib/i18n/config";
@@ -43,6 +46,10 @@ export default async function HomePage() {
   const locale = await getLocale();
   const rtl = isRtl(locale);
   const t = getHome(locale);
+  // حالة الدخول معروفة على الخادم، فنمرّرها كقيمة أولية لأزرار الجلسة كي
+  // تُصيَّر المجموعة الصحيحة من أول مرة بلا وميض ٤→٣ أثناء تحميل الجلسة.
+  const session = (await getServerSession(authOptions as any)) as any;
+  const initialLoggedIn = Boolean(session?.user);
   const c = getCommon(locale);
 
   const Arrow = rtl ? ChevronLeft : ChevronRight;
@@ -184,6 +191,7 @@ export default async function HomePage() {
 
                   <HomeAuthCtas
                     rtl={rtl}
+                    initialLoggedIn={initialLoggedIn}
                     registerLabel={c.actions.register}
                     signInLabel={c.actions.signIn}
                     consultationsLabel={c.nav.consultations}

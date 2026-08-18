@@ -10,17 +10,22 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  */
 export default function HomeAuthCtas({
   rtl,
+  initialLoggedIn = false,
   registerLabel,
   signInLabel,
   consultationsLabel,
 }: {
   rtl: boolean;
+  initialLoggedIn?: boolean;
   registerLabel: string;
   signInLabel: string;
   consultationsLabel: string;
 }) {
-  const { data: session } = useSession();
-  const isLoggedIn = Boolean(session?.user);
+  const { data: session, status } = useSession();
+  // أثناء تحميل الجلسة نعتمد الحالة المعروفة على الخادم (initialLoggedIn) بدل
+  // افتراض «زائر»، فلا يومض زرّا التسجيل/الدخول لمستخدم مسجّل ثم يُستبدلان.
+  const isLoggedIn =
+    status === "loading" ? initialLoggedIn : Boolean(session?.user);
   const Arrow = rtl ? ChevronLeft : ChevronRight;
 
   if (isLoggedIn) {
