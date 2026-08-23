@@ -9,6 +9,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { sanitizeBlogHtml } from "@/lib/sanitize";
 import BlogComments from "./BlogComments";
 import ShareButtons from "./ShareButtons";
+import BlogViewTracker from "@/components/BlogViewTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -155,17 +156,9 @@ export default async function BlogPostPage({
     isPreview = true;
   }
 
-  // زيادة عداد المشاهدات للمنشور فقط (لا نحسب معاينات الأدمن)
-  if (isPublished) {
-    try {
-      await prisma.blogPost.update({
-        where: { slug },
-        data: { views: { increment: 1 } },
-      });
-    } catch {
-      /* تجاهل */
-    }
-  }
+  // عدّ المشاهدات انتقل إلى beacon من المتصفّح (BlogViewTracker):
+  // مرّة واحدة لكل جلسة، ويستبعد البوتات — فلا نزيد هنا على الخادم
+  // حيث تُضخّم كل زحفة/معاينة رابط/إعادة تحميل الرقمَ.
 
   const comments = post.comments.map((c) => ({
     id: c.id,
@@ -180,6 +173,8 @@ export default async function BlogPostPage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100" dir="rtl">
+      {/* عدّ مشاهدة حقيقية مرّة واحدة لكل جلسة (يستبعد البوتات) — منشور فقط */}
+      {isPublished && <BlogViewTracker slug={post.slug} />}
       <article className="max-w-3xl mx-auto px-4 py-10">
         {/* زر العودة */}
         <Link
