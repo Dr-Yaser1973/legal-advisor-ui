@@ -119,6 +119,11 @@ if (/^\/api\/promo-banners\/\d+\/track$/.test(pathname)) {
   return NextResponse.next();
 }
 
+// تتبّع مصادر الزوّار (POST beacon عام من كل الصفحات) — قراءة الإحصاءات تبقى محميّة داخل /api/admin
+if (pathname.startsWith("/api/track")) {
+  return NextResponse.next();
+}
+
 if (
   pathname.startsWith("/api/auth") ||
   pathname.startsWith("/api/register") ||

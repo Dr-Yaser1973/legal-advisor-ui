@@ -6,6 +6,7 @@ import {
   LayoutDashboard, BookOpen, Users, MessageCircle,
   FileText, BarChart3, ScanText, Database, Building2, Building,
   Languages, Settings, ChevronRight, Scale, Newspaper, Inbox, Megaphone,
+  LineChart,
 } from "lucide-react";
 
 type NavLink = {
@@ -51,6 +52,7 @@ const groups: NavGroup[] = [
   {
     label: "الإحصاءات",
     links: [
+      { href: "/admin/analytics",         label: "مصادر الزوّار",       icon: LineChart },
       { href: "/admin/contracts-stats",   label: "إحصاءات العقود",      icon: FileText },
       { href: "/admin/translation-stats", label: "إحصاءات الترجمة",     icon: BarChart3 },
     ],
