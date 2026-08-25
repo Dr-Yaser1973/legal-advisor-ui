@@ -91,7 +91,8 @@ export async function middleware(request: NextRequest) {
   pathname.startsWith("/icons/") ||
   pathname === "/favicon.ico" ||
   pathname === "/sitemap.xml" ||   // ← أضف هذا
-  pathname === "/robots.txt"        // ← وهذا احترازياً
+  pathname === "/robots.txt" ||       // ← وهذا احترازياً
+  pathname === "/privacy-policy.html" // ← ملف ثابت عام (سياسة خصوصية اللعبة) يجب أن يفتحه الجميع بلا تسجيل دخول
 ) {
   return NextResponse.next();
 }
