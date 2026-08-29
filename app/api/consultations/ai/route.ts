@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { chatCompletion } from "@/lib/ai";
  import { canPerformAction, consumePoints } from "@/lib/plans";
+import { ingestConsultation } from "@/lib/ragStore";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,9 @@ export async function POST(req: Request) {
       where: { id: created.id },
       data: { answer: answerText },
     });
+
+    // إدخال تدريجي لقاعدة معرفة المحامي الذكي (best-effort)
+    ingestConsultation(created.id).catch(() => {});
 
     return NextResponse.json({
       id: created.id,

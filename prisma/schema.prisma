@@ -348,6 +348,21 @@ model ChunkEmbedding {
   chunk     LegalDocChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
 }
 
+// مخزن RAG الموحّد: مقاطع مُضمَّنة من مصادر داخلية متعددة (مكتبة/استشارات/مستندات)
+// يغذّي استرجاع «المحامي الذكي». sourceType+sourceId يحدّدان أصل المقطع.
+model RagChunk {
+  id         Int      @id @default(autoincrement())
+  sourceType String   // "LIBRARY" | "CONSULT" | "DOCUMENT"
+  sourceId   String   // معرّف المصدر (LibraryItem cuid، Consultation/LegalDocument رقم كنص)
+  title      String?
+  text       String   @db.Text
+  idx        Int      @default(0)
+  embedding  Float[]
+  createdAt  DateTime @default(now())
+
+  @@index([sourceType, sourceId])
+}
+
 model Consultation {
   id            Int                   @id @default(autoincrement())
   title         String

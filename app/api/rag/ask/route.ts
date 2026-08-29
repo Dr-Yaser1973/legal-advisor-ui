@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/guards";
 import { getUserPlanData } from "@/lib/plans";
+import { retrieveContext } from "@/lib/ragStore";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -109,6 +110,22 @@ export async function POST(req: Request) {
           }));
         }
       }
+    }
+
+    // 🔎 استرجاع من قاعدة المعرفة الداخلية (المكتبة + الاستشارات + المستندات)
+    try {
+      const retrieved = await retrieveContext(question, 6);
+      if (retrieved.length > 0) {
+        const retrievedText = retrieved
+          .map((r, i) => `مقطع ${i + 1} (${r.title || r.sourceType}):\n${r.text}`)
+          .join("\n\n---\n\n");
+        context = context
+          ? `${context}\n\n=== مقاطع ذات صلة من قاعدة المعرفة ===\n${retrievedText}`
+          : retrievedText;
+        sources = [...sources, ...retrieved.map((r) => ({ text: r.text }))];
+      }
+    } catch (e) {
+      console.error("rag retrieve error:", e);
     }
 
     // ✂️ تقليص النص حتى لا يكون طويلًا جدًا على النموذج

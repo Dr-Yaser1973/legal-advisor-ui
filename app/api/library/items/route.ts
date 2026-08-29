@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { ingestLibraryItem } from "@/lib/ragStore";
 
 export async function GET(request: NextRequest) {
   try {
@@ -218,6 +219,9 @@ export async function POST(request: Request) {
         createdById: (session.user as any).id
       }
     });
+
+    // إدخال تدريجي لقاعدة معرفة المحامي الذكي (best-effort)
+    ingestLibraryItem(newItem.id).catch(() => {});
 
     return NextResponse.json({
       success: true,
