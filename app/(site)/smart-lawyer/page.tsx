@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   FileText,
   UploadCloud,
@@ -103,6 +104,8 @@ const T = {
 
 export default function SmartLawyerPage() {
   const { locale, dir } = useLocale();
+  const { data: session } = useSession();
+  const isBusiness = (session?.user as any)?.plan === "BUSINESS";
   const t = T[locale];
   const chipIcons = [ScrollText, ShieldCheck, Bot];
 
@@ -260,6 +263,8 @@ export default function SmartLawyerPage() {
           </div>
         </header>
 
+        {isBusiness ? (
+        <>
         {/* ── الخطوتان ── */}
         <div className="grid md:grid-cols-2 gap-6">
 
@@ -392,6 +397,26 @@ export default function SmartLawyerPage() {
               </details>
             )}
           </section>
+        )}
+        </>
+        ) : (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-8 text-center space-y-3">
+            <div className="text-4xl">🔒</div>
+            <h2 className="text-lg font-bold text-white">
+              {locale === "ar" ? "ميزة حصرية لباقة الأعمال" : "Exclusive to the Business plan"}
+            </h2>
+            <p className="text-sm text-zinc-300 max-w-md mx-auto">
+              {locale === "ar"
+                ? "المحامي الذكي (تحليل المستندات والاستشارة المستندة إلى نصّها) متاح لمشتركي باقة الأعمال فقط."
+                : "The Smart Legal Advisor (document analysis and text-grounded answers) is available to Business-plan subscribers only."}
+            </p>
+            <a
+              href="/pricing"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-6 py-3 text-sm font-bold text-white hover:bg-amber-500 transition"
+            >
+              {locale === "ar" ? "الترقية إلى باقة الأعمال ←" : "Upgrade to Business →"}
+            </a>
+          </div>
         )}
 
         {/* ── تنبيه قانوني ── */}

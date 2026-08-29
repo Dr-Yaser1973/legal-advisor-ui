@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/guards";
+import { getUserPlanData } from "@/lib/plans";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -23,6 +24,20 @@ export async function POST(req: Request) {
     const auth = await requireUser();
     if (!auth.ok) return auth.res;
     const userId = auth.user.id;
+
+    // =========================
+    // المحامي الذكي متاح لباقة الأعمال فقط (permissions.smartLawyer)
+    // =========================
+    const planData = await getUserPlanData(userId);
+    if (!planData?.permissions.smartLawyer) {
+      return NextResponse.json(
+        {
+          error: "المحامي الذكي متاح لمشتركي باقة الأعمال فقط. يرجى الترقية.",
+          upgradeRequired: true,
+        },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
     const questionRaw = body?.question ?? "";

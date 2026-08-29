@@ -2,6 +2,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fileToText } from "@/lib/fileToText";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getUserPlanData } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -10,6 +13,20 @@ const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15MB
 
 export async function POST(req: Request) {
   try {
+    // مصادقة + قصر المحامي الذكي على باقة الأعمال (permissions.smartLawyer)
+    const session: any = await getServerSession(authOptions as any);
+    const userId = session?.user?.id ? Number(session.user.id) : null;
+    if (!userId) {
+      return NextResponse.json({ error: "غير مصرح. يرجى تسجيل الدخول." }, { status: 401 });
+    }
+    const planData = await getUserPlanData(userId);
+    if (!planData?.permissions.smartLawyer) {
+      return NextResponse.json(
+        { error: "المحامي الذكي متاح لمشتركي باقة الأعمال فقط. يرجى الترقية.", upgradeRequired: true },
+        { status: 403 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -52,8 +69,7 @@ export async function POST(req: Request) {
         filename: file.name,
         mimetype: file.type,
         size: file.size,
-      
-
+        createdById: userId, // نسبة المستند لرافعه (كان فارغاً → مستندات بلا مالك)
       },
     });
 
