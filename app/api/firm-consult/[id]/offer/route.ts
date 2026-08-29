@@ -12,6 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
 
+    const userId = Number((session.user as any).id);
     const { id } = await params;
     const requestId = Number(id);
     if (isNaN(requestId)) return NextResponse.json({ error: "معرف غير صالح." }, { status: 400 });
@@ -23,9 +24,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const request = await prisma.firmConsultRequest.findUnique({
       where: { id: requestId },
-      select: { id: true, clientId: true, subject: true, status: true },
+      select: { id: true, clientId: true, subject: true, status: true, orgId: true },
     });
     if (!request) return NextResponse.json({ error: "الطلب غير موجود." }, { status: 404 });
+
+    // 🔐 التفويض: المُرسِل يجب أن يكون مدير مكتب ضمن مؤسسة الطلب
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isManager: true, branch: { select: { orgId: true } } },
+    });
+    if (!me?.isManager || me.branch?.orgId !== request.orgId) {
+      return NextResponse.json(
+        { error: "لا تملك صلاحية تقديم عرض على هذا الطلب." },
+        { status: 403 }
+      );
+    }
+
     if (request.status !== "PENDING") {
       return NextResponse.json({ error: "لا يمكن تقديم عرض على هذا الطلب." }, { status: 400 });
     }
@@ -54,7 +68,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         emailKind: "new_offer",
         emailData: {
           subject: request.subject,
-          offerPath: "/firm-consult/my",
+          offerPath: "/consultations",
         },
       });
     } catch (notifyError) {

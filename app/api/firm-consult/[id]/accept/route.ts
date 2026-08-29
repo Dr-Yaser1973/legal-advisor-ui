@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { notifyUser } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -42,21 +43,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
     ]);
 
-    // إشعار لمحامي الفرع
-    const orgUsers = await prisma.user.findMany({
-      where: { branchId: request.branchId ?? undefined, role: "LAW_FIRM" },
+    // إشعار المكتب بقبول العرض: أعضاء الفرع، أو كل أعضاء المؤسسة إن لم يُحدَّد فرع
+    const firmUsers = await prisma.user.findMany({
+      where: request.branchId
+        ? { branchId: request.branchId }
+        : { branch: { orgId: request.orgId } },
       select: { id: true },
     });
 
-    if (orgUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: orgUsers.map((u) => ({
+    await Promise.allSettled(
+      firmUsers.map((u) =>
+        notifyUser({
           userId: u.id,
-          title: "تم قبول عرضكم",
+          title: "تم قبول عرضكم ✅",
           body: `قبل العميل عرضكم على استشارة "${request.subject}" — غرفة المحادثة مفتوحة الآن.`,
-        })),
-      });
-    }
+          pushData: { type: "firm_offer_accepted", requestId, chatRoomId: chatRoom.id },
+        })
+      )
+    );
 
     return NextResponse.json({ ok: true, chatRoomId: chatRoom.id });
   } catch (e: any) {

@@ -161,6 +161,14 @@ if (
   });
 
   if (!token) {
+    // مسارات API: أعِد 401 JSON (لا تحويل إلى صفحة HTML) كي تعمل معالجات
+    // العميل (مثل 401 → تسجيل دخول Google) بدل خطأ عام مبهم.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "غير مصرح. يرجى تسجيل الدخول." },
+        { status: 401 }
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

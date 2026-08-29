@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { notifyUser } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -82,21 +83,28 @@ export async function POST(req: Request) {
       },
     });
 
-    // إشعار للمسؤولين في المؤسسة
-    const orgUsers = await prisma.user.findMany({
-      where: { branchId: branchId ? Number(branchId) : undefined, role: "LAWYER" },
+    // إشعار المكتب: أعضاء الفرع المقصود، أو كل أعضاء المؤسسة إن لم يُحدَّد فرع
+    // (نُعرّف عضو المكتب بعضويته في الفرع/المؤسسة لا بدور ثابت — يمنع أيضاً
+    //  الفان-آوت لكل محامي المنصة الذي كان يحدث عند branchId=null).
+    const firmUsers = await prisma.user.findMany({
+      where: branchId
+        ? { branchId: Number(branchId) }
+        : { branch: { orgId: Number(orgId) } },
       select: { id: true },
     });
 
-    if (orgUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: orgUsers.map((u) => ({
-          userId: u.id,
-          title: "طلب استشارة جديد",
-          body: `طلب استشارة جديد بعنوان: ${subject}`,
-        })),
-      });
-    }
+    await Promise.allSettled(
+      firmUsers
+        .filter((u) => u.id !== userId)
+        .map((u) =>
+          notifyUser({
+            userId: u.id,
+            title: "طلب استشارة جديد",
+            body: `طلب استشارة جديد بعنوان: ${subject}`,
+            pushData: { type: "firm_request", requestId: request.id },
+          })
+        )
+    );
 
     return NextResponse.json({ ok: true, request });
   } catch (e: any) {
