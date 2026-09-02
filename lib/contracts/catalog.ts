@@ -1,4 +1,8 @@
- import { ContractTemplate } from "./engine/types";
+ import { ContractTemplate, JurisdictionCode } from "./engine/types";
+import { templateJurisdiction } from "./jurisdictions";
+
+// EG (مصر)
+import { EG_TEMPLATES } from "./eg";
 
 // PRO
 import { SALE_AR, SALE_EN } from "./pro/sale";
@@ -56,6 +60,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
   DAP_AR, DAP_EN,
   DPU_AR, DPU_EN,
   DDP_AR, DDP_EN,
+
+  // EG (مصر)
+  ...EG_TEMPLATES,
 ];
 
 export function getTemplateBySlug(slug: string): ContractTemplate | undefined {
@@ -69,5 +76,11 @@ export function listTemplates() {
     title: t.title,
     lang: t.lang,
     group: t.group,
+    jurisdiction: templateJurisdiction(t),
   }));
+}
+
+/** قوالب اختصاص معيّن (مع معاملة القوالب القديمة كـ "IQ"). */
+export function listTemplatesByJurisdiction(code: JurisdictionCode) {
+  return listTemplates().filter(t => t.jurisdiction === code);
 }
