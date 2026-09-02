@@ -64,7 +64,6 @@ export const EMPLOYMENT_AR: ContractTemplate = {
 
   <div class="header">
     <div class="title">عقد عمل</div>
-    <div class="subtitle">نموذج احترافي (PRO)</div>
     <div class="meta">
       <div><b>رقم العقد:</b> {{contractRef}}</div>
       <div><b>التاريخ:</b> {{contractDate}}</div>

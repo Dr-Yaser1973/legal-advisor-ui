@@ -25,6 +25,7 @@ export const SALE_AR: ContractTemplate = {
     { key: "buyerPhone", label: "هاتف المشتري", required: false, type: "text", group: "المشتري" },
 
     // ── المبيع ──
+    { key: "movableName", label: "نوع/اسم المنقول (يظهر في عنوان العقد)", required: true, type: "text", group: "المبيع", placeholder: "سيارة، شقة، جهاز حاسوب..." },
     { key: "movableDescription", label: "وصف المنقول وصفاً دقيقاً", required: true, type: "textarea", group: "المبيع" },
     { key: "movableIdentifiers", label: "أرقام/سمات تعريفية (هيكل/سيريال/لوحة)", required: false, type: "text", group: "المبيع" },
     { key: "condition", label: "حالة المنقول عند البيع", required: true, type: "text", group: "المبيع" },
@@ -59,8 +60,7 @@ export const SALE_AR: ContractTemplate = {
   html: `
 <div class="doc rtl">
   <div class="header">
-    <div class="title">عقد بيع منقول</div>
-    <div class="subtitle">نموذج احترافي (PRO)</div>
+    <div class="title">عقد بيع {{movableName}}</div>
     <div class="meta">
       <div><span class="k">رقم العقد:</span> <span class="v">{{contractRef}}</span></div>
       <div><span class="k">التاريخ:</span> <span class="v">{{contractDate}}</span></div>

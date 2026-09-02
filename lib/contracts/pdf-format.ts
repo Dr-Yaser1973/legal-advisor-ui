@@ -29,13 +29,15 @@ const OFFICIAL_CSS = `<style id="pdf-official-style">
     -webkit-font-smoothing: antialiased;
     text-rendering: geometricPrecision;
   }
-  /* هامش داخلي بين إطار الصفحة والنص */
-  body{ margin: 8mm 9mm !important; padding: 0 !important; }
+  /* هامش داخلي بسيط للنص (الفراغ الأساسي عن الإطار تصنعه هوامش page.pdf) */
+  body{ margin: 2mm 3mm !important; padding: 0 !important; }
 
-  /* ===== إطار الصفحة المزدوج (يتكرّر على كل صفحة) ===== */
+  /* ===== إطار الصفحة المزدوج (يتكرّر على كل صفحة) =====
+     إزاحة سالبة تُخرج الإطار داخل هامش الطباعة، فيبقى فراغ ثابت بينه وبين
+     النص على كل صفحة (بما فيها أعلى الصفحات التالية) ولا يتلامسان. */
   .pdf-frame{
     position: fixed;
-    top: 0; right: 0; bottom: 0; left: 0;
+    top: -10mm; right: -7mm; bottom: -10mm; left: -7mm;
     border: 1.5px solid var(--navy);
     pointer-events: none;
     z-index: 0;
@@ -43,7 +45,7 @@ const OFFICIAL_CSS = `<style id="pdf-official-style">
   .pdf-frame::before{
     content: "";
     position: absolute;
-    top: 5px; right: 5px; bottom: 5px; left: 5px;
+    top: 4px; right: 4px; bottom: 4px; left: 4px;
     border: 0.8px solid var(--navy-soft);
   }
   /* المحتوى فوق الإطار */
@@ -101,11 +103,7 @@ const OFFICIAL_CSS = `<style id="pdf-official-style">
     font-size: 12px !important;
     margin-top: 6px !important;
   }
-  /* فاصل أفقي أنيق تحت الرأس */
-  .header, .hdr{
-    border-bottom: 1px solid var(--hair) !important;
-    padding-bottom: 10px !important;
-  }
+  .header, .hdr{ padding-bottom: 6px !important; }
 
   /* ===== عناوين الأقسام بلمسة كحلية ===== */
   h2, .h, .sec h3{
@@ -128,27 +126,28 @@ const OFFICIAL_CSS = `<style id="pdf-official-style">
   ol.ol{ padding-right: 20px; }
   li{ margin: 7px 0; }
 
-  /* ===== الجداول: خطوط أفقية رفيعة بدل الإطار الكامل ===== */
-  table, .tbl{ width: 100%; border-collapse: collapse; margin: 8px 0; }
+  /* ===== الجداول: بلا حدود إطلاقاً — تنظيم بالمسافات فقط ===== */
+  table, .tbl{ width: 100%; border-collapse: collapse; margin: 6px 0; }
   table td, table th, .tbl td{
     border: none !important;
-    border-bottom: 1px solid var(--hair) !important;
-    padding: 9px 8px !important;
+    background: transparent !important;
+    padding: 6px 8px 6px 0 !important;
     vertical-align: top;
   }
   .th{
-    background: var(--soft) !important;
+    background: transparent !important;
     font-weight: 800;
     color: var(--navy);
     white-space: nowrap;
+    width: 90px;
   }
 
-  /* ===== الفقرة/الشرط المميّز ===== */
+  /* ===== الشرط/الفقرة المميّزة: بلا صندوق أو خلفية — نص عادي ===== */
   .clause{
-    background: var(--soft) !important;
-    border-right: 3px solid var(--navy-soft) !important;
-    padding: 10px 12px !important;
-    margin: 10px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 0 !important;
+    margin: 8px 0 !important;
   }
 
   /* ===== التواقيع: أسطر أنيقة بلا صناديق ===== */
@@ -168,8 +167,17 @@ const OFFICIAL_CSS = `<style id="pdf-official-style">
   h1, h2, .h, .title{ page-break-after: avoid; }
 </style>`;
 
+// إزالة شارة "نموذج احترافي (PRO)" من العقود القديمة المحفوظة
+// (القوالب الجديدة لم تعد تحتويها، لكن الـ htmlBody المحفوظ سابقًا يحملها).
+function stripLegacyBadges(html: string): string {
+  return html.replace(
+    /<div[^>]*class=["'][^"']*\bsubtitle\b[^"']*["'][^>]*>\s*نموذج\s+احترافي[^<]*<\/div>/gi,
+    ""
+  );
+}
+
 export function normalizeContractHtml(inputHtml: string): string {
-  const html = (inputHtml ?? "").trim();
+  const html = stripLegacyBadges((inputHtml ?? "").trim());
   if (!html) return "";
 
   const hasHtmlTag = /<html\b/i.test(html);
