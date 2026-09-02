@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { normalizeContractHtml } from "@/lib/contracts/pdf-format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,82 +15,6 @@ function getPdfServiceBaseUrl() {
   const base = process.env.PDF_SERVICE_URL?.trim();
   if (!base) throw new Error("PDF_SERVICE_URL غير مضبوط في متغيرات البيئة.");
   return base.replace(/\/$/, "");
-}
-
-function normalizeContractHtml(inputHtml: string) {
-  const html = (inputHtml ?? "").trim();
-  if (!html) return "";
-
-  // إذا كان محفوظ كوثيقة HTML كاملة، نحقن/نضمن RTL داخلها
-  const hasHtmlTag = /<html\b/i.test(html);
-  const hasHeadTag = /<head\b/i.test(html);
-  const hasBodyTag = /<body\b/i.test(html);
-
-  const rtlCss = `
-    <style>
-      html, body{
-        direction: rtl;
-        unicode-bidi: isolate;
-        text-align: right;
-        margin: 40px 50px;
-        line-height: 1.9;
-        font-family: "Cairo","Noto Naskh Arabic",Arial,sans-serif;
-      }
-      .rtl{
-        direction: rtl;
-        unicode-bidi: plaintext;
-        text-align: right;
-      }
-      h1{ text-align:center; font-size:28px; margin:0 0 22px; }
-      h2{ font-size:20px; margin:26px 0 10px; }
-      p{ margin:10px 0; }
-      ol{ padding-right:22px; }
-      li{ margin:8px 0; }
-    </style>
-  `.trim();
-
-  if (hasHtmlTag && hasHeadTag && hasBodyTag) {
-    // 1) تأكد من dir=rtl و lang=ar على html
-    let out = html
-      .replace(/<html\b([^>]*)>/i, (m, attrs) => {
-        const hasDir = /\bdir\s*=\s*["']rtl["']/i.test(attrs);
-        const hasLang = /\blang\s*=\s*["'][^"']+["']/i.test(attrs);
-        const nextAttrs = [
-          attrs?.trim() || "",
-          hasLang ? "" : `lang="ar"`,
-          hasDir ? "" : `dir="rtl"`,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        return `<html${nextAttrs ? " " + nextAttrs : ""}>`;
-      });
-
-    // 2) حقن CSS قبل </head> إذا لم يكن موجودًا
-    if (!/unicode-bidi:\s*plaintext/i.test(out)) {
-      out = out.replace(/<\/head>/i, `${rtlCss}\n</head>`);
-    }
-
-    // 3) لفّ محتوى body داخل .rtl لضمان اتجاه السطر حتى لو داخل عناصر LTR
-    out = out.replace(/<body\b([^>]*)>/i, `<body$1><div class="rtl">`);
-    out = out.replace(/<\/body>/i, `</div></body>`);
-    return out;
-  }
-
-  // إذا كان Fragment (بدون html/head/body) نلفّه داخل وثيقة كاملة RTL
-  return `<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-${rtlCss}
-</head>
-<body>
-  <div class="rtl">
-    ${html}
-  </div>
-</body>
-</html>`;
 }
 
 export async function GET(_req: Request, context: { params: RouteParams }) {

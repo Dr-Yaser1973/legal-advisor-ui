@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyUserToken } from "@/lib/jwt";
+import { normalizeContractHtml } from "@/lib/contracts/pdf-format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,26 +10,6 @@ function getPdfServiceBaseUrl() {
   const base = process.env.PDF_SERVICE_URL?.trim();
   if (!base) throw new Error("PDF_SERVICE_URL غير مضبوط.");
   return base.replace(/\/$/, "");
-}
-
-function normalizeContractHtml(inputHtml: string) {
-  const html = (inputHtml ?? "").trim();
-  if (!html) return "";
-  const rtlCss = `<style>
-    html,body{direction:rtl;text-align:right;margin:40px 50px;line-height:1.9;font-family:"Cairo","Noto Naskh Arabic",Arial,sans-serif;}
-    .rtl{direction:rtl;unicode-bidi:plaintext;text-align:right;}
-    h1{text-align:center;font-size:28px;margin:0 0 22px;}
-    h2{font-size:20px;margin:26px 0 10px;}
-    p{margin:10px 0;} ol{padding-right:22px;} li{margin:8px 0;}
-  </style>`;
-  const hasFull = /<html\b/i.test(html) && /<head\b/i.test(html) && /<body\b/i.test(html);
-  if (hasFull) {
-    let out = html.replace(/<\/head>/i, `${rtlCss}\n</head>`);
-    out = out.replace(/<body\b([^>]*)>/i, `<body$1><div class="rtl">`);
-    out = out.replace(/<\/body>/i, `</div></body>`);
-    return out;
-  }
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/>${rtlCss}</head><body><div class="rtl">${html}</div></body></html>`;
 }
 
 export async function GET(
