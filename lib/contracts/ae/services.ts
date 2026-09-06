@@ -1,19 +1,19 @@
-// lib/contracts/eg/services.ts
-// عقود الخدمات المصرية (استشارة، تدريب، تسويق، تطوير برمجي، خدمات إلكترونية، ترخيص، إدارة).
-// هذه عقود تخضع للقواعد العامة للعقود في القانون المدني المصري رقم 131 لسنة 1948
-// (سلطان الإرادة والقوة الملزمة للعقد — المادتان 147 و148)، مع مراعاة القوانين الخاصة
-// المشار إليها في كل عقد (حماية الملكية الفكرية 82/2002، التوقيع الإلكتروني 15/2004،
-// حماية البيانات الشخصية 151/2020، حماية المستهلك 181/2018).
+// lib/contracts/ae/services.ts
+// عقود الخدمات الإماراتية (استشارة، تدريب، تسويق، تطوير برمجي، خدمات إلكترونية، ترخيص، إدارة).
+// تخضع للقواعد العامة للعقود في قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985
+// (العقد شريعة المتعاقدين — المادة 267، وتنفيذه بحسن النية — المادة 246)، مع مراعاة القوانين
+// الخاصة: حقوق المؤلف (مرسوم بقانون 38/2021)، المعاملات الإلكترونية (46/2021)،
+// حماية البيانات الشخصية (45/2021)، حماية المستهلك (قانون اتحادي 15/2020).
 import type { ContractTemplate, ContractField } from "../engine/types";
 import { currencyOptionsAr, currencyOptionsEn } from "../currencies";
 import { getJurisdiction } from "../jurisdictions";
-import { AR_CSS, EN_CSS } from "./_shared";
+import { AR_CSS, EN_CSS } from "../doc-styles";
 
-const EG = getJurisdiction("EG");
+const AE = getJurisdiction("AE");
 
 type ServiceSpec = {
-  idBase: number; // AR = idBase+1, EN = idBase+2
-  slug: string; // بدون بادئة eg-
+  idBase: number;
+  slug: string;
   titleAr: string;
   titleEn: string;
   providerAr: string;
@@ -24,7 +24,7 @@ type ServiceSpec = {
   scopeLabelEn: string;
   lawNoteAr: string;
   lawNoteEn: string;
-  withIp: boolean; // إدراج بند ملكية المخرجات/الحقوق الفكرية
+  withIp: boolean;
 };
 
 function buildServiceContract(s: ServiceSpec): {
@@ -34,14 +34,14 @@ function buildServiceContract(s: ServiceSpec): {
   const arFields: ContractField[] = [
     { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
     { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
-    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد", placeholder: "القاهرة" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد", placeholder: "دبي" },
 
     { key: "providerName", label: `اسم ${s.providerAr}`, required: true, type: "text", group: s.providerAr },
-    { key: "providerId", label: "الرقم القومي/السجل التجاري", required: true, type: "text", group: s.providerAr },
+    { key: "providerId", label: "الهوية/الرخصة التجارية", required: true, type: "text", group: s.providerAr },
     { key: "providerAddress", label: "العنوان", required: true, type: "text", group: s.providerAr },
 
     { key: "clientName", label: `اسم ${s.clientAr}`, required: true, type: "text", group: s.clientAr },
-    { key: "clientId", label: "الرقم القومي/السجل التجاري", required: true, type: "text", group: s.clientAr },
+    { key: "clientId", label: "الهوية/الرخصة التجارية", required: true, type: "text", group: s.clientAr },
     { key: "clientAddress", label: "العنوان", required: true, type: "text", group: s.clientAr },
 
     { key: "scope", label: s.scopeLabelAr, required: true, type: "textarea", group: "نطاق العمل" },
@@ -50,7 +50,7 @@ function buildServiceContract(s: ServiceSpec): {
 
     { key: "feeAmount", label: "قيمة الأتعاب/المقابل", required: true, type: "number", group: "المالية" },
     { key: "feeCurrency", label: "العملة", required: true, type: "select", group: "المالية",
-      options: currencyOptionsAr(EG.currencies) },
+      options: currencyOptionsAr(AE.currencies) },
     { key: "paymentTerms", label: "شروط ومواعيد السداد", required: true, type: "textarea", group: "المالية" },
 
     { key: "startDate", label: "تاريخ البدء", required: true, type: "date", group: "المدة" },
@@ -67,8 +67,8 @@ function buildServiceContract(s: ServiceSpec): {
   arFields.push(
     { key: "confidentiality", label: "بند السرية", required: false, type: "textarea", group: "الملكية والسرية" },
     { key: "specialTerms", label: "شروط خاصة إضافية", required: false, type: "textarea", group: "أحكام" },
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام", placeholder: EG.governingLawAr },
-    { key: "disputeCity", label: "الاختصاص المكاني (محكمة)", required: true, type: "text", group: "أحكام", placeholder: EG.defaultCourtCityAr },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام", placeholder: AE.governingLawAr },
+    { key: "disputeCity", label: "الاختصاص المكاني (محكمة)", required: true, type: "text", group: "أحكام", placeholder: AE.defaultCourtCityAr },
   );
 
   const arIpBlock = s.withIp
@@ -76,17 +76,17 @@ function buildServiceContract(s: ServiceSpec): {
   <div class="box">
     <div class="h">خامساً: الملكية الفكرية</div>
     <div class="p">{{ipOwnership}}</div>
-    <div class="clause">تخضع حقوق المؤلف والحقوق المجاورة والمصنفات (ومنها البرمجيات) لأحكام قانون حماية حقوق الملكية الفكرية رقم 82 لسنة 2002؛ ولا يجوز لأي طرف استعمال علامات أو مصنفات الطرف الآخر خارج حدود هذا العقد.</div>
+    <div class="clause">تخضع حقوق المؤلف والحقوق المجاورة والمصنفات (ومنها البرمجيات) لأحكام المرسوم بقانون اتحادي رقم 38 لسنة 2021 بشأن حقوق المؤلف والحقوق المجاورة؛ ولا يجوز لأي طرف استعمال علامات أو مصنفات الطرف الآخر خارج حدود هذا العقد.</div>
   </div>`
     : "";
 
   const AR: ContractTemplate = {
     id: s.idBase + 1,
-    slug: `eg-${s.slug}-ar`,
-    title: `${s.titleAr} (مصر) – عربي`,
+    slug: `ae-${s.slug}-ar`,
+    title: `${s.titleAr} (الإمارات) – عربي`,
     lang: "ar",
     group: "PRO",
-    jurisdiction: "EG",
+    jurisdiction: "AE",
     fields: arFields,
     html: `
 <div class="doc rtl">
@@ -102,8 +102,8 @@ function buildServiceContract(s: ServiceSpec): {
 
   <div class="box">
     <div class="h">أولاً: طرفا العقد</div>
-    <div class="p"><b>${s.providerAr}:</b> {{providerName}} — الرقم القومي/السجل: {{providerId}} — العنوان: {{providerAddress}}</div>
-    <div class="p"><b>${s.clientAr}:</b> {{clientName}} — الرقم القومي/السجل: {{clientId}} — العنوان: {{clientAddress}}</div>
+    <div class="p"><b>${s.providerAr}:</b> {{providerName}} — الهوية/الرخصة: {{providerId}} — العنوان: {{providerAddress}}</div>
+    <div class="p"><b>${s.clientAr}:</b> {{clientName}} — الهوية/الرخصة: {{clientId}} — العنوان: {{clientAddress}}</div>
   </div>
 
   <div class="box">
@@ -111,7 +111,7 @@ function buildServiceContract(s: ServiceSpec): {
     <div class="p"><b>${s.scopeLabelAr}:</b> {{scope}}</div>
     <div class="p"><b>المخرجات المتوقعة:</b> {{deliverables}}</div>
     <div class="p"><b>مستوى الخدمة/المعايير:</b> {{sla}}</div>
-    <div class="clause">العقد شريعة المتعاقدين، فلا يجوز نقضه ولا تعديله إلا باتفاق الطرفين أو للأسباب التي يقرّرها القانون، ويُنفَّذ بطريقة تتفق مع ما يوجبه حسن النية (المادتان 147 و148 مدني).</div>
+    <div class="clause">العقد شريعة المتعاقدين فلا يجوز نقضه ولا تعديله إلا باتفاق الطرفين أو للأسباب التي يقرّرها القانون (المادة 267)، ويجب تنفيذه بطريقة تتفق مع ما يوجبه حسن النية (المادة 246) من قانون المعاملات المدنية.</div>
   </div>
 
   <div class="box">
@@ -124,7 +124,7 @@ function buildServiceContract(s: ServiceSpec): {
     <div class="h">رابعاً: المدة والإنهاء</div>
     <div class="p"><b>تاريخ البدء:</b> {{startDate}} — <b>المدة:</b> {{duration}}</div>
     <div class="p"><b>الإخطار قبل الإنهاء:</b> {{terminationNotice}}</div>
-    <div class="p">يجوز لأي طرف إنهاء العقد بإخطار كتابي مسبق، مع سداد مقابل ما أُنجز فعلاً من أعمال حتى تاريخ الإنهاء، ودون إخلال بالتعويض عن الإنهاء غير المبرَّر.</div>
+    <div class="p">يجوز لأي طرف إنهاء العقد بإخطار كتابي مسبق، مع سداد مقابل ما أُنجز فعلاً حتى تاريخ الإنهاء، ودون إخلال بالتعويض عن الإنهاء غير المبرَّر.</div>
   </div>
 ${arIpBlock}
   <div class="box">
@@ -153,14 +153,14 @@ ${arIpBlock}
   const enFields: ContractField[] = [
     { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
     { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
-    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info", placeholder: "Cairo" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info", placeholder: "Dubai" },
 
     { key: "providerName", label: `${s.providerEn} Name`, required: true, type: "text", group: s.providerEn },
-    { key: "providerId", label: "ID / Commercial Reg.", required: true, type: "text", group: s.providerEn },
+    { key: "providerId", label: "ID / Trade Licence", required: true, type: "text", group: s.providerEn },
     { key: "providerAddress", label: "Address", required: true, type: "text", group: s.providerEn },
 
     { key: "clientName", label: `${s.clientEn} Name`, required: true, type: "text", group: s.clientEn },
-    { key: "clientId", label: "ID / Commercial Reg.", required: true, type: "text", group: s.clientEn },
+    { key: "clientId", label: "ID / Trade Licence", required: true, type: "text", group: s.clientEn },
     { key: "clientAddress", label: "Address", required: true, type: "text", group: s.clientEn },
 
     { key: "scope", label: s.scopeLabelEn, required: true, type: "textarea", group: "Scope" },
@@ -169,7 +169,7 @@ ${arIpBlock}
 
     { key: "feeAmount", label: "Fee / Consideration", required: true, type: "number", group: "Financial" },
     { key: "feeCurrency", label: "Currency", required: true, type: "select", group: "Financial",
-      options: currencyOptionsEn(EG.currencies) },
+      options: currencyOptionsEn(AE.currencies) },
     { key: "paymentTerms", label: "Payment Terms", required: true, type: "textarea", group: "Financial" },
 
     { key: "startDate", label: "Start Date", required: true, type: "date", group: "Term" },
@@ -185,25 +185,25 @@ ${arIpBlock}
   enFields.push(
     { key: "confidentiality", label: "Confidentiality", required: false, type: "textarea", group: "IP & Confidentiality" },
     { key: "specialTerms", label: "Special Terms", required: false, type: "textarea", group: "Provisions" },
-    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions", placeholder: EG.governingLawEn },
-    { key: "disputeCity", label: "Jurisdiction / Court", required: false, type: "text", group: "Provisions", placeholder: EG.defaultCourtCityEn },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions", placeholder: AE.governingLawEn },
+    { key: "disputeCity", label: "Jurisdiction / Court", required: false, type: "text", group: "Provisions", placeholder: AE.defaultCourtCityEn },
   );
 
   const enIpBlock = s.withIp
     ? `
   <div class="sec"><h3>5. Intellectual Property</h3><div class="box">
     <div>{{ipOwnership}}</div>
-    <div class="muted">Copyright, neighbouring rights and works (including software) are subject to the IP Protection Law No. 82 of 2002; neither party may use the other's marks or works beyond this contract.</div>
+    <div class="muted">Copyright, neighbouring rights and works (including software) are subject to Federal Decree-Law No. 38 of 2021 on Copyright and Neighbouring Rights; neither party may use the other's marks or works beyond this contract.</div>
   </div></div>`
     : "";
 
   const EN: ContractTemplate = {
     id: s.idBase + 2,
-    slug: `eg-${s.slug}-en`,
-    title: `${s.titleEn} (Egypt) — English`,
+    slug: `ae-${s.slug}-en`,
+    title: `${s.titleEn} (UAE) — English`,
     lang: "en",
     group: "PRO",
-    jurisdiction: "EG",
+    jurisdiction: "AE",
     fields: enFields,
     html: `
 <div class="doc" dir="ltr" lang="en">
@@ -221,15 +221,15 @@ ${arIpBlock}
   </div>
 
   <div class="box"><div class="sec"><h3>1. Parties</h3>
-    <div><b>${s.providerEn}:</b> {{providerName}} — ID/Reg: {{providerId}} — {{providerAddress}}</div>
-    <div><b>${s.clientEn}:</b> {{clientName}} — ID/Reg: {{clientId}} — {{clientAddress}}</div>
+    <div><b>${s.providerEn}:</b> {{providerName}} — ID/Licence: {{providerId}} — {{providerAddress}}</div>
+    <div><b>${s.clientEn}:</b> {{clientName}} — ID/Licence: {{clientId}} — {{clientAddress}}</div>
   </div></div>
 
   <div class="sec"><h3>2. Scope & Deliverables</h3><div class="box">
     <div><b>${s.scopeLabelEn}:</b> {{scope}}</div>
     <div><b>Deliverables:</b> {{deliverables}}</div>
     <div><b>Service Levels:</b> {{sla}}</div>
-    <div class="muted">This Agreement is binding on the Parties and may be revoked or amended only by mutual consent or on grounds provided by law, and must be performed in good faith (Arts. 147–148 Civil Code).</div>
+    <div class="muted">This Agreement is binding on the Parties and may be amended or rescinded only by mutual consent or on grounds provided by law (Art. 267), and must be performed in good faith (Art. 246 Civil Transactions Law).</div>
   </div></div>
 
   <div class="sec"><h3>3. Fees & Payment</h3><div class="box">
@@ -265,12 +265,12 @@ ${enIpBlock}
 }
 
 const GENERAL_LAW_AR =
-  "مصاغ وفق القواعد العامة للعقود في القانون المدني المصري رقم 131 لسنة 1948 (المادتان 147 و148)";
+  "مصاغ وفق القواعد العامة للعقود في قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985 (المادتان 246 و267)";
 const GENERAL_LAW_EN =
-  "Governed by the general contract rules of the Egyptian Civil Code No. 131 of 1948 (Arts. 147–148)";
+  "Governed by the general contract rules of the UAE Civil Transactions Law No. 5 of 1985 (Arts. 246 & 267)";
 
 const consultancy = buildServiceContract({
-  idBase: 4300, slug: "consultancy",
+  idBase: 6300, slug: "consultancy",
   titleAr: "عقد استشارة", titleEn: "Consultancy Agreement",
   providerAr: "المستشار", providerEn: "Consultant",
   clientAr: "العميل", clientEn: "Client",
@@ -280,7 +280,7 @@ const consultancy = buildServiceContract({
 });
 
 const training = buildServiceContract({
-  idBase: 4400, slug: "training",
+  idBase: 6400, slug: "training",
   titleAr: "عقد تدريب", titleEn: "Training Agreement",
   providerAr: "مقدّم التدريب", providerEn: "Training Provider",
   clientAr: "الجهة المتدرّبة", clientEn: "Client",
@@ -290,59 +290,59 @@ const training = buildServiceContract({
 });
 
 const marketing = buildServiceContract({
-  idBase: 4500, slug: "marketing",
+  idBase: 6500, slug: "marketing",
   titleAr: "عقد إعلان وتسويق", titleEn: "Advertising & Marketing Agreement",
   providerAr: "الوكالة/مقدّم الخدمة", providerEn: "Agency",
   clientAr: "المُعلِن (العميل)", clientEn: "Advertiser (Client)",
   scopeLabelAr: "الحملة/الخدمات التسويقية والقنوات", scopeLabelEn: "Campaign / marketing services & channels",
   lawNoteAr:
-    "مصاغ وفق القواعد العامة للعقود في القانون المدني المصري رقم 131 لسنة 1948، ومع مراعاة قانون حماية المستهلك رقم 181 لسنة 2018",
+    "مصاغ وفق قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985، ومع مراعاة قانون حماية المستهلك الاتحادي رقم 15 لسنة 2020",
   lawNoteEn:
-    "Governed by the general contract rules of the Egyptian Civil Code No. 131 of 1948, with regard to Consumer Protection Law No. 181 of 2018",
+    "Governed by the UAE Civil Transactions Law No. 5 of 1985, with regard to Consumer Protection Law No. 15 of 2020",
   withIp: true,
 });
 
 const software = buildServiceContract({
-  idBase: 4600, slug: "software-development",
+  idBase: 6600, slug: "software-development",
   titleAr: "عقد تطوير برمجي", titleEn: "Software Development Agreement",
   providerAr: "المطوّر", providerEn: "Developer",
   clientAr: "العميل", clientEn: "Client",
   scopeLabelAr: "نطاق التطوير والمواصفات الفنية", scopeLabelEn: "Development scope & specifications",
   lawNoteAr:
-    "مصاغ وفق القواعد العامة للعقود في القانون المدني المصري رقم 131 لسنة 1948، ومع مراعاة قانون حماية حقوق الملكية الفكرية رقم 82 لسنة 2002",
+    "مصاغ وفق قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985، ومع مراعاة المرسوم بقانون رقم 38 لسنة 2021 بشأن حقوق المؤلف والحقوق المجاورة",
   lawNoteEn:
-    "Governed by the general contract rules of the Egyptian Civil Code No. 131 of 1948, with regard to the IP Protection Law No. 82 of 2002",
+    "Governed by the UAE Civil Transactions Law No. 5 of 1985, with regard to Federal Decree-Law No. 38 of 2021 on Copyright",
   withIp: true,
 });
 
 const eservices = buildServiceContract({
-  idBase: 4700, slug: "e-services",
+  idBase: 6700, slug: "e-services",
   titleAr: "عقد خدمات إلكترونية", titleEn: "Electronic Services Agreement",
   providerAr: "مقدّم الخدمة الإلكترونية", providerEn: "Service Provider",
   clientAr: "المستخدم/العميل", clientEn: "User / Client",
   scopeLabelAr: "الخدمات الإلكترونية ونطاق الاستخدام", scopeLabelEn: "E-services & usage scope",
   lawNoteAr:
-    "مصاغ وفق القانون المدني المصري رقم 131 لسنة 1948، ومع مراعاة قانون التوقيع الإلكتروني رقم 15 لسنة 2004 وقانون حماية البيانات الشخصية رقم 151 لسنة 2020",
+    "مصاغ وفق قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985، ومع مراعاة المرسوم بقانون رقم 46 لسنة 2021 بشأن المعاملات الإلكترونية والمرسوم بقانون رقم 45 لسنة 2021 بشأن حماية البيانات الشخصية",
   lawNoteEn:
-    "Governed by the Egyptian Civil Code No. 131 of 1948, with regard to the E-Signature Law No. 15 of 2004 and Personal Data Protection Law No. 151 of 2020",
+    "Governed by the UAE Civil Transactions Law No. 5 of 1985, with regard to Federal Decree-Law No. 46 of 2021 on Electronic Transactions and Decree-Law No. 45 of 2021 on Personal Data Protection",
   withIp: true,
 });
 
 const licensing = buildServiceContract({
-  idBase: 4800, slug: "licensing",
+  idBase: 6800, slug: "licensing",
   titleAr: "عقد ترخيص", titleEn: "Licensing Agreement",
   providerAr: "المُرخِّص", providerEn: "Licensor",
   clientAr: "المُرخَّص له", clientEn: "Licensee",
   scopeLabelAr: "محل الترخيص ونطاقه (الحقوق/العلامة/البرمجية)", scopeLabelEn: "Licensed subject & scope (rights/mark/software)",
   lawNoteAr:
-    "مصاغ وفق القانون المدني المصري رقم 131 لسنة 1948، ومع مراعاة قانون حماية حقوق الملكية الفكرية رقم 82 لسنة 2002",
+    "مصاغ وفق قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985، ومع مراعاة المرسوم بقانون رقم 38 لسنة 2021 بشأن حقوق المؤلف والحقوق المجاورة",
   lawNoteEn:
-    "Governed by the Egyptian Civil Code No. 131 of 1948, with regard to the IP Protection Law No. 82 of 2002",
+    "Governed by the UAE Civil Transactions Law No. 5 of 1985, with regard to Federal Decree-Law No. 38 of 2021 on Copyright",
   withIp: true,
 });
 
 const management = buildServiceContract({
-  idBase: 4900, slug: "management",
+  idBase: 6900, slug: "management",
   titleAr: "عقد إدارة", titleEn: "Management Agreement",
   providerAr: "المدير/الجهة المديرة", providerEn: "Manager",
   clientAr: "المالك (العميل)", clientEn: "Owner (Client)",
@@ -350,21 +350,6 @@ const management = buildServiceContract({
   lawNoteAr: GENERAL_LAW_AR, lawNoteEn: GENERAL_LAW_EN,
   withIp: false,
 });
-
-export const CONSULTANCY_EG_AR = consultancy.AR;
-export const CONSULTANCY_EG_EN = consultancy.EN;
-export const TRAINING_EG_AR = training.AR;
-export const TRAINING_EG_EN = training.EN;
-export const MARKETING_EG_AR = marketing.AR;
-export const MARKETING_EG_EN = marketing.EN;
-export const SOFTWARE_EG_AR = software.AR;
-export const SOFTWARE_EG_EN = software.EN;
-export const ESERVICES_EG_AR = eservices.AR;
-export const ESERVICES_EG_EN = eservices.EN;
-export const LICENSING_EG_AR = licensing.AR;
-export const LICENSING_EG_EN = licensing.EN;
-export const MANAGEMENT_EG_AR = management.AR;
-export const MANAGEMENT_EG_EN = management.EN;
 
 export const SERVICE_TEMPLATES: ContractTemplate[] = [
   consultancy.AR, consultancy.EN,

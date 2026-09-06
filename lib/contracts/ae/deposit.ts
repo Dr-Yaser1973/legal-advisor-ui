@@ -1,30 +1,30 @@
-// lib/contracts/eg/deposit.ts
-// عقد وديعة وفق القانون المدني المصري رقم 131 لسنة 1948 (مواد الوديعة 718 وما بعدها).
+// lib/contracts/ae/deposit.ts
+// عقد وديعة وفق قانون المعاملات المدنية الاتحادي الإماراتي رقم 5 لسنة 1985 (أحكام الوديعة).
 import type { ContractTemplate } from "../engine/types";
 import { currencyOptionsAr, currencyOptionsEn } from "../currencies";
 import { getJurisdiction } from "../jurisdictions";
-import { AR_CSS, EN_CSS } from "./_shared";
+import { AR_CSS, EN_CSS } from "../doc-styles";
 
-const EG = getJurisdiction("EG");
+const AE = getJurisdiction("AE");
 
-export const DEPOSIT_EG_AR: ContractTemplate = {
-  id: 4001,
-  slug: "eg-deposit-ar",
-  title: "عقد وديعة (مصر) – عربي",
+export const DEPOSIT_AE_AR: ContractTemplate = {
+  id: 6001,
+  slug: "ae-deposit-ar",
+  title: "عقد وديعة (الإمارات) – عربي",
   lang: "ar",
   group: "PRO",
-  jurisdiction: "EG",
+  jurisdiction: "AE",
   fields: [
     { key: "contractRef", label: "رقم العقد", required: true, type: "text", group: "معلومات العقد" },
     { key: "contractDate", label: "تاريخ العقد", required: true, type: "date", group: "معلومات العقد" },
-    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد", placeholder: "القاهرة" },
+    { key: "contractCity", label: "مدينة الإبرام", required: true, type: "text", group: "معلومات العقد", placeholder: "دبي" },
 
     { key: "depositorName", label: "اسم المودِع", required: true, type: "text", group: "المودِع" },
-    { key: "depositorId", label: "الرقم القومي/السجل للمودِع", required: true, type: "text", group: "المودِع" },
+    { key: "depositorId", label: "الهوية/الرخصة للمودِع", required: true, type: "text", group: "المودِع" },
     { key: "depositorAddress", label: "عنوان المودِع", required: true, type: "text", group: "المودِع" },
 
     { key: "custodianName", label: "اسم المودَع لديه (الوديع)", required: true, type: "text", group: "المودَع لديه" },
-    { key: "custodianId", label: "الرقم القومي/السجل للمودَع لديه", required: true, type: "text", group: "المودَع لديه" },
+    { key: "custodianId", label: "الهوية/الرخصة للمودَع لديه", required: true, type: "text", group: "المودَع لديه" },
     { key: "custodianAddress", label: "عنوان المودَع لديه", required: true, type: "text", group: "المودَع لديه" },
 
     { key: "depositDescription", label: "وصف الشيء المودَع", required: true, type: "textarea", group: "الوديعة" },
@@ -36,18 +36,18 @@ export const DEPOSIT_EG_AR: ContractTemplate = {
       options: ["وديعة بغير أجر (تبرعاً)", "وديعة بأجر متفق عليه"] },
     { key: "feeAmount", label: "الأجر (إن وجد)", required: false, type: "number", group: "الأجر والمدة" },
     { key: "feeCurrency", label: "العملة", required: false, type: "select", group: "الأجر والمدة",
-      options: currencyOptionsAr(EG.currencies) },
+      options: currencyOptionsAr(AE.currencies) },
     { key: "duration", label: "مدة الإيداع", required: false, type: "text", group: "الأجر والمدة", placeholder: "مثال: حتى يطلب المودِع الاسترداد" },
 
     { key: "specialTerms", label: "شروط خاصة إضافية", required: false, type: "textarea", group: "أحكام" },
-    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام", placeholder: EG.governingLawAr },
-    { key: "disputeCity", label: "الاختصاص المكاني (محكمة)", required: true, type: "text", group: "أحكام", placeholder: EG.defaultCourtCityAr },
+    { key: "governingLaw", label: "القانون الواجب التطبيق", required: true, type: "text", group: "أحكام", placeholder: AE.governingLawAr },
+    { key: "disputeCity", label: "الاختصاص المكاني (محكمة)", required: true, type: "text", group: "أحكام", placeholder: AE.defaultCourtCityAr },
   ],
   html: `
 <div class="doc rtl">
   <div class="header">
     <div class="title">عقد وديعة</div>
-    <div class="subtitle">مصاغ وفق القانون المدني المصري رقم 131 لسنة 1948 (مواد الوديعة 718 وما بعدها)</div>
+    <div class="subtitle">مصاغ وفق قانون المعاملات المدنية الاتحادي رقم 5 لسنة 1985</div>
     <div class="meta">
       <div><span class="k">رقم العقد:</span> {{contractRef}}</div>
       <div><span class="k">التاريخ:</span> {{contractDate}}</div>
@@ -57,8 +57,8 @@ export const DEPOSIT_EG_AR: ContractTemplate = {
 
   <div class="box">
     <div class="h">أولاً: طرفا العقد</div>
-    <div class="p"><b>المودِع:</b> {{depositorName}} — الرقم القومي/السجل: {{depositorId}} — العنوان: {{depositorAddress}}</div>
-    <div class="p"><b>المودَع لديه:</b> {{custodianName}} — الرقم القومي/السجل: {{custodianId}} — العنوان: {{custodianAddress}}</div>
+    <div class="p"><b>المودِع:</b> {{depositorName}} — الهوية/الرخصة: {{depositorId}} — العنوان: {{depositorAddress}}</div>
+    <div class="p"><b>المودَع لديه:</b> {{custodianName}} — الهوية/الرخصة: {{custodianId}} — العنوان: {{custodianAddress}}</div>
   </div>
 
   <div class="box">
@@ -66,20 +66,19 @@ export const DEPOSIT_EG_AR: ContractTemplate = {
     <div class="p"><b>وصف الشيء المودَع:</b> {{depositDescription}}</div>
     <div class="p"><b>الحالة عند الإيداع:</b> {{depositCondition}}</div>
     <div class="p"><b>القيمة التقديرية:</b> {{depositValue}} — <b>مكان الحفظ:</b> {{storagePlace}}</div>
-    <div class="clause">تُنقَل بالوديعة حيازة الشيء إلى المودَع لديه ليتولّى حفظه على أن يردّه عيناً عند طلب المودِع (المادة 718 مدني).</div>
+    <div class="clause">تُنقَل بالوديعة حيازة الشيء إلى المودَع لديه ليتولّى حفظه على أن يردّه عيناً عند طلب المودِع، عملاً بأحكام الوديعة في قانون المعاملات المدنية.</div>
   </div>
 
   <div class="box">
     <div class="h">ثالثاً: الأجر والمدة</div>
-    <div class="p"><b>طبيعة الوديعة:</b> {{isPaid}}</div>
-    <div class="p"><b>الأجر:</b> {{feeAmount}} {{feeCurrency}}</div>
+    <div class="p"><b>طبيعة الوديعة:</b> {{isPaid}} — <b>الأجر:</b> {{feeAmount}} {{feeCurrency}}</div>
     <div class="p"><b>مدة الإيداع:</b> {{duration}}</div>
   </div>
 
   <div class="box">
     <div class="h">رابعاً: التزامات المودَع لديه</div>
     <ol class="ol">
-      <li>يبذل المودَع لديه في حفظ الوديعة العناية التي يبذلها في حفظ ماله، فإن كانت بأجر لزمته عناية الشخص المعتاد (المادة 719 مدني).</li>
+      <li>يبذل المودَع لديه في حفظ الوديعة عناية الشخص المعتاد، وتشتدّ عنايته إذا كانت الوديعة بأجر.</li>
       <li>لا يجوز له استعمال الوديعة دون إذن المودِع، ولا إيداعها لدى الغير إلا بإذن أو لضرورة.</li>
       <li>يلتزم بردّ الوديعة بحالتها وقت الاسترداد مع ثمارها التي قبضها، في المكان المتفق عليه.</li>
     </ol>
@@ -103,24 +102,24 @@ export const DEPOSIT_EG_AR: ContractTemplate = {
   `.trim(),
 };
 
-export const DEPOSIT_EG_EN: ContractTemplate = {
-  id: 4002,
-  slug: "eg-deposit-en",
-  title: "Deposit / Bailment Agreement (Egypt) — English",
+export const DEPOSIT_AE_EN: ContractTemplate = {
+  id: 6002,
+  slug: "ae-deposit-en",
+  title: "Deposit / Bailment Agreement (UAE) — English",
   lang: "en",
   group: "PRO",
-  jurisdiction: "EG",
+  jurisdiction: "AE",
   fields: [
     { key: "contractRef", label: "Contract Ref", required: true, type: "text", group: "Contract Info" },
     { key: "contractDate", label: "Contract Date", required: true, type: "date", group: "Contract Info" },
-    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info", placeholder: "Cairo" },
+    { key: "contractCity", label: "Place of Execution", required: true, type: "text", group: "Contract Info", placeholder: "Dubai" },
 
     { key: "depositorName", label: "Depositor Name", required: true, type: "text", group: "Depositor" },
-    { key: "depositorId", label: "Depositor ID / Reg.", required: true, type: "text", group: "Depositor" },
+    { key: "depositorId", label: "Depositor ID / Licence", required: true, type: "text", group: "Depositor" },
     { key: "depositorAddress", label: "Depositor Address", required: true, type: "text", group: "Depositor" },
 
     { key: "custodianName", label: "Depositary (Custodian) Name", required: true, type: "text", group: "Depositary" },
-    { key: "custodianId", label: "Depositary ID / Reg.", required: true, type: "text", group: "Depositary" },
+    { key: "custodianId", label: "Depositary ID / Licence", required: true, type: "text", group: "Depositary" },
     { key: "custodianAddress", label: "Depositary Address", required: true, type: "text", group: "Depositary" },
 
     { key: "depositDescription", label: "Description of Deposited Item", required: true, type: "textarea", group: "Deposit" },
@@ -132,12 +131,12 @@ export const DEPOSIT_EG_EN: ContractTemplate = {
       options: ["Gratuitous", "For an agreed fee"] },
     { key: "feeAmount", label: "Fee (if any)", required: false, type: "number", group: "Fee & Term" },
     { key: "feeCurrency", label: "Currency", required: false, type: "select", group: "Fee & Term",
-      options: currencyOptionsEn(EG.currencies) },
+      options: currencyOptionsEn(AE.currencies) },
     { key: "duration", label: "Duration", required: false, type: "text", group: "Fee & Term" },
 
     { key: "specialTerms", label: "Special Terms", required: false, type: "textarea", group: "Provisions" },
-    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions", placeholder: EG.governingLawEn },
-    { key: "disputeCity", label: "Jurisdiction / Court", required: false, type: "text", group: "Provisions", placeholder: EG.defaultCourtCityEn },
+    { key: "governingLaw", label: "Governing Law", required: false, type: "text", group: "Provisions", placeholder: AE.governingLawEn },
+    { key: "disputeCity", label: "Jurisdiction / Court", required: false, type: "text", group: "Provisions", placeholder: AE.defaultCourtCityEn },
   ],
   html: `
 <div class="doc" dir="ltr" lang="en">
@@ -145,7 +144,7 @@ export const DEPOSIT_EG_EN: ContractTemplate = {
   <div class="hdr">
     <div>
       <div class="title">Deposit / Bailment Agreement</div>
-      <div class="muted">Governed by the Egyptian Civil Code No. 131 of 1948 (Deposit, Arts. 718 ff.).</div>
+      <div class="muted">Governed by the UAE Civil Transactions Law No. 5 of 1985.</div>
     </div>
     <div class="meta">
       <div><b>Ref:</b> {{contractRef}}</div>
@@ -155,15 +154,15 @@ export const DEPOSIT_EG_EN: ContractTemplate = {
   </div>
 
   <div class="box"><div class="sec"><h3>1. Parties</h3>
-    <div><b>Depositor:</b> {{depositorName}} — ID/Reg: {{depositorId}} — {{depositorAddress}}</div>
-    <div><b>Depositary:</b> {{custodianName}} — ID/Reg: {{custodianId}} — {{custodianAddress}}</div>
+    <div><b>Depositor:</b> {{depositorName}} — ID/Licence: {{depositorId}} — {{depositorAddress}}</div>
+    <div><b>Depositary:</b> {{custodianName}} — ID/Licence: {{custodianId}} — {{custodianAddress}}</div>
   </div></div>
 
   <div class="sec"><h3>2. Subject of Deposit</h3><div class="box">
     <div><b>Item:</b> {{depositDescription}}</div>
     <div><b>Condition:</b> {{depositCondition}}</div>
     <div><b>Value:</b> {{depositValue}} — <b>Storage:</b> {{storagePlace}}</div>
-    <div class="muted">The deposit transfers possession to the depositary for safekeeping, to be returned in specie on the depositor's demand (Art. 718 Civil Code).</div>
+    <div class="muted">The deposit transfers possession to the depositary for safekeeping, to be returned in specie on the depositor's demand, under the Civil Transactions Law.</div>
   </div></div>
 
   <div class="sec"><h3>3. Fee & Term</h3><div class="box">
@@ -172,9 +171,7 @@ export const DEPOSIT_EG_EN: ContractTemplate = {
   </div></div>
 
   <div class="sec"><h3>4. Depositary's Duties</h3><div class="box">
-    <div class="muted">
-      The depositary shall keep the item with the same care applied to their own property; where the deposit is for a fee, reasonable care is owed (Art. 719). The item may not be used or sub-deposited without consent, and must be returned in its then-current condition together with any fruits collected.
-    </div>
+    <div class="muted">The depositary shall keep the item with reasonable care (a higher standard applying where the deposit is for a fee), may not use or sub-deposit it without consent, and shall return it in its then-current condition together with any fruits collected.</div>
   </div></div>
 
   <div class="sec"><h3>5. Governing Law & Special Terms</h3><div class="box">

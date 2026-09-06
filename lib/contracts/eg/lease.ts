@@ -271,7 +271,7 @@ export const LEASE_EG_EN: ContractTemplate = {
       <div><b>Description:</b> {{propertyDescription}}</div>
       <div><b>Location:</b> {{propertyLocation}}</div>
       <div><b>Permitted Use:</b> {{usageType}}</div>
-      <div class="muted">Lessee shall use the premises for the agreed purpose and preserve them with the care of an ordinary person (Arts. 579, 583 Civil Code).</div>
+      <div class="muted">The Lessee shall use the premises for the agreed purpose and preserve them with reasonable care (Arts. 579, 583 Civil Code).</div>
     </div>
   </div>
 

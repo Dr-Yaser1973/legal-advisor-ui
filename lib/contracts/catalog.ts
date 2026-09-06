@@ -4,6 +4,9 @@ import { templateJurisdiction } from "./jurisdictions";
 // EG (مصر)
 import { EG_TEMPLATES } from "./eg";
 
+// AE (الإمارات)
+import { AE_TEMPLATES } from "./ae";
+
 // PRO
 import { SALE_AR, SALE_EN } from "./pro/sale";
 import { SERVICES_AR, SERVICES_EN } from "./pro/services";
@@ -63,6 +66,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
 
   // EG (مصر)
   ...EG_TEMPLATES,
+
+  // AE (الإمارات)
+  ...AE_TEMPLATES,
 ];
 
 export function getTemplateBySlug(slug: string): ContractTemplate | undefined {
