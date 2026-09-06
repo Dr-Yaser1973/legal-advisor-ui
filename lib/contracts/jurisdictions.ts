@@ -88,8 +88,8 @@ export const JURISDICTIONS: Jurisdiction[] = [
     governingLawEn: "Jordanian Civil Code No. 43 of 1976",
     defaultCourtCityAr: "عمّان",
     defaultCourtCityEn: "Amman",
-    currencies: ["JOD", "USD"],
-    enabled: false,
+    currencies: ["JOD", "USD", "EUR"],
+    enabled: true,
   },
 ];
 
