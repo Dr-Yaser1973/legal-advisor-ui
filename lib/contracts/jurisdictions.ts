@@ -60,12 +60,14 @@ export const JURISDICTIONS: Jurisdiction[] = [
     nameAr: "السعودية",
     nameEn: "Saudi Arabia",
     flag: "🇸🇦",
-    governingLawAr: "الأنظمة المعمول بها في المملكة العربية السعودية",
-    governingLawEn: "Laws in force in the Kingdom of Saudi Arabia",
+    governingLawAr:
+      "نظام المعاملات المدنية الصادر بالمرسوم الملكي رقم (م/191) وتاريخ 29/11/1444هـ",
+    governingLawEn:
+      "Saudi Civil Transactions Law (Royal Decree No. M/191 of 1444H)",
     defaultCourtCityAr: "الرياض",
     defaultCourtCityEn: "Riyadh",
-    currencies: ["SAR", "USD"],
-    enabled: false,
+    currencies: ["SAR", "USD", "EUR"],
+    enabled: true,
   },
   {
     code: "AE",

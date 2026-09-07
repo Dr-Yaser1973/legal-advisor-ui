@@ -10,6 +10,9 @@ import { AE_TEMPLATES } from "./ae";
 // JO (الأردن)
 import { JO_TEMPLATES } from "./jo";
 
+// SA (السعودية)
+import { SA_TEMPLATES } from "./sa";
+
 // IQ (العراق) — العقود المعيارية المضافة لتوحيد المجموعة
 import { IQ_TEMPLATES } from "./iq";
 
@@ -78,6 +81,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
 
   // JO (الأردن)
   ...JO_TEMPLATES,
+
+  // SA (السعودية)
+  ...SA_TEMPLATES,
 
   // IQ (العراق)
   ...IQ_TEMPLATES,
