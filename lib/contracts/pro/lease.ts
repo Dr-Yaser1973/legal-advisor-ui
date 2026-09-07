@@ -3,7 +3,7 @@ import type { ContractTemplate } from "../engine/types";
 export const LEASE_AR: ContractTemplate = {
   id: 1201,
   slug: "pro-lease-ar",
-  title: "عقد إيجار احترافي (Pro) – عربي",
+  title: "عقد إيجار (العراق) – عربي",
   lang: "ar",
   group: "PRO",
 
@@ -144,7 +144,7 @@ export const LEASE_AR: ContractTemplate = {
 export const LEASE_EN: ContractTemplate = {
   id: 1202,
   slug: "pro-lease-en",
-  title: "Lease Agreement (PRO) — English",
+  title: "Lease Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
 

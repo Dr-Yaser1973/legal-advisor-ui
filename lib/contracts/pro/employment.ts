@@ -4,7 +4,7 @@ import type { ContractTemplate } from "../engine/types";
 export const EMPLOYMENT_AR: ContractTemplate = {
   id: 1601,
   slug: "pro-employment-ar",
-  title: "عقد عمل (PRO) — عربي",
+  title: "عقد عمل (العراق) – عربي",
   lang: "ar",
   group: "PRO",
 
@@ -136,7 +136,7 @@ export const EMPLOYMENT_AR: ContractTemplate = {
 export const EMPLOYMENT_EN: ContractTemplate = {
   id: 1602,
   slug: "pro-employment-en",
-  title: "Employment Contract (PRO) — English",
+  title: "Employment Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
 

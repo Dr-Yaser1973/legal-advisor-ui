@@ -10,6 +10,9 @@ import { AE_TEMPLATES } from "./ae";
 // JO (الأردن)
 import { JO_TEMPLATES } from "./jo";
 
+// IQ (العراق) — العقود المعيارية المضافة لتوحيد المجموعة
+import { IQ_TEMPLATES } from "./iq";
+
 // PRO
 import { SALE_AR, SALE_EN } from "./pro/sale";
 import { SERVICES_AR, SERVICES_EN } from "./pro/services";
@@ -75,6 +78,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
 
   // JO (الأردن)
   ...JO_TEMPLATES,
+
+  // IQ (العراق)
+  ...IQ_TEMPLATES,
 ];
 
 export function getTemplateBySlug(slug: string): ContractTemplate | undefined {

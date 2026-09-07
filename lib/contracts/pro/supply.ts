@@ -3,7 +3,7 @@ import type { ContractTemplate } from "../engine/types";
 export const SUPPLY_AR: ContractTemplate = {
   id: 1501,
   slug: "pro-supply-ar",
-  title: "عقد توريد (PRO) — عربي",
+  title: "عقد توريد (العراق) – عربي",
   lang: "ar",
   group: "PRO",
 
@@ -101,7 +101,7 @@ export const SUPPLY_AR: ContractTemplate = {
 export const SUPPLY_EN: ContractTemplate = {
   id: 1502,
   slug: "pro-supply-en",
-  title: "Supply Agreement (PRO) — English",
+  title: "Supply Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
 

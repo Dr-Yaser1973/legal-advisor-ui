@@ -9,7 +9,7 @@ import { ContractTemplate } from "../engine/types";
 export const NDA_AR: ContractTemplate = {
   id: 1021,
   slug: "pro-nda-ar",
-  title: "اتفاقية عدم إفشاء (NDA)",
+  title: "اتفاقية عدم إفشاء (العراق) – عربي",
   lang: "ar",
   group: "PRO",
   fields: [
@@ -110,7 +110,7 @@ export const NDA_AR: ContractTemplate = {
 export const NDA_EN: ContractTemplate = {
   id: 1022,
   slug: "pro-nda-en",
-  title: "Non-Disclosure Agreement (NDA)",
+  title: "Non-Disclosure Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
   fields: [

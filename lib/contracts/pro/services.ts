@@ -9,7 +9,7 @@ import { ContractTemplate } from "../engine/types";
 export const SERVICES_AR: ContractTemplate = {
   id: 1011,
   slug: "pro-services-ar",
-  title: "عقد تقديم خدمات (تجاري / مهني)",
+  title: "عقد تقديم خدمات (العراق) – عربي",
   lang: "ar",
   group: "PRO",
   fields: [
@@ -117,7 +117,7 @@ export const SERVICES_AR: ContractTemplate = {
 export const SERVICES_EN: ContractTemplate = {
   id: 1012,
   slug: "pro-services-en",
-  title: "Services Agreement (Commercial / Professional)",
+  title: "Services Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
   fields: [

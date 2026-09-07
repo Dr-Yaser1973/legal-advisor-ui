@@ -3,7 +3,7 @@ import type { ContractTemplate } from "../engine/types";
 export const PARTNERSHIP_AR: ContractTemplate = {
   id: 1401,
   slug: "pro-partnership-ar",
-  title: "عقد شراكة احترافي (Pro) – عربي",
+  title: "عقد شراكة (العراق) – عربي",
   lang: "ar",
   group: "PRO",
 
@@ -92,7 +92,7 @@ export const PARTNERSHIP_AR: ContractTemplate = {
 export const PARTNERSHIP_EN: ContractTemplate = {
   id: 1402,
   slug: "pro-partnership-en",
-  title: "Partnership Agreement (PRO) — English",
+  title: "Partnership Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
 

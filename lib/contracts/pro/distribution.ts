@@ -9,7 +9,7 @@ import { ContractTemplate } from "../engine/types";
 export const DISTRIBUTION_AR: ContractTemplate = {
   id: 1031,
   slug: "pro-distribution-ar",
-  title: "عقد توزيع / وكالة تجارية",
+  title: "عقد توزيع / وكالة تجارية (العراق) – عربي",
   lang: "ar",
   group: "PRO",
   fields: [
@@ -134,7 +134,7 @@ export const DISTRIBUTION_AR: ContractTemplate = {
 export const DISTRIBUTION_EN: ContractTemplate = {
   id: 1032,
   slug: "pro-distribution-en",
-  title: "Distribution / Commercial Agency Agreement",
+  title: "Distribution / Commercial Agency Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
   fields: [

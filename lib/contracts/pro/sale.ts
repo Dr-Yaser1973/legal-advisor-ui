@@ -3,7 +3,7 @@
 export const SALE_AR: ContractTemplate = {
   id: 1101,
   slug: "pro-sale-movable-ar",
-  title: "عقد بيع منقول احترافي (Pro) – عربي",
+  title: "عقد بيع منقول (العراق) – عربي",
   lang: "ar",
   group: "PRO",
   fields: [
@@ -242,7 +242,7 @@ export const SALE_AR: ContractTemplate = {
 export const SALE_EN: ContractTemplate = {
   id: 1102,
   slug: "pro-sale-movable-en",
-  title: "Movable Property Sale Agreement (PRO) — English",
+  title: "Movable Property Sale Agreement (Iraq) — English",
   lang: "en",
   group: "PRO",
   fields: [
