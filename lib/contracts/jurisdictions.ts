@@ -93,6 +93,18 @@ export const JURISDICTIONS: Jurisdiction[] = [
     currencies: ["JOD", "USD", "EUR"],
     enabled: true,
   },
+  {
+    code: "KW",
+    nameAr: "الكويت",
+    nameEn: "Kuwait",
+    flag: "🇰🇼",
+    governingLawAr: "القانون المدني الكويتي الصادر بالمرسوم بقانون رقم 67 لسنة 1980",
+    governingLawEn: "Kuwaiti Civil Code (Decree-Law No. 67 of 1980)",
+    defaultCourtCityAr: "الكويت",
+    defaultCourtCityEn: "Kuwait City",
+    currencies: ["KWD", "USD", "EUR"],
+    enabled: true,
+  },
 ];
 
 export function getJurisdiction(code: JurisdictionCode | undefined): Jurisdiction {
