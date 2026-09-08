@@ -32,6 +32,7 @@ const JUR_UI: Record<string, { adjAr: string; adjEn: string; accent: string }> =
   SA: { adjAr: "السعودية", adjEn: "Saudi", accent: "teal" },
   KW: { adjAr: "الكويتية", adjEn: "Kuwaiti", accent: "indigo" },
   QA: { adjAr: "القطرية", adjEn: "Qatari", accent: "fuchsia" },
+  OM: { adjAr: "العُمانية", adjEn: "Omani", accent: "cyan" },
 };
 
 const ACCENT: Record<
@@ -45,6 +46,7 @@ const ACCENT: Record<
   teal: { tile: "bg-teal-500/10 text-teal-300", cta: "text-teal-300", hover: "hover:border-teal-400/40", bar: "bg-teal-500/10" },
   indigo: { tile: "bg-indigo-500/10 text-indigo-300", cta: "text-indigo-300", hover: "hover:border-indigo-400/40", bar: "bg-indigo-500/10" },
   fuchsia: { tile: "bg-fuchsia-500/10 text-fuchsia-300", cta: "text-fuchsia-300", hover: "hover:border-fuchsia-400/40", bar: "bg-fuchsia-500/10" },
+  cyan: { tile: "bg-cyan-500/10 text-cyan-300", cta: "text-cyan-300", hover: "hover:border-cyan-400/40", bar: "bg-cyan-500/10" },
   sky: { tile: "bg-sky-500/10 text-sky-300", cta: "text-sky-300", hover: "hover:border-sky-400/40", bar: "bg-sky-500/10" },
 };
 

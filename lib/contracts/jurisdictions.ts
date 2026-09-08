@@ -117,6 +117,18 @@ export const JURISDICTIONS: Jurisdiction[] = [
     currencies: ["QAR", "USD", "EUR"],
     enabled: true,
   },
+  {
+    code: "OM",
+    nameAr: "عُمان",
+    nameEn: "Oman",
+    flag: "🇴🇲",
+    governingLawAr: "قانون المعاملات المدنية العُماني الصادر بالمرسوم السلطاني رقم 29/2013",
+    governingLawEn: "Omani Civil Transactions Law (Royal Decree No. 29/2013)",
+    defaultCourtCityAr: "مسقط",
+    defaultCourtCityEn: "Muscat",
+    currencies: ["OMR", "USD", "EUR"],
+    enabled: true,
+  },
 ];
 
 export function getJurisdiction(code: JurisdictionCode | undefined): Jurisdiction {
