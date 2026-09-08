@@ -16,6 +16,9 @@ import { SA_TEMPLATES } from "./sa";
 // KW (الكويت)
 import { KW_TEMPLATES } from "./kw";
 
+// QA (قطر)
+import { QA_TEMPLATES } from "./qa";
+
 // IQ (العراق) — العقود المعيارية المضافة لتوحيد المجموعة
 import { IQ_TEMPLATES } from "./iq";
 
@@ -90,6 +93,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
 
   // KW (الكويت)
   ...KW_TEMPLATES,
+
+  // QA (قطر)
+  ...QA_TEMPLATES,
 
   // IQ (العراق)
   ...IQ_TEMPLATES,

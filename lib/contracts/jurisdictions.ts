@@ -105,6 +105,18 @@ export const JURISDICTIONS: Jurisdiction[] = [
     currencies: ["KWD", "USD", "EUR"],
     enabled: true,
   },
+  {
+    code: "QA",
+    nameAr: "قطر",
+    nameEn: "Qatar",
+    flag: "🇶🇦",
+    governingLawAr: "القانون المدني القطري رقم 22 لسنة 2004",
+    governingLawEn: "Qatari Civil Code (Law No. 22 of 2004)",
+    defaultCourtCityAr: "الدوحة",
+    defaultCourtCityEn: "Doha",
+    currencies: ["QAR", "USD", "EUR"],
+    enabled: true,
+  },
 ];
 
 export function getJurisdiction(code: JurisdictionCode | undefined): Jurisdiction {
