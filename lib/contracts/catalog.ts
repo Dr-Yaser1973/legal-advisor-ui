@@ -22,6 +22,9 @@ import { QA_TEMPLATES } from "./qa";
 // OM (عُمان)
 import { OM_TEMPLATES } from "./om";
 
+// BH (البحرين)
+import { BH_TEMPLATES } from "./bh";
+
 // IQ (العراق) — العقود المعيارية المضافة لتوحيد المجموعة
 import { IQ_TEMPLATES } from "./iq";
 
@@ -102,6 +105,9 @@ export const CONTRACT_CATALOG: ContractTemplate[] = [
 
   // OM (عُمان)
   ...OM_TEMPLATES,
+
+  // BH (البحرين)
+  ...BH_TEMPLATES,
 
   // IQ (العراق)
   ...IQ_TEMPLATES,

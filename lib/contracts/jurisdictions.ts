@@ -129,6 +129,18 @@ export const JURISDICTIONS: Jurisdiction[] = [
     currencies: ["OMR", "USD", "EUR"],
     enabled: true,
   },
+  {
+    code: "BH",
+    nameAr: "البحرين",
+    nameEn: "Bahrain",
+    flag: "🇧🇭",
+    governingLawAr: "القانون المدني البحريني الصادر بالمرسوم بقانون رقم 19 لسنة 2001",
+    governingLawEn: "Bahraini Civil Code (Decree-Law No. 19 of 2001)",
+    defaultCourtCityAr: "المنامة",
+    defaultCourtCityEn: "Manama",
+    currencies: ["BHD", "USD", "EUR"],
+    enabled: true,
+  },
 ];
 
 export function getJurisdiction(code: JurisdictionCode | undefined): Jurisdiction {
