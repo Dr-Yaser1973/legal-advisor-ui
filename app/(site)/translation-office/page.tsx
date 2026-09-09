@@ -158,28 +158,28 @@ export default async function TranslationOfficeDashboardPage() {
     <main className="min-h-screen bg-[#0a0a12] text-white">
       <div className="max-w-5xl mx-auto px-4 py-10 text-right space-y-8">
         {/* الترويسة */}
-        <div className="relative overflow-hidden rounded-3xl border border-purple-500/25 bg-gradient-to-bl from-[#1e1133] via-[#15101f] to-[#120e1a] p-8">
+        <div className="relative overflow-hidden rounded-3xl border border-purple-500/25 bg-gradient-to-bl from-[#1e1133] via-[#15101f] to-[#120e1a] p-6 sm:p-8">
           <div className="absolute -left-10 -top-10 h-44 w-44 rounded-full bg-purple-500/20 blur-3xl" />
           <div className="absolute -right-8 -bottom-12 h-36 w-36 rounded-full bg-amber-400/10 blur-3xl" />
-          <div className="relative flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-l from-white to-purple-200 bg-clip-text text-transparent">
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-l from-white to-purple-200 bg-clip-text text-transparent">
                 لوحة مكتب الترجمة
               </h1>
               <p className="text-sm text-purple-200/90 mt-2">
                 متابعة طلبات الترجمة الرسمية المقبولة والجارية.
               </p>
             </div>
-            <div className="shrink-0 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/translation-office/profile"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-purple-500/30 hover:border-amber-400/50 text-sm font-medium transition"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-purple-500/30 hover:border-amber-400/50 text-sm font-medium transition"
               >
                 الملف التعريفي للمكتب
               </Link>
               <Link
                 href="/translation-office/requests"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-sm font-medium transition"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-sm font-medium transition"
               >
                 عرض الطلبات الجديدة
                 <span>←</span>
