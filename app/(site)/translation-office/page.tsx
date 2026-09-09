@@ -189,7 +189,7 @@ export default async function TranslationOfficeDashboardPage() {
         </div>
 
         {/* بطاقات الإحصائيات */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
           {stats.map((s) => (
             <div
               key={s.label}
