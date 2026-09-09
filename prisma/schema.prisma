@@ -22,6 +22,7 @@ model User {
   isApproved                 Boolean               @default(false)
   location                   String?
   phone                      String?
+  bio                        String?               @db.Text
   status                     UserStatus            @default(PENDING)
   plan                       UserPlan              @default(FREE)
   points                     Int                   @default(0)

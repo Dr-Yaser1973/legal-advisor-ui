@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
         phone: true,
         location: true,
         image: true,
+        bio: true,
       },
       orderBy: { id: "asc" },
     });

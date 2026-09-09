@@ -1,6 +1,7 @@
  // app/(site)/translation-office/page.tsx
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import OfficeInProgressCard, {
@@ -169,14 +170,21 @@ export default async function TranslationOfficeDashboardPage() {
                 متابعة طلبات الترجمة الرسمية المقبولة والجارية.
               </p>
             </div>
-            
-              href="/translation-office/requests"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-sm font-medium transition"
-            ;
-              عرض الطلبات الجديدة
-              <span>←</span>
-          
-
+            <div className="shrink-0 flex flex-wrap items-center gap-2">
+              <Link
+                href="/translation-office/profile"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-purple-500/30 hover:border-amber-400/50 text-sm font-medium transition"
+              >
+                الملف التعريفي للمكتب
+              </Link>
+              <Link
+                href="/translation-office/requests"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-sm font-medium transition"
+              >
+                عرض الطلبات الجديدة
+                <span>←</span>
+              </Link>
+            </div>
           </div>
         </div>
 

@@ -24,6 +24,7 @@ export default async function TranslationOfficesListPage() {
       phone: true,
       location: true,
       image: true,
+      bio: true,
     },
     orderBy: { id: "asc" },
   });

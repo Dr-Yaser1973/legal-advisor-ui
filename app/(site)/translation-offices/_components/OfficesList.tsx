@@ -11,6 +11,7 @@ type Office = {
   phone: string | null;
   location: string | null;
   image: string | null;
+  bio: string | null;
 };
 
 function initials(name: string | null, id: number) {
@@ -70,7 +71,8 @@ export default function OfficesList({ offices }: { offices: Office[] }) {
     return offices.filter((o) => {
       const name = (o.name || "").toLowerCase();
       const loc = (o.location || "").toLowerCase();
-      return name.includes(q) || loc.includes(q);
+      const bio = (o.bio || "").toLowerCase();
+      return name.includes(q) || loc.includes(q) || bio.includes(q);
     });
   }, [offices, query]);
 
@@ -137,6 +139,21 @@ export default function OfficesList({ offices }: { offices: Office[] }) {
                   </span>
                 </div>
               </div>
+
+              {/* نبذة مختصرة */}
+              {office.bio && (
+                <p
+                  className="mt-3 text-xs leading-relaxed text-purple-200/70"
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {office.bio}
+                </p>
+              )}
 
               {/* معلومات */}
               <div className="mt-4 space-y-1.5 text-xs text-purple-200/80">

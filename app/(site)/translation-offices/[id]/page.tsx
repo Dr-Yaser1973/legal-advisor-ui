@@ -37,6 +37,7 @@ export default async function TranslationOfficeDetailsPage({
       phone: true,
       location: true,
       image: true,
+      bio: true,
       createdAt: true,
     },
   });
@@ -95,8 +96,20 @@ export default async function TranslationOfficeDetailsPage({
             </div>
           </div>
 
-          {/* معلومات التواصل */}
+          {/* المحتوى */}
           <div className="p-6 sm:p-8 space-y-5">
+            {/* نبذة عن المكتب */}
+            {office.bio && (
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-purple-100">
+                  نبذة عن المكتب
+                </h2>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-purple-100/85">
+                  {office.bio}
+                </p>
+              </div>
+            )}
+
             <h2 className="text-sm font-semibold text-purple-100">
               معلومات التواصل
             </h2>
