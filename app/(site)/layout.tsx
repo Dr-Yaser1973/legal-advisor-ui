@@ -45,7 +45,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           <Sidebar initialLocale={locale} />
         </Suspense>
 
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex flex-col flex-1 min-w-0 overflow-x-hidden">
           <header className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur px-6 py-3 flex items-center justify-end gap-3">
             {/*
               مبدّل اللغة المشترك لكل الصفحات العامة تحت (site). يعتمد useSearchParams

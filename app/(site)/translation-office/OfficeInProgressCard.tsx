@@ -78,19 +78,23 @@ export default function OfficeInProgressCard({
       {/* معلومات الطلب */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-2">
-          <div className="text-sm font-semibold text-white flex items-center gap-2">
+          <div className="text-sm font-semibold text-white flex items-center gap-2 min-w-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300 shrink-0">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
               <path d="M14 2v6h6" />
             </svg>
-            {item.sourceDoc.title || item.sourceDoc.filename}
+            <span className="truncate">
+              {item.sourceDoc.title || item.sourceDoc.filename}
+            </span>
           </div>
-          <div className="text-xs text-purple-200/80 flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="text-xs text-purple-200/80 flex items-center gap-1.5 min-w-0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            {item.client.name || item.client.email}
+            <span className="truncate">
+              {item.client.name || item.client.email}
+            </span>
           </div>
           <div className="text-xs text-purple-200/80">
             اللغة المستهدفة:{" "}

@@ -219,18 +219,24 @@ export default async function TranslationOfficeDashboardPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm text-white flex items-center gap-2">
-                        <span className="text-purple-300">
+                      <div className="text-sm text-white flex items-center gap-2 min-w-0">
+                        <span className="text-purple-300 shrink-0">
                           <IconFile />
                         </span>
-                        {r.sourceDoc?.title || r.sourceDoc?.filename}
+                        <span className="truncate">
+                          {r.sourceDoc?.title || r.sourceDoc?.filename}
+                        </span>
                       </div>
-                      <div className="text-xs text-purple-200/80 mt-2 flex items-center gap-1.5">
-                        <IconUser />
-                        {r.client?.name || r.client?.email}
+                      <div className="text-xs text-purple-200/80 mt-2 flex items-center gap-1.5 min-w-0">
+                        <span className="shrink-0">
+                          <IconUser />
+                        </span>
+                        <span className="truncate">
+                          {r.client?.name || r.client?.email}
+                        </span>
                       </div>
                     </div>
-                    <span className="whitespace-nowrap text-[11px] text-amber-300 bg-amber-400/12 px-2.5 py-1 rounded-full">
+                    <span className="whitespace-nowrap text-[11px] text-amber-300 bg-amber-400/12 px-2.5 py-1 rounded-full shrink-0">
                       {statusLabel(r.status)}
                     </span>
                   </div>
@@ -276,18 +282,24 @@ export default async function TranslationOfficeDashboardPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm text-zinc-200 flex items-center gap-2">
-                        <span className="text-emerald-400">
+                      <div className="text-sm text-zinc-200 flex items-center gap-2 min-w-0">
+                        <span className="text-emerald-400 shrink-0">
                           <IconFileCheck />
                         </span>
-                        {r.sourceDoc?.title || r.sourceDoc?.filename}
+                        <span className="truncate">
+                          {r.sourceDoc?.title || r.sourceDoc?.filename}
+                        </span>
                       </div>
-                      <div className="text-xs text-zinc-400 mt-2 flex items-center gap-1.5">
-                        <IconUser />
-                        {r.client?.name || r.client?.email}
+                      <div className="text-xs text-zinc-400 mt-2 flex items-center gap-1.5 min-w-0">
+                        <span className="shrink-0">
+                          <IconUser />
+                        </span>
+                        <span className="truncate">
+                          {r.client?.name || r.client?.email}
+                        </span>
                       </div>
                     </div>
-                    <span className="whitespace-nowrap text-[11px] text-emerald-300 bg-emerald-500/12 px-2.5 py-1 rounded-full">
+                    <span className="whitespace-nowrap text-[11px] text-emerald-300 bg-emerald-500/12 px-2.5 py-1 rounded-full shrink-0">
                       {statusLabel(r.status)}
                     </span>
                   </div>
